@@ -4,21 +4,27 @@ import { render } from '@testing-library/react';
 import { Mascot } from '../Mascot';
 
 describe('Mascot', () => {
-  it('renders an SVG with aria-hidden and presentation role', () => {
+  it('renders a video element with presentation role and aria-hidden for idle state', () => {
     const { container } = render(<Mascot state="idle" />);
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.getAttribute('role')).toBe('presentation');
+    const video = wrapper.querySelector('video');
+    expect(video).toBeTruthy();
+    expect(video!.getAttribute('src')).toBe('/animations/mascot.webm');
+    expect(video!.getAttribute('aria-hidden')).toBe('true');
+    expect(video!.hasAttribute('autoplay')).toBe(true);
+    expect(video!.hasAttribute('loop')).toBe(true);
+    expect(video!.hasAttribute('muted')).toBe(true);
+    expect(video!.hasAttribute('playsinline')).toBe(true);
+  });
+
+  it('renders an SVG with aria-hidden and presentation role for SVG states', () => {
+    const { container } = render(<Mascot state="sleeping" />);
     const wrapper = container.firstElementChild as HTMLElement;
     expect(wrapper.getAttribute('role')).toBe('presentation');
     const svg = wrapper.querySelector('svg');
     expect(svg).toBeTruthy();
     expect(svg!.getAttribute('aria-hidden')).toBe('true');
-  });
-
-  it('applies idle palette gradient stops', () => {
-    const { container } = render(<Mascot state="idle" />);
-    const stops = container.querySelectorAll('stop');
-    const colors = Array.from(stops).map(s => s.getAttribute('stop-color'));
-    expect(colors).toContain('#c8f0de');
-    expect(colors).toContain('#6dbf96');
   });
 
   it('applies sleeping palette gradient stops', () => {
@@ -45,8 +51,8 @@ describe('Mascot', () => {
     expect(colors).toContain('#78aec8');
   });
 
-  it('renders upright viewBox for idle state', () => {
-    const { container } = render(<Mascot state="idle" />);
+  it('renders upright viewBox for excited state', () => {
+    const { container } = render(<Mascot state="excited" />);
     const svg = container.querySelector('svg');
     expect(svg!.getAttribute('viewBox')).toBe('0 0 200 200');
   });
@@ -65,8 +71,8 @@ describe('Mascot', () => {
     expect(closedEyes.length).toBe(2);
   });
 
-  it('renders open eyes (ellipses) for non-sleeping states', () => {
-    const { container } = render(<Mascot state="idle" />);
+  it('renders open eyes (ellipses) for excited state', () => {
+    const { container } = render(<Mascot state="excited" />);
     const eyeWhites = container.querySelectorAll('[data-eye="white"]');
     expect(eyeWhites.length).toBe(2);
   });
@@ -83,8 +89,8 @@ describe('Mascot', () => {
     expect(zBox).toBeFalsy();
   });
 
-  it('renders a ground shadow', () => {
-    const { container } = render(<Mascot state="idle" />);
+  it('renders a ground shadow for SVG states', () => {
+    const { container } = render(<Mascot state="excited" />);
     const shadow = container.querySelector('[data-mascot="shadow"]');
     expect(shadow).toBeTruthy();
   });
@@ -112,8 +118,8 @@ describe('Mascot', () => {
     expect(mouth!.tagName.toLowerCase()).toBe('ellipse');
   });
 
-  it('renders the upright mouth as a path for idle', () => {
-    const { container } = render(<Mascot state="idle" />);
+  it('renders the upright mouth as a path for excited', () => {
+    const { container } = render(<Mascot state="excited" />);
     const mouth = container.querySelector('[data-mascot="mouth"]');
     expect(mouth).toBeTruthy();
     expect(mouth!.tagName.toLowerCase()).toBe('path');

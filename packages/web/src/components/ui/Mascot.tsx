@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useMascotAnimation } from '../../hooks/useMascotAnimation';
 
 export const MASCOT_PALETTES = {
@@ -21,55 +21,35 @@ interface SvgProps {
   svgRef: React.Ref<SVGSVGElement>;
 }
 
-function IdleSvg({ palette, gradientId, svgRef }: SvgProps) {
+function IdleVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.defaultMuted = true;
+      videoRef.current.muted = true;
+      try {
+        const promise = videoRef.current.play();
+        if (promise && typeof promise.catch === 'function') {
+          promise.catch(() => {});
+        }
+      } catch {
+        // Ignored for environments without full media element support
+      }
+    }
+  }, []);
+
   return (
-    <svg ref={svgRef} viewBox="0 0 200 200" aria-hidden="true" width="100%" height="100%">
-      <defs>
-        <radialGradient id={gradientId} cx="38%" cy="30%" r="65%">
-          <stop offset="0%" stopColor={palette.from} />
-          <stop offset="100%" stopColor={palette.to} />
-        </radialGradient>
-      </defs>
-
-      {/* Shadow */}
-      <ellipse data-mascot="shadow" cx="100" cy="188" rx="32" ry="6" fill={palette.shadow} />
-
-      {/* Body */}
-      <path
-        data-mascot="body"
-        d="M100 28 C132 24, 162 48, 166 84 C170 120, 152 154, 122 162 C108 166, 92 166, 78 162 C48 154, 30 120, 34 84 C38 48, 68 24, 100 28Z"
-        fill={`url(#${gradientId})`}
-      />
-
-      {/* Inner highlight */}
-      <ellipse cx="84" cy="58" rx="26" ry="14" fill="rgba(255,255,255,0.13)" transform="rotate(-18 84 58)" />
-
-      {/* Left eye */}
-      <ellipse data-eye="white" data-side="left" cx="80" cy="92" rx="12" ry="13" fill="#1a1a23" />
-      <ellipse data-eye="pupil" data-side="left" cx="81" cy="93" rx="7.5" ry="8" fill="#0d0d12" />
-      <circle cx="85" cy="87" r="3.2" fill="rgba(255,255,255,0.88)" />
-      <circle cx="78" cy="96" r="1.2" fill="rgba(255,255,255,0.4)" />
-
-      {/* Right eye */}
-      <ellipse data-eye="white" data-side="right" cx="120" cy="92" rx="12" ry="13" fill="#1a1a23" />
-      <ellipse data-eye="pupil" data-side="right" cx="121" cy="93" rx="7.5" ry="8" fill="#0d0d12" />
-      <circle cx="125" cy="87" r="3.2" fill="rgba(255,255,255,0.88)" />
-      <circle cx="118" cy="96" r="1.2" fill="rgba(255,255,255,0.4)" />
-
-      {/* Blush */}
-      <ellipse cx="64" cy="108" rx="8" ry="3.5" fill={palette.blush} opacity="0.28" transform="rotate(-8 64 108)" />
-      <ellipse cx="136" cy="108" rx="8" ry="3.5" fill={palette.blush} opacity="0.28" transform="rotate(8 136 108)" />
-
-      {/* Mouth */}
-      <path
-        data-mascot="mouth"
-        d="M92 116 Q100 123, 108 116"
-        stroke="#1a1a23"
-        strokeWidth="2.5"
-        fill="none"
-        strokeLinecap="round"
-      />
-    </svg>
+    <video
+      ref={videoRef}
+      src="/animations/mascot.webm"
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-full h-full object-contain pointer-events-none select-none"
+      aria-hidden="true"
+    />
   );
 }
 
@@ -242,7 +222,7 @@ export function Mascot({ state, className }: MascotProps) {
 
   return (
     <div ref={containerRef} role="presentation" className={`relative ${className ?? 'w-32 h-32'}`}>
-      {state === 'idle' && <IdleSvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
+      {state === 'idle' && <IdleVideo />}
       {state === 'sleeping' && <SleepingSvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
       {state === 'excited' && <ExcitedSvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
       {state === 'lonely' && <LonelySvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
