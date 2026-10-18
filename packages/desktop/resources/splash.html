@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Nuvio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --primary: #7c6cf6;
+      --primary-hover: #6b5ce0;
+      --bg: #0E1015;
+      --surface: #14161E;
+      --border: rgba(255, 255, 255, 0.08);
+      --text-main: #FFFFFF;
+      --text-muted: #8E9297;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .titlebar {
+      height: 32px;
+      background: transparent;
+      -webkit-app-region: drag;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+
+    .splash-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .brand-glow {
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 108, 246, 0.15) 0%, rgba(14, 16, 21, 0) 70%);
+      pointer-events: none;
+      animation: pulse-glow 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse-glow {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      100% { transform: scale(1.15); opacity: 1; }
+    }
+
+    .logo-container {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      margin-bottom: 1.5rem;
+      z-index: 2;
+    }
+
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 24px rgba(124, 108, 246, 0.35));
+      animation: float 4s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .brand-name {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin: 0 0 0.5rem 0;
+      background: linear-gradient(135deg, #ffffff 40%, #b2a7f8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      z-index: 2;
+    }
+
+    .status-text {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      margin: 0 0 1.5rem 0;
+      min-height: 1.4em;
+      z-index: 2;
+      transition: color 0.2s ease;
+    }
+
+    .spinner-bar {
+      width: 140px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 1rem;
+      z-index: 2;
+    }
+
+    .spinner-bar-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, #7c6cf6, #a195f9);
+      border-radius: 999px;
+      animation: indeterminate 1.6s infinite ease-in-out;
+    }
+
+    @keyframes indeterminate {
+      0% { left: -40%; width: 30%; }
+      50% { left: 40%; width: 50%; }
+      100% { left: 100%; width: 30%; }
+    }
+
+    /* Offline / Error Box */
+    .offline-card {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      -webkit-app-region: no-drag;
+      animation: fade-in 0.3s ease-out;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .connection-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      margin-bottom: 0.75rem;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .offline-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+      color: #fff;
+    }
+
+    .offline-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin: 0 0 1.25rem 0;
+    }
+
+    .countdown-text {
+      font-size: 0.8125rem;
+      color: #a3a3b0;
+      margin-bottom: 1rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    button.btn {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      outline: none;
+      border: none;
+    }
+
+    button.btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    button.btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(124, 108, 246, 0.35);
+    }
+
+    button.btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: #d1d5db;
+    }
+
+    button.btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="titlebar"></div>
+
+  <div class="splash-container">
+    <div class="brand-glow"></div>
+
+    <div class="logo-container">
+      <img src="icon.png" alt="Nuvio" class="logo-img" />
+    </div>
+
+    <h1 class="brand-name">Nuvio</h1>
+
+    <div id="loading-view">
+      <p class="status-text" id="status-text">Iniciando o Nuvio...</p>
+      <div class="spinner-bar">
+        <div class="spinner-bar-fill"></div>
+      </div>
+    </div>
+
+    <div id="offline-view" class="offline-card">
+      <div class="connection-badge">
+        <span class="status-dot"></span>
+        Sem Conexão
+      </div>
+      <h2 class="offline-title">Servidores temporariamente inacessíveis</h2>
+      <p class="offline-desc">Não foi possível estabelecer contato com a rede do Nuvio. Verifique sua conexão com a internet.</p>
+      <div class="countdown-text" id="countdown-label">Reconectando automaticamente em <strong id="countdown-val">5</strong>s...</div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" id="btn-quit">Fechar</button>
+        <button class="btn btn-primary" id="btn-retry">Tentar novamente</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    const loadingView = document.getElementById('loading-view');
+    const offlineView = document.getElementById('offline-view');
+    const statusText = document.getElementById('status-text');
+    const countdownVal = document.getElementById('countdown-val');
+    const countdownLabel = document.getElementById('countdown-label');
+    const btnRetry = document.getElementById('btn-retry');
+    const btnQuit = document.getElementById('btn-quit');
+
+    let countdownTimer = null;
+    let secondsLeft = 5;
+
+    // Listen to events from Electron main process
+    if (window.electronAPI) {
+      window.electronAPI.onSplashStatus((status) => {
+        if (status.phase === 'connecting') {
+          showLoading(status.message || 'Conectando aos servidores do Nuvio...');
+        } else if (status.phase === 'offline') {
+          showOffline(status.retryInSeconds || 5);
+        } else if (status.phase === 'ready') {
+          showLoading('Conectado! Abrindo Nuvio...');
+        }
+      });
+    }
+
+    function showLoading(msg) {
+      if (countdownTimer) clearInterval(countdownTimer);
+      loadingView.style.display = 'block';
+      offlineView.style.display = 'none';
+      statusText.textContent = msg;
+    }
+
+    function showOffline(initialSeconds) {
+      loadingView.style.display = 'none';
+      offlineView.style.display = 'flex';
+      secondsLeft = initialSeconds || 5;
+      countdownVal.textContent = secondsLeft;
+      countdownLabel.style.display = 'block';
+
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(countdownTimer);
+          countdownLabel.textContent = 'Tentando reconectar agora...';
+          triggerRetry();
+        } else {
+          countdownVal.textContent = secondsLeft;
+        }
+      }, 1000);
+    }
+
+    function triggerRetry() {
+      showLoading('Verificando conexão...');
+      if (window.electronAPI && window.electronAPI.retryConnection) {
+        window.electronAPI.retryConnection();
+      } else {
+        // Fallback IPC trigger
+        window.location.reload();
+      }
+    }
+
+    btnRetry.addEventListener('click', () => {
+      triggerRetry();
+    });
+
+    btnQuit.addEventListener('click', () => {
+      if (window.electronAPI && window.electronAPI.quitApp) {
+        window.electronAPI.quitApp();
+      } else {
+        window.close();
+      }
+    });
+
+    // Notify main process that splash is mounted and ready
+    if (window.electronAPI && window.electronAPI.splashReady) {
+      window.electronAPI.splashReady();
+    }
+  </script>
+</body>
+</html>

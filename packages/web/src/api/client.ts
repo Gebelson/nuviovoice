@@ -1002,14 +1002,19 @@ function handleUnauthorized(): void {
   }
 }
 
+const defaultApiBase =
+  typeof window !== 'undefined' && (window as any).nuvioConfig?.backendUrl
+    ? `${(window as any).nuvioConfig.backendUrl}/api`
+    : '/api';
+
 export const api = new BackspaceApiClient(
-  '/api',
+  defaultApiBase,
   () => localStorage.getItem('backspace_token'),
   handleUnauthorized,
 );
 
 export function createApiClient(origin: string, getToken: () => string | null, onUnauthorized?: () => void): BackspaceApiClient {
-  const baseUrl = origin ? `${origin}/api` : '/api';
+  const baseUrl = origin ? `${origin}/api` : defaultApiBase;
   return new BackspaceApiClient(baseUrl, getToken, onUnauthorized);
 }
 

@@ -1,6 +1,38 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-contextBridge.exposeInMainWorld('backspace', {
+// Sync fetch of Nuvio backend configuration
+let nuvioConfig = {
+  backendUrl: 'https://167-234-239-100.sslip.io',
+  wsUrl: 'wss://167-234-239-100.sslip.io',
+  backendHost: '167-234-239-100.sslip.io',
+  isDesktop: true,
+  version: '1.11.0',
+};
+
+try {
+  const syncConfig = ipcRenderer.sendSync('get-backend-config-sync');
+  if (syncConfig && typeof syncConfig === 'object') {
+    nuvioConfig = { ...nuvioConfig, ...syncConfig };
+  }
+} catch {
+  // Ignored if sync channel unavailable
+}
+
+contextBridge.exposeInMainWorld('nuvioConfig', nuvioConfig);
+
+// Splash Screen helper API
+contextBridge.exposeInMainWorld('electronAPI', {
+  splashReady: () => ipcRenderer.send('splash-ready'),
+  retryConnection: () => ipcRenderer.send('splash-retry'),
+  quitApp: () => ipcRenderer.send('close-window'),
+  onSplashStatus: (callback: (status: { phase: string; message?: string; retryInSeconds?: number }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, status: any) => callback(status);
+    ipcRenderer.on('splash-status', handler);
+    return () => { ipcRenderer.removeListener('splash-status', handler); };
+  },
+});
+
+const desktopApi = {
   // Platform info
   platform: process.platform,
   // Window controls
@@ -28,12 +60,6 @@ contextBridge.exposeInMainWorld('backspace', {
   },
 
   // Auto-update, legacy per-event channels.
-  //
-  // Superseded by getUpdateStatus/onUpdateStatusChanged below and unused by the
-  // current web client, but deliberately kept. The desktop app and the instance
-  // it connects to version independently: a newer app can be pointed at an older
-  // instance that still serves a client calling these. Removing them would make
-  // that client throw inside a useEffect and take the whole renderer down.
   onUpdateAvailable: (callback: (info: { version: string }) => void) => {
     ipcRenderer.on('update-available', (_event, info) => callback(info));
   },
@@ -98,13 +124,9 @@ contextBridge.exposeInMainWorld('backspace', {
     ipcRenderer.send('screen-share-selected', sourceId, shareAudio ?? true);
   },
   getScreenSources: () => ipcRenderer.invoke('get-screen-sources'),
-  // invoke, not send: the renderer must know the preselection has landed in the
-  // main process before it calls getDisplayMedia(), or the two race.
   preselectScreenSource: (sourceId: string, shareAudio?: boolean) =>
     ipcRenderer.invoke('screen-share-preselect', sourceId, shareAudio ?? true),
   getScreenSharePickerMode: () => ipcRenderer.invoke('get-screen-share-picker-mode'),
-  // `true` from a web client that opens the system-audio source (startSystemAudio)
-  // itself; an older client passes nothing and gets the loopback's answer.
   getSystemAudioCapability: (usesAppSource?: boolean) =>
     ipcRenderer.invoke('get-system-audio-capability', usesAppSource === true),
   startSystemAudio: () => ipcRenderer.invoke('system-audio-start'),
@@ -162,7 +184,7 @@ contextBridge.exposeInMainWorld('backspace', {
   },
   checkAccessibility: () => ipcRenderer.invoke('check-accessibility'),
 
-  // Recovery mode bridge (Task 11)
+  // Recovery mode bridge
   rendererReady: (): void => {
     ipcRenderer.send('renderer-ready');
   },
@@ -180,4 +202,8 @@ contextBridge.exposeInMainWorld('backspace', {
   recoveryAction: (action: string): void => {
     ipcRenderer.send('recovery-action', action);
   },
-});
+};
+
+// Expose both Nuvio and Backspace names for 100% interoperability
+contextBridge.exposeInMainWorld('nuvio', desktopApi);
+contextBridge.exposeInMainWorld('backspace', desktopApi);

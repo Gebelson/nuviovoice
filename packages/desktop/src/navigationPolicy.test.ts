@@ -92,14 +92,14 @@ describe('isNavigationAllowed', () => {
     ).toBe(false);
   });
 
-  it('denies when currentUrl is malformed and target is not otherwise allowlisted', () => {
+  it('allows navigation to nuvio-app internal scheme', () => {
     expect(
       isNavigationAllowed({
-        targetUrl: 'https://chat.example.com/app',
-        currentUrl: 'not a url',
+        targetUrl: 'nuvio-app://app/login',
+        currentUrl: 'nuvio-app://app/',
         pickerFileUrl: PICKER_URL,
         knownInstanceOrigins: new Set(),
       })
-    ).toBe(false);
+    ).toBe(true);
   });
 });

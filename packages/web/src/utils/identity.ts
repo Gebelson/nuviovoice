@@ -96,7 +96,10 @@ export function normalizeOriginToHost(input: string | null | undefined): string 
  * connection). All other inputs are normalized via {@link normalizeOriginToHost}.
  */
 export function deliveringHost(origin: string): string {
-  if (origin === '') return typeof window === 'undefined' ? '' : window.location.host;
+  if (origin === '') {
+    if (typeof window === 'undefined') return '';
+    return (window as any).nuvioConfig?.backendHost || window.location.host;
+  }
   return normalizeOriginToHost(origin);
 }
 

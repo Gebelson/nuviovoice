@@ -39,6 +39,10 @@ export function isNavigationAllowed(input: NavigationPolicyInput): boolean {
     return target.href === pickerFileUrl;
   }
 
+  if (target.protocol === 'nuvio-app:') {
+    return true;
+  }
+
   if (target.protocol !== 'http:' && target.protocol !== 'https:') {
     return false;
   }

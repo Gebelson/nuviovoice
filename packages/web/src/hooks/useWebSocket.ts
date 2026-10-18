@@ -125,6 +125,9 @@ function stopHeartbeat(conn: ConnectionState): void {
 
 function buildWsUrl(origin: string): string {
   if (!origin) {
+    if (typeof window !== 'undefined' && (window as any).nuvioConfig?.wsUrl) {
+      return `${(window as any).nuvioConfig.wsUrl}/ws`;
+    }
     // Home instance — derive from current page
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${window.location.host}/ws`;

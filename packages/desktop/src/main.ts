@@ -10,6 +10,8 @@ import {
   screen,
   session,
   desktopCapturer,
+  protocol,
+  net,
 } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -23,6 +25,9 @@ import {
   saveInstanceUrl,
   clearInstanceUrl,
   getPickerPath,
+  getSplashPath,
+  getEffectiveBackendUrl,
+  DEFAULT_NUVIO_URL,
 } from './instanceUrl';
 import { getUpdateCapability, isSandboxed } from './updateCapability';
 import { ownAudioInSystemAudio } from './systemAudioCapability';
@@ -67,6 +72,21 @@ import { getDesktopLanguage, isDesktopLanguage, saveStoredLanguage, translateDes
 // package name. Must run before any app.getPath('userData') consumer.
 app.setName('Nuvio');
 
+// Register custom scheme 'nuvio-app' as privileged before app is ready
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'nuvio-app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+      allowServiceWorkers: true,
+    },
+  },
+]);
+
 // One-time migration from the historical scoped path. After the move the old
 // folder is gone, so subsequent launches hit the old-missing no-op branch.
 {
@@ -91,11 +111,75 @@ let isQuitting = false;
 let pendingDeepLink: string | null = null;
 
 const knownInstanceOrigins = new Set<string>();
+try {
+  knownInstanceOrigins.add(new URL(getEffectiveBackendUrl()).origin);
+  knownInstanceOrigins.add('nuvio-app://app');
+} catch {}
+
+function getWebDistPath(): string {
+  const candidate1 = path.join(__dirname, '..', 'web-dist');
+  if (fs.existsSync(candidate1)) return candidate1;
+  const candidate2 = path.join(app.getAppPath(), 'web-dist');
+  if (fs.existsSync(candidate2)) return candidate2;
+  const candidate3 = path.join(process.resourcesPath, 'web-dist');
+  if (fs.existsSync(candidate3)) return candidate3;
+  return candidate1;
+}
+
+let checkConnectivityInProgress = false;
+
+async function checkAndLaunchApp(attempt = 1): Promise<void> {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (checkConnectivityInProgress) return;
+  checkConnectivityInProgress = true;
+
+  try {
+    mainWindow.webContents.send('splash-status', {
+      phase: 'connecting',
+      message: 'Conectando aos servidores do Nuvio...',
+    });
+
+    const backendUrl = getEffectiveBackendUrl();
+    const probeController = new AbortController();
+    const probeTimeout = setTimeout(() => probeController.abort(), 6000);
+    const res = await net.fetch(`${backendUrl}/api/instance/info`, {
+      method: 'GET',
+      signal: probeController.signal,
+    }).catch(() => null);
+    clearTimeout(probeTimeout);
+
+    if (res && (res.ok || res.status === 200 || res.status === 304)) {
+      mainWindow.webContents.send('splash-status', {
+        phase: 'ready',
+        message: 'Conectado! Abrindo Nuvio...',
+      });
+
+      setTimeout(() => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        mainWindow.loadURL('nuvio-app://app/');
+      }, 350);
+      checkConnectivityInProgress = false;
+      return;
+    }
+  } catch (err) {
+    console.error('[main] Connectivity probe error:', err);
+  }
+
+  checkConnectivityInProgress = false;
+  const retryDelaySec = Math.min(5 + (attempt - 1) * 3, 15);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('splash-status', {
+      phase: 'offline',
+      retryInSeconds: retryDelaySec,
+      message: 'Servidores temporariamente inacessíveis',
+    });
+  }
+}
 
 // ─── AGPL-3.0 § 13 source offer ─────────────────────────────────────────────
 // Upstream fallback for the "Source code" menu items and the About panel.
 // Used when the connected instance can't be reached or advertises no source URL.
-const UPSTREAM_SOURCE_URL = 'https://github.com/TheZwiss/backspace';
+const UPSTREAM_SOURCE_URL = 'https://github.com/Gebelson/nuviovoice';
 
 /**
  * Resolve the Corresponding Source URL for the instance the desktop app is
@@ -103,7 +187,7 @@ const UPSTREAM_SOURCE_URL = 'https://github.com/TheZwiss/backspace';
  * Falls back to the upstream repo when no instance is loaded or the probe fails.
  */
 async function resolveSourceUrl(): Promise<string> {
-  let base: string | null = process.env.BACKSPACE_URL ?? loadInstanceUrl();
+  let base: string | null = process.env.BACKSPACE_URL ?? getEffectiveBackendUrl();
   if (!base && mainWindow && !mainWindow.isDestroyed()) {
     const current = mainWindow.webContents.getURL();
     if (current.startsWith('http://') || current.startsWith('https://')) base = current;
@@ -369,12 +453,12 @@ function createWindow(): void {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     ...(process.platform !== 'darwin' ? {
       titleBarOverlay: {
-        color: '#0b0b10',
-        symbolColor: '#d8d8de',
+        color: '#0E1015',
+        symbolColor: '#8E9297',
         height: 32,
       },
     } : {}),
-    backgroundColor: '#313338',
+    backgroundColor: '#0E1015',
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -392,21 +476,8 @@ function createWindow(): void {
     mainWindow.maximize();
   }
 
-  // URL resolution priority:
-  // 1. BACKSPACE_URL env var (managed deployments)
-  // 2. Saved instance URL from picker
-  // 3. No URL → show instance picker
-  const envUrl = process.env.BACKSPACE_URL;
-  if (envUrl) {
-    mainWindow.loadURL(envUrl);
-  } else {
-    const savedUrl = loadInstanceUrl();
-    if (savedUrl) {
-      mainWindow.loadURL(savedUrl);
-    } else {
-      mainWindow.loadFile(getPickerPath(), { query: { lang: getDesktopLanguage() } });
-    }
-  }
+  // Load the Nuvio splash screen initially
+  mainWindow.loadFile(getSplashPath());
 
   mainWindow.once('ready-to-show', () => {
     // Hidden-launch detection. We pass `args: ['--hidden']` on all three platforms
@@ -426,6 +497,16 @@ function createWindow(): void {
       mainWindow.webContents.send('deep-link', pendingDeepLink);
       pendingDeepLink = null;
     }
+
+    // Safety fallback: ensure connectivity probe begins if splash-ready is delayed
+    setTimeout(() => {
+      if (!checkConnectivityInProgress && mainWindow && !mainWindow.isDestroyed()) {
+        const curUrl = mainWindow.webContents.getURL();
+        if (curUrl.includes('splash.html') || curUrl.includes('file:')) {
+          void checkAndLaunchApp(1);
+        }
+      }
+    }, 800);
   });
 
   // Window state persistence — debounced save on resize/move
@@ -680,6 +761,34 @@ function registerIpcHandlers(): void {
     for (const o of origins) {
       if (typeof o === 'string' && o.length > 0) knownInstanceOrigins.add(o);
     }
+  });
+
+  // Nuvio official backend configuration sync
+  ipcMain.on('get-backend-config-sync', (event) => {
+    const backendUrl = getEffectiveBackendUrl();
+    let host = '167-234-239-100.sslip.io';
+    let wsProto = 'wss:';
+    try {
+      const parsed = new URL(backendUrl);
+      host = parsed.host;
+      wsProto = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+    } catch {}
+    event.returnValue = {
+      backendUrl,
+      wsUrl: `${wsProto}//${host}`,
+      backendHost: host,
+      isDesktop: true,
+      version: app.getVersion(),
+    };
+  });
+
+  // Splash screen lifecycle IPC
+  ipcMain.on('splash-ready', () => {
+    void checkAndLaunchApp(1);
+  });
+
+  ipcMain.on('splash-retry', () => {
+    void checkAndLaunchApp(1);
   });
 
   // Instance URL management
@@ -1199,7 +1308,7 @@ function initAutoUpdater(): void {
 // ─── Deep Linking ───────────────────────────────────────────────────────────
 
 function handleDeepLink(url: string): void {
-  if (!url.startsWith('backspace://')) return;
+  if (!url.startsWith('nuvio://') && !url.startsWith('backspace://')) return;
 
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('deep-link', url);
@@ -1241,6 +1350,7 @@ export function requestQuit(): void {
 }
 
 // Set as default protocol handler
+app.setAsDefaultProtocolClient('nuvio');
 app.setAsDefaultProtocolClient('backspace');
 
 // macOS: open-url event
@@ -1257,7 +1367,7 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', (_event, commandLine) => {
     // Find the deep link URL in the command line args
-    const deepLinkArg = commandLine.find((arg) => arg.startsWith('backspace://'));
+    const deepLinkArg = commandLine.find((arg) => arg.startsWith('nuvio://') || arg.startsWith('backspace://'));
     if (deepLinkArg) {
       handleDeepLink(deepLinkArg);
     }
@@ -1309,6 +1419,54 @@ if (!gotTheLock) {
     // Purge ALL stale caches so Electron always loads fresh code on launch
     await session.defaultSession.clearStorageData({ storages: ['serviceworkers'] });
     await session.defaultSession.clearCache();
+
+    // Register custom protocol handler for nuvio-app://
+    protocol.handle('nuvio-app', async (request) => {
+      const url = new URL(request.url);
+
+      // 1. Proxy API and Uploads requests directly to the official backend
+      if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/uploads/')) {
+        const backendBase = getEffectiveBackendUrl();
+        const targetUrl = `${backendBase}${url.pathname}${url.search}`;
+        const fetchOptions: RequestInit = {
+          method: request.method,
+          headers: request.headers,
+        };
+        if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
+          (fetchOptions as any).body = request.body;
+          (fetchOptions as any).duplex = 'half';
+        }
+        return net.fetch(targetUrl, fetchOptions);
+      }
+
+      // 2. Serve static files from web-dist
+      const webDist = getWebDistPath();
+      const rawPath = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+
+      if (!rawPath || rawPath === 'index.html') {
+        return net.fetch(pathToFileURL(path.join(webDist, 'index.html')).toString());
+      }
+
+      const filePath = path.join(webDist, rawPath);
+      // Ensure the resolved file path stays inside webDist
+      if (filePath.startsWith(webDist) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        return net.fetch(pathToFileURL(filePath).toString());
+      }
+
+      // 3. Fallback for SPA client-side routing (e.g. /channels/@me, /login, /register, etc.)
+      return net.fetch(pathToFileURL(path.join(webDist, 'index.html')).toString());
+    });
+
+    // Auto-grant desktop media and notification permissions for seamless UX
+    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+      const allowed = ['media', 'mediaKeySystem', 'notifications', 'display-capture'];
+      callback(allowed.includes(permission));
+    });
+
+    session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
+      const allowed = ['media', 'mediaKeySystem', 'notifications', 'display-capture'];
+      return allowed.includes(permission);
+    });
 
     // Intercept getDisplayMedia(). Two ways to answer it:
     //   1. Preselected (current web client): ScreenShareSetup listed the
@@ -1517,7 +1675,7 @@ if (!gotTheLock) {
     }
 
     // Check if the app was launched with a deep link (Windows/Linux)
-    const launchArg = process.argv.find((arg) => arg.startsWith('backspace://'));
+    const launchArg = process.argv.find((arg) => arg.startsWith('nuvio://') || arg.startsWith('backspace://'));
     if (launchArg) {
       pendingDeepLink = launchArg;
     }

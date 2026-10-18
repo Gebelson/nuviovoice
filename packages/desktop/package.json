@@ -8,10 +8,11 @@
   "main": "dist/main.js",
   "desktopName": "chat.nuvio.desktop",
   "scripts": {
+    "prebuild": "node scripts/copy-web.js",
     "build:ts": "tsc",
     "dev": "tsc && electron .",
-    "build": "tsc && electron-builder",
-    "build:all": "tsc && electron-builder --mac --win --linux --arm64 --x64",
+    "build": "node scripts/copy-web.js && tsc && electron-builder",
+    "build:all": "node scripts/copy-web.js && tsc && electron-builder --mac --win --linux --arm64 --x64",
     "clean": "rm -rf dist dist-electron",
     "test": "vitest run",
     "test:watch": "vitest",

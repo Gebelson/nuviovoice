@@ -300,7 +300,7 @@ export function setOnBootStall(cb: (() => void) | null): void {
 export function armBootTimer(win: BrowserWindow): void {
   if (!app.isPackaged) return;
   const url = win.webContents.getURL();
-  if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('nuvio-app://')) return;
   // Critical: if the renderer-ready ping arrived before did-finish-load
   // (typical SPA timing — useEffect runs in microtask before window.onload),
   // do not arm. Otherwise the timer fires 20s later despite the renderer
@@ -448,17 +448,12 @@ export function isValidRecoveryAction(action: unknown): action is RecoveryAction
 export function handleRecoveryAction(action: RecoveryAction): void {
   switch (action) {
     case 'reload': {
-      const url = loadInstanceUrl();
       // Optimistic exit — clear recovery state BEFORE loading. If the load
       // fails, did-fail-load re-enters recovery. If it stalls, boot timer fires.
       recoveryStore.markRecoveryExited();
       recoveryStore.update({ mode: 'normal', reason: null });
       console.log('[recovery] exited (reload)');
-      if (!url) {
-        mainWindowRef?.loadFile(getPickerPath(), { query: { lang: getDesktopLanguage() } });
-        return;
-      }
-      mainWindowRef?.loadURL(url);
+      mainWindowRef?.loadURL('nuvio-app://app/');
       return;
     }
     case 'check-update': {
