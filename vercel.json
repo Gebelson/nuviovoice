@@ -5,11 +5,12 @@
       "source": "/",
       "destination": "https://167-234-239-100.sslip.io/",
       "permanent": false
-    },
+    }
+  ],
+  "rewrites": [
     {
-      "source": "/:path*",
-      "destination": "https://167-234-239-100.sslip.io/:path*",
-      "permanent": false
+      "source": "/api/:path*",
+      "destination": "https://167-234-239-100.sslip.io/api/:path*"
     }
   ]
 }
