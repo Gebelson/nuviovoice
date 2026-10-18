@@ -1,6 +1,9 @@
 import sqlite3
+import os
 
-for dbpath in ['data/concord.db', 'packages/server/data/concord.db']:
+for dbpath in ['data/concord.db', 'packages/server/data/concord.db', '/var/lib/nuviovoice/concord.db']:
+    if not os.path.exists(dbpath):
+        continue
     con = sqlite3.connect(dbpath)
     cur = con.cursor()
     cur.execute("""
