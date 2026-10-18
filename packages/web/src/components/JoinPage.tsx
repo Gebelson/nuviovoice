@@ -311,23 +311,38 @@ export function JoinPage() {
     );
   }
 
+  const bannerUrl = preview.banner
+    ? (preview.banner.startsWith('http') || preview.banner.startsWith('/')
+        ? preview.banner
+        : (parsed?.origin ? `${parsed.origin}/api/uploads/${preview.banner}` : `/api/uploads/${preview.banner}`))
+    : null;
+
   // Main invite page
   return (
     <div className="h-full overflow-y-auto flex flex-col items-center bg-surface-base relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgb(var(--accent-primary)/0.06)_0%,transparent_50%)]" />
-      <div className="my-auto flex-shrink-0 w-full max-w-[480px] bg-surface-elevated rounded-md p-8 shadow-elevation-high relative z-10">
-        {/* Space preview */}
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <Avatar
-              src={preview.icon ? (parsed?.origin ? `${parsed.origin}/api/uploads/${preview.icon}` : preview.icon) : null}
-              name={preview.spaceName}
-              size={72}
-              userId={preview.spaceId}
-              avatarColor={preview.avatarColor}
-              palette="space"
-            />
+      <div className="my-auto flex-shrink-0 w-full max-w-[480px] bg-surface-elevated rounded-md shadow-elevation-high relative z-10 overflow-hidden">
+        {bannerUrl && (
+          <div className="h-32 w-full relative overflow-hidden">
+            <img src={bannerUrl} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-surface-elevated via-transparent to-black/25" />
           </div>
+        )}
+        <div className={`p-8 ${bannerUrl ? 'pt-0' : ''}`}>
+          {/* Space preview */}
+          <div className="text-center mb-6">
+            <div className={`flex justify-center mb-4 ${bannerUrl ? '-mt-10 relative z-10' : ''}`}>
+              <div className={bannerUrl ? 'p-1 rounded-full bg-surface-elevated shadow-lg inline-block' : 'inline-block'}>
+                <Avatar
+                  src={preview.icon ? (parsed?.origin ? `${parsed.origin}/api/uploads/${preview.icon}` : preview.icon) : null}
+                  name={preview.spaceName}
+                  size={72}
+                  userId={preview.spaceId}
+                  avatarColor={preview.avatarColor}
+                  palette="space"
+                />
+              </div>
+            </div>
           <p className="text-xs text-txt-tertiary uppercase tracking-wide mb-1">{action === 'request' ? t('auth:join.invitedToRequest') : t('auth:join.invitedTo')}</p>
           <h1 className="text-2xl font-bold text-txt-primary">{preview.spaceName}</h1>
           {preview.description && (
@@ -617,6 +632,7 @@ export function JoinPage() {
             </div>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

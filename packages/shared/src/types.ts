@@ -148,6 +148,7 @@ export interface InvitePreview {
   spaceName: string;
   description: string | null;
   icon: string | null;
+  banner?: string | null;
   avatarColor: AvatarColor | null;
   memberCount: number;
   instanceName: string;

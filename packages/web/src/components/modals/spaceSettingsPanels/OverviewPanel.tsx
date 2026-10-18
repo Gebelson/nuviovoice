@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ImageCropModal } from '../../ui/ImageCropModal';
+import { Avatar } from '../../ui/Avatar';
 import { getSpaceGradient, SPACE_GRADIENT_MAP } from '../../../utils/gradients';
 import { AVATAR_COLORS } from '@concord/shared';
 import type { AvatarColor } from '@concord/shared';
@@ -53,6 +54,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [bannerCropSrc, setBannerCropSrc] = useState<string | null>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const [showRemoveBannerConfirm, setShowRemoveBannerConfirm] = useState(false);
 
   const [avatarColorState, setAvatarColorState] = useState<AvatarColor | null>(space?.avatarColor ?? null);
 
@@ -167,11 +169,26 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
 
   const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (bannerFileInputRef.current) bannerFileInputRef.current.value = '';
     if (!file) return;
+
+    // Validate image format
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      addToast(t('spaces:settings.overview.bannerInvalidType'), 'warning', 4000);
+      return;
+    }
+
+    // Validate size (max 5 MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      addToast(t('spaces:settings.overview.bannerTooLarge'), 'warning', 4000);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => setBannerCropSrc(reader.result as string);
     reader.readAsDataURL(file);
-    if (bannerFileInputRef.current) bannerFileInputRef.current.value = '';
   };
 
   const handleBannerCropComplete = async (blob: Blob) => {
@@ -199,9 +216,15 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
   };
 
   const handleRemoveBanner = () => {
+    setShowRemoveBannerConfirm(true);
+  };
+
+  const confirmRemoveBanner = () => {
     if (bannerPreview) URL.revokeObjectURL(bannerPreview);
     setBannerPreview(null);
     setBannerFilename('');
+    setShowRemoveBannerConfirm(false);
+    addToast(t('spaces:settings.overview.bannerRemovedToast'), 'info', 3000);
   };
 
   // ─── Save / Discard / Delete ──────────────────────────────────────────────
@@ -254,6 +277,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
       setBannerPreview(null);
     }
     setSaveError('');
+    setShowRemoveBannerConfirm(false);
   };
 
   const handleDelete = async () => {
@@ -394,64 +418,182 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
         </div>
 
         {/* Space Banner */}
-        <div>
-          <label className="block text-xs text-txt-secondary mb-1.5">
-            {t('spaces:settings.overview.bannerLabel')}
-          </label>
-          <div className="flex flex-col gap-2">
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-xs font-semibold text-txt-primary uppercase tracking-wider">
+                {t('spaces:settings.overview.bannerLabel')}
+              </label>
+              <p className="text-[12px] text-txt-tertiary mt-0.5">
+                {t('spaces:settings.overview.bannerHint')}
+              </p>
+            </div>
+            {uploadingBanner && (
+              <span className="flex items-center gap-1.5 text-xs text-accent-primary animate-pulse font-medium">
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {t('common:states.loading')}
+              </span>
+            )}
+          </div>
+
+          {/* Banner container & actions */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
             <button
               type="button"
               onClick={() => canManageSpace && bannerFileInputRef.current?.click()}
               disabled={!canManageSpace || uploadingBanner}
-              className={`relative w-full h-24 rounded-lg bg-surface-input border-2 border-dashed border-border-soft flex items-center justify-center overflow-hidden group ${
+              className={`relative w-full sm:w-64 h-36 rounded-lg bg-surface-input border border-border-soft flex items-center justify-center overflow-hidden group shadow-inner ${
                 canManageSpace ? 'hover:border-accent-primary cursor-pointer' : 'cursor-default'
-              } transition-colors`}
+              } transition-all`}
+              title={canManageSpace ? t('spaces:settings.overview.changeBanner') : undefined}
             >
               {displayBannerSrc ? (
                 <>
-                  <img src={displayBannerSrc} alt={t('spaces:settings.overview.bannerAlt')} className="w-full h-full object-cover" />
+                  <img src={displayBannerSrc} alt={t('spaces:settings.overview.bannerAlt')} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                   {canManageSpace && (
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 backdrop-blur-[2px]">
+                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
+                      <span className="text-[11px] font-medium text-white">{t('spaces:settings.overview.changeBanner')}</span>
                     </div>
                   )}
                 </>
               ) : (
-                <div className="flex flex-col items-center gap-1 text-txt-tertiary">
-                  <svg className="w-6 h-6 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                  </svg>
-                  <span className="text-[11px]">{t('spaces:settings.overview.uploadBanner')}</span>
+                <div
+                  className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 text-center relative overflow-hidden"
+                  style={{ background: getSpaceGradient(space.id, space.name, avatarColorState).gradient }}
+                >
+                  <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
+                  <div className="relative z-10 flex flex-col items-center gap-1 text-white/90">
+                    <svg className="w-7 h-7 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                    <span className="text-xs font-semibold">{t('spaces:settings.overview.uploadBanner')}</span>
+                    <span className="text-[10px] text-white/70">{t('spaces:settings.overview.bannerRatio')}</span>
+                  </div>
                 </div>
               )}
               {uploadingBanner && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-2 z-20">
+                  <svg className="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
+                  <span className="text-xs text-white font-medium">{t('common:states.loading')}</span>
                 </div>
               )}
             </button>
+
+            <div className="flex-1 flex flex-col justify-between self-stretch py-1">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => canManageSpace && bannerFileInputRef.current?.click()}
+                    disabled={!canManageSpace || uploadingBanner}
+                    className="px-3 py-1.5 bg-surface-elevated hover:bg-surface-elevated/80 border border-border-soft text-txt-primary text-xs font-medium rounded-md transition-colors disabled:opacity-50"
+                  >
+                    {displayBannerSrc ? t('spaces:settings.overview.changeBanner') : t('spaces:settings.overview.uploadBanner')}
+                  </button>
+
+                  {canManageSpace && (displayBannerSrc || space.banner) && bannerFilename !== '' && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveBanner}
+                      disabled={uploadingBanner}
+                      className="px-3 py-1.5 bg-transparent hover:bg-accent-rose/10 border border-border-soft hover:border-accent-rose/30 text-xs text-txt-tertiary hover:text-txt-danger rounded-md transition-colors disabled:opacity-50"
+                    >
+                      {t('spaces:settings.overview.removeBanner')}
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-[11px] text-txt-tertiary space-y-1">
+                  <p>• {t('spaces:settings.overview.bannerDimensions')}</p>
+                  <p>• {t('spaces:settings.overview.bannerFormats')}</p>
+                  <p>• {t('spaces:settings.overview.bannerSize')}</p>
+                </div>
+              </div>
+
+              {bannerFilename === '' && (
+                <div className="mt-2 text-xs text-accent-amber flex items-center gap-1.5 bg-accent-amber/10 border border-accent-amber/20 px-2.5 py-1.5 rounded-md">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>{t('spaces:settings.overview.bannerPendingRemoval')}</span>
+                </div>
+              )}
+            </div>
+
             <input
               ref={bannerFileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
               onChange={handleBannerSelect}
               className="hidden"
             />
-            {canManageSpace && (displayBannerSrc || space.banner) && bannerFilename !== '' && (
-              <button
-                type="button"
-                onClick={handleRemoveBanner}
-                className="text-xs text-txt-tertiary hover:text-txt-danger transition-colors self-start"
-              >
-                {t('spaces:settings.overview.removeBanner')}
-              </button>
-            )}
+          </div>
+
+          {/* Live Space Card Preview */}
+          <div className="mt-4 pt-4 border-t border-border-soft/60">
+            <span className="block text-[11px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">
+              {t('spaces:settings.overview.bannerCardPreview')}
+            </span>
+            <div className="w-full max-w-sm rounded-lg border border-border-soft bg-surface-channel overflow-hidden shadow-sm">
+              <div className="h-28 relative overflow-hidden">
+                {displayBannerSrc ? (
+                  <img src={displayBannerSrc} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div
+                    className="w-full h-full relative overflow-hidden"
+                    style={{ background: getSpaceGradient(space.id, spaceName.trim() || space.name, avatarColorState).gradient }}
+                  >
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/15 via-transparent to-black/35 pointer-events-none" />
+                    <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+                  </div>
+                )}
+                <div
+                  className="absolute bottom-0 inset-x-0 h-14"
+                  style={{ background: 'linear-gradient(to top, rgba(20,20,26,0.95), transparent)' }}
+                />
+                <div className="absolute top-2 right-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm bg-accent-mint/20 text-accent-mint">
+                    {space.visibility === 'public' ? t('spaces:explore.badges.public') : t('spaces:explore.badges.request')}
+                  </span>
+                </div>
+              </div>
+              <div className="p-3 pt-0 relative">
+                <div className="-mt-6 mb-2 flex items-end justify-between">
+                  <div className="p-1 rounded-full bg-surface-channel shadow-md">
+                    <Avatar
+                      src={displayIconSrc}
+                      name={spaceName.trim() || space.name}
+                      size={44}
+                      userId={space.id}
+                      avatarColor={avatarColorState}
+                      palette="space"
+                    />
+                  </div>
+                </div>
+                <h4 className="font-semibold text-sm text-txt-primary truncate">
+                  {spaceName.trim() || space.name}
+                </h4>
+                {space.description && (
+                  <p className="text-xs text-txt-secondary line-clamp-1 mt-0.5">
+                    {space.description}
+                  </p>
+                )}
+                <div className="mt-2 text-[11px] text-txt-tertiary flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-accent-mint" />
+                  <span>{t('spaces:explore.memberCount', { count: members.length })}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -642,6 +784,36 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
         aspectRatio={16 / 9}
         maxOutputDimension={1280}
       />
+
+      {/* Remove Banner Confirmation Modal */}
+      {showRemoveBannerConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface-elevated border border-border-hard rounded-lg p-5 max-w-md w-full shadow-elevation-high animate-scale-in">
+            <h3 className="text-base font-bold text-txt-primary mb-2">
+              {t('spaces:settings.overview.confirmRemoveBannerTitle')}
+            </h3>
+            <p className="text-sm text-txt-secondary mb-5 leading-relaxed">
+              {t('spaces:settings.overview.confirmRemoveBannerPrompt')}
+            </p>
+            <div className="flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowRemoveBannerConfirm(false)}
+                className="px-4 py-2 bg-surface-input hover:bg-surface-interactive text-txt-secondary hover:text-txt-primary text-sm font-medium rounded transition-colors"
+              >
+                {t('common:actions.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemoveBanner}
+                className="px-4 py-2 bg-accent-rose hover:bg-accent-rose/80 text-white text-sm font-medium rounded transition-colors shadow-sm"
+              >
+                {t('spaces:settings.overview.confirmRemoveBannerAction')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

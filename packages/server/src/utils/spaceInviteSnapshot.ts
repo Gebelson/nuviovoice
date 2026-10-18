@@ -8,6 +8,7 @@ export interface SpaceInviteSnapshot {
   spaceName: string;
   description: string | null;
   icon: string | null;
+  banner?: string | null;
   avatarColor: AvatarColor | null;
   memberCount: number;
   instanceName: string;
@@ -37,6 +38,7 @@ export function getLocalInvitePreview(inviteCode: string): InvitePreview | null 
     spaceName: space.name,
     description: space.description ?? null,
     icon: space.icon ?? null,
+    banner: space.banner ?? null,
     avatarColor: (space.avatarColor as AvatarColor | null) ?? null,
     memberCount,
     instanceName,
@@ -60,6 +62,7 @@ export function getLocalInviteSnapshot(inviteCode: string): SpaceInviteSnapshot 
     spaceName: preview.spaceName,
     description: preview.description,
     icon: preview.icon,
+    banner: preview.banner ?? null,
     avatarColor: preview.avatarColor,
     memberCount: preview.memberCount,
     instanceName: preview.instanceName,
@@ -92,6 +95,7 @@ export async function fetchSpaceInviteSnapshot(
       spaceName: data.spaceName,
       description: data.description ?? null,
       icon: data.icon ?? null,
+      banner: data.banner ?? null,
       avatarColor: data.avatarColor ?? null,
       memberCount: typeof data.memberCount === 'number' ? data.memberCount : 0,
       instanceName: data.instanceName ?? 'Backspace',

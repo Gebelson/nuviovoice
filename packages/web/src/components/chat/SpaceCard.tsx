@@ -62,10 +62,14 @@ export function SpaceCard({
     : null;
 
   const iconUrl = space.icon
-    ? (space.icon.startsWith('http') || space.icon.startsWith('/') ? space.icon : `/api/uploads/${space.icon}`)
+    ? (space.icon.startsWith('http') || space.icon.startsWith('/')
+        ? space.icon
+        : (space._instanceOrigin ? `${space._instanceOrigin}/api/uploads/${space.icon}` : `/api/uploads/${space.icon}`))
     : null;
   const bannerUrl = space.banner
-    ? (space.banner.startsWith('http') || space.banner.startsWith('/') ? space.banner : `/api/uploads/${space.banner}`)
+    ? (space.banner.startsWith('http') || space.banner.startsWith('/')
+        ? space.banner
+        : (space._instanceOrigin ? `${space._instanceOrigin}/api/uploads/${space.banner}` : `/api/uploads/${space.banner}`))
     : null;
 
   // Extract dominant colors from icon when no banner is set
@@ -98,12 +102,16 @@ export function SpaceCard({
         : 'border-border-soft hover:border-border-hard'
     }`}>
       {/* Banner area */}
-      <div className="h-32 relative overflow-hidden">
+      <div className="h-32 relative overflow-hidden group/cardbanner">
         {/* Background layer */}
         {bannerUrl ? (
-          <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/cardbanner:scale-105" />
         ) : (
-          <div className="absolute inset-0" style={{ background: iconGradient ?? fallbackGradient }} />
+          <div className="absolute inset-0 overflow-hidden" style={{ background: iconGradient ?? fallbackGradient }}>
+            {/* Elegant Nuvio ambient decorative pattern */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/15 via-transparent to-black/35 pointer-events-none" />
+            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+          </div>
         )}
 
         {/* Frosted bottom fade, Aether Drift glass */}

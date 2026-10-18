@@ -114,6 +114,14 @@ export function ChannelSidebar() {
     if (inst) return inst.label;
     try { return new URL(origin).host; } catch { return origin; }
   }, [space, federationInstances]);
+
+  const bannerUrl = useMemo(() => {
+    if (!space?.banner) return null;
+    if (space.banner.startsWith('http') || space.banner.startsWith('/')) return space.banner;
+    const origin = (space as any)?._instanceOrigin;
+    return origin ? `${origin}/api/uploads/${space.banner}` : `/api/uploads/${space.banner}`;
+  }, [space?.banner, (space as any)?._instanceOrigin]);
+
   const channelPermissions = useSpaceStore((s) => s.channelPermissions);
   const canManageChannels = hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_CHANNELS);
   const canCreateInvite = hasPermissionBit(mySpacePerms, PermissionBits.CREATE_INVITE);
@@ -572,35 +580,79 @@ export function ChannelSidebar() {
     <>
     <div className="w-60 desktop:w-full bg-surface-channel flex flex-col flex-shrink-0 select-none desktop:pl-[72px] border-r border-border-hard">
       {/* Space header */}
-      <div className="h-12 flex items-stretch border-b border-border-hard z-10 group/header">
-        <button
-          onClick={() => openModal('spaceSettings')}
-          className="flex-1 h-full px-4 flex items-center justify-between hover:bg-interactive-hover transition-colors min-w-0"
-        >
-          <div className="min-w-0">
-            <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary truncate leading-tight block">{space.name}</span>
-            {instanceLabel && (
-              <span className="text-[10px] text-txt-tertiary font-medium truncate block leading-tight">
-                {instanceLabel}
-              </span>
+      {bannerUrl ? (
+        <div className="relative h-28 w-full flex flex-col justify-end border-b border-border-hard z-10 overflow-hidden group/header select-none">
+          <img
+            src={bannerUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover/header:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-channel via-surface-channel/50 to-black/20 pointer-events-none" />
+          <div className="relative flex items-center justify-between px-3 py-2 z-10 w-full min-w-0">
+            <button
+              onClick={() => openModal('spaceSettings')}
+              className="flex-1 flex items-center justify-between min-w-0 hover:opacity-95 transition-opacity text-left mr-1 focus:outline-none"
+            >
+              <div className="min-w-0 pr-1.5">
+                <span className="font-bold text-[15px] tracking-[-0.02em] text-white truncate leading-tight block drop-shadow-md">
+                  {space.name}
+                </span>
+                {instanceLabel && (
+                  <span className="text-[10px] text-white/80 font-medium truncate block leading-tight drop-shadow">
+                    {instanceLabel}
+                  </span>
+                )}
+              </div>
+              <div className="w-6 h-6 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/90 flex-shrink-0 group-hover/header:bg-black/60 transition-colors">
+                <svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L9 9.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
+                </svg>
+              </div>
+            </button>
+            {canCreateInvite && (
+              <button
+                onClick={(e) => { e.stopPropagation(); openModal('invite'); }}
+                className="w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/90 hover:text-white hover:bg-black/60 transition-colors flex-shrink-0"
+                title={t('common:actions.invitePeople')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M21 3H24V5H21V8H19V5H16V3H19V0H21V3ZM10 12C12.21 12 14 10.21 14 8C14 5.79 12.21 4 10 4C7.79 4 6 5.79 6 8C6 10.21 7.79 12 10 12ZM10 13C6.69 13 1 14.66 1 18V20H19V18C19 14.66 13.31 13 10 13Z" />
+                </svg>
+              </button>
             )}
           </div>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" className="text-txt-tertiary flex-shrink-0">
-            <path d="M5.293 7.293a1 1 0 011.414 0L9 9.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
-          </svg>
-        </button>
-        {canCreateInvite && (
+        </div>
+      ) : (
+        <div className="h-12 flex items-stretch border-b border-border-hard z-10 group/header">
           <button
-            onClick={() => openModal('invite')}
-            className="w-10 h-full flex items-center justify-center text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover transition-all flex-shrink-0"
-            title={t('common:actions.invitePeople')}
+            onClick={() => openModal('spaceSettings')}
+            className="flex-1 h-full px-4 flex items-center justify-between hover:bg-interactive-hover transition-colors min-w-0"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21 3H24V5H21V8H19V5H16V3H19V0H21V3ZM10 12C12.21 12 14 10.21 14 8C14 5.79 12.21 4 10 4C7.79 4 6 5.79 6 8C6 10.21 7.79 12 10 12ZM10 13C6.69 13 1 14.66 1 18V20H19V18C19 14.66 13.31 13 10 13Z" />
+            <div className="min-w-0">
+              <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary truncate leading-tight block">{space.name}</span>
+              {instanceLabel && (
+                <span className="text-[10px] text-txt-tertiary font-medium truncate block leading-tight">
+                  {instanceLabel}
+                </span>
+              )}
+            </div>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" className="text-txt-tertiary flex-shrink-0">
+              <path d="M5.293 7.293a1 1 0 011.414 0L9 9.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
             </svg>
           </button>
-        )}
-      </div>
+          {canCreateInvite && (
+            <button
+              onClick={() => openModal('invite')}
+              className="w-10 h-full flex items-center justify-center text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover transition-all flex-shrink-0"
+              title={t('common:actions.invitePeople')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 3H24V5H21V8H19V5H16V3H19V0H21V3ZM10 12C12.21 12 14 10.21 14 8C14 5.79 12.21 4 10 4C7.79 4 6 5.79 6 8C6 10.21 7.79 12 10 12ZM10 13C6.69 13 1 14.66 1 18V20H19V18C19 14.66 13.31 13 10 13Z" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Channels — dynamic category layout */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-3 px-2 no-scrollbar" style={{ paddingBottom: floatingPanelHeight + 24 }} onDrop={containerHandlers.onDrop} onDragOver={containerHandlers.onDragOver} onContextMenu={handleSidebarContextMenu}>
