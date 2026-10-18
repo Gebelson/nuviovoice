@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://167-234-239-100.sslip.io/",
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://167-234-239-100.sslip.io/:path*",
+      "permanent": false
+    }
+  ]
+}
