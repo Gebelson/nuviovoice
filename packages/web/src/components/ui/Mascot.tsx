@@ -21,7 +21,7 @@ interface SvgProps {
   svgRef: React.Ref<SVGSVGElement>;
 }
 
-function IdleVideo() {
+function MascotVideo({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ function IdleVideo() {
   return (
     <video
       ref={videoRef}
-      src="/animations/mascot.webm"
+      src={src}
       autoPlay
       loop
       muted
@@ -53,60 +53,6 @@ function IdleVideo() {
   );
 }
 
-function SleepingSvg({ palette, gradientId, svgRef }: SvgProps) {
-  return (
-    <svg ref={svgRef} viewBox="0 0 220 130" aria-hidden="true" width="100%" height="100%">
-      <defs>
-        <radialGradient id={gradientId} cx="40%" cy="30%" r="65%">
-          <stop offset="0%" stopColor={palette.from} />
-          <stop offset="100%" stopColor={palette.to} />
-        </radialGradient>
-      </defs>
-
-      {/* Shadow */}
-      <ellipse data-mascot="shadow" cx="110" cy="120" rx="50" ry="5" fill={palette.shadow} />
-
-      {/* Body */}
-      <path
-        data-mascot="body"
-        d="M110 24 C152 20, 190 38, 192 64 C194 86, 174 106, 142 112 C126 116, 94 116, 78 112 C46 106, 26 86, 28 64 C30 38, 68 20, 110 24Z"
-        fill={`url(#${gradientId})`}
-      />
-
-      {/* Inner highlight */}
-      <ellipse cx="96" cy="44" rx="30" ry="12" fill="rgba(255,255,255,0.08)" transform="rotate(-8 96 44)" />
-
-      {/* Left closed eye */}
-      <path
-        data-eye="closed"
-        data-side="left"
-        d="M86 64 Q94 54, 102 64"
-        stroke="#2a2a36"
-        strokeWidth="2.8"
-        fill="none"
-        strokeLinecap="round"
-      />
-
-      {/* Right closed eye */}
-      <path
-        data-eye="closed"
-        data-side="right"
-        d="M118 64 Q126 54, 134 64"
-        stroke="#2a2a36"
-        strokeWidth="2.8"
-        fill="none"
-        strokeLinecap="round"
-      />
-
-      {/* Blush */}
-      <ellipse cx="78" cy="76" rx="8" ry="3" fill={palette.blush} opacity="0.22" />
-      <ellipse cx="142" cy="76" rx="8" ry="3" fill={palette.blush} opacity="0.22" />
-
-      {/* Mouth */}
-      <ellipse data-mascot="mouth" cx="110" cy="78" rx="4" ry="3.2" fill="#2a2a36" opacity="0.3" />
-    </svg>
-  );
-}
 
 function ExcitedSvg({ palette, gradientId, svgRef }: SvgProps) {
   return (
@@ -222,23 +168,10 @@ export function Mascot({ state, className }: MascotProps) {
 
   return (
     <div ref={containerRef} role="presentation" className={`relative ${className ?? 'w-32 h-32'}`}>
-      {state === 'idle' && <IdleVideo />}
-      {state === 'sleeping' && <SleepingSvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
+      {state === 'idle' && <MascotVideo src="/animations/mascot.webm" />}
+      {state === 'sleeping' && <MascotVideo src="/animations/mascot-sleeping.webm" />}
       {state === 'excited' && <ExcitedSvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
       {state === 'lonely' && <LonelySvg palette={palette} gradientId={gradientId} svgRef={svgRef} />}
-      {state === 'sleeping' && (
-        <div
-          data-mascot="z-container"
-          style={{
-            position: 'absolute',
-            top: '-15px',
-            right: '8px',
-            width: '50px',
-            height: '90px',
-            pointerEvents: 'none',
-          }}
-        />
-      )}
     </div>
   );
 }
