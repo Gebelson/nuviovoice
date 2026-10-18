@@ -1,0 +1,35 @@
+# Concord LiveKit SFU Configuration
+# Optimized for Oracle Cloud Always Free (ARM64 Ubuntu/Debian)
+
+port: 7880
+bind_addresses:
+  - ""
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+  enable_loopback_candidate: false
+
+# Keys must match LIVEKIT_API_KEY and LIVEKIT_API_SECRET in your .env
+keys:
+  concord_key: "CONCORD_GENERATE_RANDOM_SECRET_KEY"
+
+# Built-in TURN server configuration
+turn:
+  enabled: true
+  domain: ""
+  tls_port: 5349
+  udp_port: 3478
+
+logging:
+  json: false
+  level: info
+
+# Dynacast & Adaptive Stream optimizations
+audio:
+  enable_noise_cancellation: false # Done in browser AudioWorklet for zero server CPU
+
+video:
+  dynacast_pause_delay: 5s

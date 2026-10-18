@@ -1,0 +1,43 @@
+Concord - Plataforma Completa de Comunicação em Tempo Real
+Copyright (C) 2026 Concord Contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+========================================================================
+ATTRIBUTIONS AND THIRD-PARTY NOTICES:
+
+This project incorporates architectural concepts, source code, and assets
+derived from the following open-source projects under the AGPL-3.0 license:
+
+1. Backspace (https://github.com/TheZwiss/backspace)
+   Copyright (C) Jannis Braun and Backspace contributors
+   Licensed under GNU Affero General Public License v3 (AGPL-3.0-only).
+   Key contributions integrated:
+   - TypeScript monorepo architecture (@concord/shared, server, web, desktop)
+   - LiveKit SFU real-time voice, video and screensharing engine
+   - Advanced screenshare bitrate matrix, resolution & FPS tuning (up to 4K 120fps)
+   - AudioWorklet noise suppression with @sapphi-red/web-noise-suppressor
+   - React 18 / Vite / TailwindCSS / Zustand client interface
+   - Electron desktop integration with native push-to-talk and system audio
+
+2. Haven (https://github.com/ancsemi/Haven)
+   Copyright (C) ancsemi and Haven contributors
+   Licensed under GNU Affero General Public License v3 (AGPL-3.0).
+   Key contributions integrated:
+   - Soundboard custom audio system & role permissions
+   - Watch Party synchronized video playback engine
+   - End-to-end encryption (E2EE) key exchange for direct messages
+   - Webhooks and slash commands bot infrastructure
+   - Automated moderation rules & domain blocking
+   - High-performance SQLite WAL pragmas and caching

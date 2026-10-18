@@ -1,0 +1,62 @@
+{
+  "nav": {
+    "label": "Nuvio",
+    "updatedDot": "O Nuvio foi atualizado"
+  },
+  "header": {
+    "title": "Nuvio",
+    "tagline": "Plataforma moderna, independente e segura de comunicação em tempo real."
+  },
+  "whatsNew": {
+    "title": "Novidades",
+    "updated": "Atualizado para a versão {{version}}",
+    "current": "Você está na versão {{version}}",
+    "noVersion": "Notas de versão de todas as versões",
+    "action": "Ler as notas de versão"
+  },
+  "community": {
+    "title": "Comunidade Oficial Nuvio",
+    "body": "Conecte-se com amigos, gamers, criadores e equipes na plataforma Nuvio.",
+    "join": "Entrar",
+    "open": "Abrir",
+    "pending": "Solicitação enviada",
+    "retry": "Tentar novamente",
+    "unreachable": "Não foi possível acessar a instância da comunidade.",
+    "notListed": "O espaço da comunidade não está disponível no momento."
+  },
+  "support": {
+    "title": "Projeto Nuvio",
+    "body": "Plataforma 100% open source e independente para comunidades e criadores.",
+    "action": "Saiba mais"
+  },
+  "insights": {
+    "title": "Métricas da Instância",
+    "body": "Estatísticas de conexão, salas de voz ativas e participantes.",
+    "action": "Ver métricas"
+  },
+  "report": {
+    "title": "Reportar um problema ou sugerir recurso",
+    "body": "Sua versão e seu navegador já vêm preenchidos.",
+    "bug": "Reportar problema",
+    "feature": "Sugerir melhoria"
+  },
+  "host": {
+    "title": "Hospedagem Independente",
+    "body": "Execute o Nuvio no seu próprio servidor (compatível com Oracle Cloud Always Free).",
+    "action": "Guia de implantação"
+  },
+  "desktop": {
+    "title": "Aplicativo Nuvio Desktop",
+    "body": "Push-to-Talk global, captura de áudio do sistema, compartilhamento até 4K/120fps.",
+    "action": "Baixar aplicativo"
+  },
+  "instance": {
+    "title": "Esta instância"
+  },
+  "footer": {
+    "license": "Licença (AGPL-3.0)",
+    "security": "Segurança e Privacidade",
+    "contributors": "Contribuidores",
+    "source": "Código-fonte"
+  }
+}
