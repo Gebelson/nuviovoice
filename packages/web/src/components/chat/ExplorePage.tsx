@@ -56,7 +56,7 @@ export function ExplorePage() {
   const setSortBy = useExploreStore((s) => s.setSortBy);
   const fetchSpaces = useExploreStore((s) => s.fetchSpaces);
   const fetchMyRequests = useExploreStore((s) => s.fetchMyRequests);
-  const joinPublicSpace = useExploreStore((s) => s.joinSpace);
+  const joinPublicSpace = useExploreStore((s) => s.publicJoin);
   const fetchDirectory = useDirectoryStore((s) => s.fetch);
 
   const [joinedCollapsed, setJoinedCollapsed] = useState(false);
@@ -238,7 +238,7 @@ export function ExplorePage() {
     if (!previewSpace) return;
     setPreviewJoining(true);
     try {
-      const joined = await joinPublicSpace(previewSpace.id, previewSpace._instanceOrigin);
+      const joined = await joinPublicSpace(previewSpace);
       setPreviewSpace(null);
       handleJoinSuccess(joined.id);
     } catch {

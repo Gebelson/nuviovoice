@@ -224,11 +224,16 @@ function deriveDmView(
 
 type ChannelTableFields = Pick<
   SpaceState,
-  'spaceChannelIndex' | 'channelPermissions' | 'channelLastMessageIds' | 'channelToSpaceMap' | 'channelOriginMap' | 'voiceChannelIds'
+  'spaceChannelIndex' | 'channelPermissions' | 'channelLastMessageIds' | 'channelNames' | 'channelToSpaceMap' | 'channelOriginMap' | 'voiceChannelIds'
 >;
 
 function channelTablesOf(state: SpaceState): SpaceChannelTables {
-  return { index: state.spaceChannelIndex, permissions: state.channelPermissions, lastMessageIds: state.channelLastMessageIds };
+  return {
+    index: state.spaceChannelIndex,
+    permissions: state.channelPermissions,
+    lastMessageIds: state.channelLastMessageIds,
+    names: state.channelNames,
+  };
 }
 
 /**
@@ -245,6 +250,7 @@ function channelTableFields(
     tables.index === state.spaceChannelIndex
     && tables.permissions === state.channelPermissions
     && tables.lastMessageIds === state.channelLastMessageIds
+    && (tables.names ?? state.channelNames) === state.channelNames
   ) {
     return {};
   }
@@ -252,6 +258,7 @@ function channelTableFields(
     spaceChannelIndex: tables.index,
     channelPermissions: tables.permissions,
     channelLastMessageIds: tables.lastMessageIds,
+    channelNames: tables.names ?? state.channelNames,
     ...deriveChannelLookups(tables.index, pinnedOriginByChannelId(dmConversations)),
   };
 }
@@ -346,6 +353,8 @@ interface SpaceState {
   spacePermissions: ReadonlyMap<string, string>; // spaceId → myPermissions decimal string
   /** Space channelId → myPermissions decimal string. Changes with the index. */
   channelPermissions: ReadonlyMap<string, string>;
+  /** Space channelId → channel display name. Changes with the index. */
+  channelNames: ReadonlyMap<string, string>;
   /** Derived: channelId → instance origin ('' = home), space channels and pinned DM copies. */
   channelOriginMap: ReadonlyMap<string, string>;
   /** Derived: the voice channels (excluded from unread). */
@@ -554,6 +563,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
   channelLastMessageIds: new Map(),
   spacePermissions: new Map(),
   channelPermissions: new Map(),
+  channelNames: new Map(),
   channelOriginMap: new Map(),
   voiceChannelIds: new Set(),
   categoryOriginMap: new Map(),
@@ -581,6 +591,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       channelLastMessageIds: new Map(),
       spacePermissions: new Map(),
       channelPermissions: new Map(),
+      channelNames: new Map(),
       channelOriginMap: new Map(),
       voiceChannelIds: new Set(),
       categoryOriginMap: new Map(),
@@ -1360,6 +1371,18 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     if (origin) {
       if (space.icon) space.icon = resolveAssetUrl(space.icon, origin) ?? space.icon;
       if (space.banner) space.banner = resolveAssetUrl(space.banner, origin) ?? space.banner;
+      if (space.members) {
+        for (const member of space.members) {
+          if (member.user) normalizeUserAssets(member.user, origin);
+        }
+      }
+    }
+
+    if (space.members) {
+      const { upsertUserView } = get();
+      for (const member of space.members) {
+        if (member.user) upsertUserView(member.user, origin);
+      }
     }
 
     const tagged: TaggedSpace = {

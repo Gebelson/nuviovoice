@@ -14,6 +14,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useInstanceStore } from '../../stores/instanceStore';
 import { useContextMenuStore, type ContextMenuItem } from '../../stores/contextMenuStore';
 import { Tooltip } from '../ui/Tooltip';
+import { SpaceHoverCard } from './SpaceHoverCard';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { TransferOwnershipModal } from '../modals/TransferOwnershipModal';
 import { NotificationSettingsModal, type NotificationSettingsModalTarget } from '../notifications/NotificationSettingsModal';
@@ -55,6 +56,8 @@ interface SidebarItemProps {
   dimmed?: boolean;
   federationBadge?: boolean;
   federationDisconnected?: boolean;
+  spaceOrigin?: string;
+  federationHost?: string | null;
   tooltipText?: string;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
@@ -65,7 +68,7 @@ interface SidebarItemProps {
   dropIndicator?: 'before' | 'after' | 'merge' | null;
 }
 
-function SidebarItem({ id, name, icon, avatarColor, active, onClick, onContextMenu, type = 'space', actionType, hasUnread, dimmed, federationBadge, federationDisconnected, tooltipText, draggable, onDragStart, onDragOver, onDragEnd, onDrop, isDragging, dropIndicator }: SidebarItemProps) {
+function SidebarItem({ id, name, icon, avatarColor, active, onClick, onContextMenu, type = 'space', actionType, hasUnread, dimmed, federationBadge, federationDisconnected, spaceOrigin = '', federationHost = null, tooltipText, draggable, onDragStart, onDragOver, onDragEnd, onDrop, isDragging, dropIndicator }: SidebarItemProps) {
   const { t } = useTranslation(['spaces', 'common']);
   const [isHovered, setIsHovered] = useState(false);
   const firstLetter = name.charAt(0).toUpperCase();
@@ -192,7 +195,17 @@ function SidebarItem({ id, name, icon, avatarColor, active, onClick, onContextMe
         </div>
       )}
 
-      {tooltipText ? (
+      {type === 'space' ? (
+        <SpaceHoverCard
+          spaceId={id}
+          spaceName={name}
+          origin={spaceOrigin}
+          federationHost={federationHost}
+          disabled={!!isDragging}
+        >
+          {innerContent}
+        </SpaceHoverCard>
+      ) : tooltipText ? (
         <Tooltip content={tooltipText} position="right" delay={300}>
           {innerContent}
         </Tooltip>
@@ -1106,17 +1119,18 @@ export function SpaceSidebar() {
   // ─── Helpers for rendering ──────────────────────────────────────────
 
   const getFederationInfo = useCallback((space: TaggedSpace) => {
-    const origin = space._instanceOrigin;
+    const origin = space._instanceOrigin ?? '';
     const isFederated = !!origin;
     const isDimmed = isFederated && disconnectedOrigins.has(origin);
     let tooltipText = space.name;
+    let hostLabel: string | null = null;
     if (isFederated) {
       try {
-        const hostLabel = new URL(origin).host;
+        hostLabel = new URL(origin).host;
         tooltipText = `${space.name} \u00b7 ${hostLabel}`;
       } catch { /* ignore */ }
     }
-    return { isFederated, isDimmed, tooltipText };
+    return { origin, isFederated, isDimmed, tooltipText, hostLabel };
   }, [disconnectedOrigins]);
 
   // Check if a folder has any unread spaces
@@ -1138,7 +1152,7 @@ export function SpaceSidebar() {
 
   const renderLayoutItem = (item: ResolvedSpaceLayoutItem) => {
     if (item.type === 'space') {
-      const { isFederated, isDimmed, tooltipText } = getFederationInfo(item.space);
+      const { origin, isFederated, isDimmed, tooltipText, hostLabel } = getFederationInfo(item.space);
       return (
         <SidebarItem
           key={item.space.id}
@@ -1153,6 +1167,8 @@ export function SpaceSidebar() {
           dimmed={isDimmed}
           federationBadge={isFederated}
           federationDisconnected={isDimmed}
+          spaceOrigin={origin}
+          federationHost={hostLabel}
           tooltipText={tooltipText}
           draggable
           onDragStart={(e) => handleDragStart(e, item.space.id, 'space')}

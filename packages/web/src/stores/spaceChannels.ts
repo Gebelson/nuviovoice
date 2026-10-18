@@ -33,6 +33,8 @@ export interface SpaceChannelTables {
   readonly permissions: ReadonlyMap<string, string>;
   /** channelId → last message id as a listing reported it. DM entries belong to the DM view. */
   readonly lastMessageIds: ReadonlyMap<string, string>;
+  /** channelId → channel display name. Space channels only. */
+  readonly names?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -59,15 +61,17 @@ export function putSpaceListings(
   const index = new Map(tables.index);
   const permissions = new Map(tables.permissions);
   const lastMessageIds = new Map(tables.lastMessageIds);
+  const names = new Map(tables.names);
   for (const space of spaces) {
     for (const channel of space.channels) {
       index.set(channel.id, { spaceId: space.id, origin, type: channel.type });
+      if (channel.name) names.set(channel.id, channel.name);
       if (channel.myPermissions) permissions.set(channel.id, channel.myPermissions);
       // Voice channels have no text to read; unread tracking skips them.
       if (channel.type !== 'voice' && channel.lastMessageId) lastMessageIds.set(channel.id, channel.lastMessageId);
     }
   }
-  return { index, permissions, lastMessageIds };
+  return { index, permissions, lastMessageIds, names };
 }
 
 /** Forget `channelIds` in every table. Ids the index does not hold are ignored. */
@@ -77,12 +81,14 @@ export function dropChannels(tables: SpaceChannelTables, channelIds: Iterable<st
   const index = new Map(tables.index);
   const permissions = new Map(tables.permissions);
   const lastMessageIds = new Map(tables.lastMessageIds);
+  const names = new Map(tables.names);
   for (const id of ids) {
     index.delete(id);
     permissions.delete(id);
     lastMessageIds.delete(id);
+    names.delete(id);
   }
-  return { index, permissions, lastMessageIds };
+  return { index, permissions, lastMessageIds, names };
 }
 
 /** The ids of the indexed channels `match` accepts. */
