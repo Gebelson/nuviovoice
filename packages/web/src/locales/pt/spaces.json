@@ -272,6 +272,7 @@
       "management": "Gerenciamento",
       "tabs": {
         "overview": "Visão geral",
+        "appearance": "Aparência",
         "discovery": "Descoberta",
         "roles": "Cargos",
         "bans": "Banimentos"
@@ -285,14 +286,15 @@
       "colorLabel": "Cor do ícone",
       "bannerLabel": "Capa do espaço",
       "bannerAlt": "Capa do espaço",
-      "bannerHint": "A capa é exibida no card do espaço público, na exploração e no cabeçalho. Proporção 16:9 recomendada (mínimo 1280×720). PNG, JPG ou WEBP até 5 MB.",
+      "bannerHint": "A capa é exibida no card do espaço público, na exploração e no cabeçalho. Proporção oficial 15:4 (1800 × 480 px, mínimo 900 × 240 px). PNG, JPG ou WEBP até 5 MB.",
       "uploadBanner": "Carregar capa",
       "changeBanner": "Alterar capa",
+      "repositionBanner": "Reposicionar capa",
       "removeBanner": "Remover capa",
-      "bannerDimensions": "Dimensão recomendada: 16:9 (mínimo 1280×720 pixels)",
+      "bannerDimensions": "Proporção oficial: 15:4 (1800 × 480 px, mínimo 900 × 240 px)",
       "bannerFormats": "Formatos aceitos: PNG, JPG, JPEG ou WEBP",
       "bannerSize": "Tamanho máximo permitido: 5 MB",
-      "bannerRatio": "16:9 · até 5 MB",
+      "bannerRatio": "15:4 · até 5 MB",
       "bannerCardPreview": "Pré-visualização do card na busca / exploração",
       "bannerInvalidType": "Por favor, selecione uma imagem válida (PNG, JPG ou WEBP).",
       "bannerTooLarge": "A imagem deve ter no máximo 5 MB.",
@@ -721,5 +723,26 @@
     "suppressRoles": "Suprimir menções a cargos",
     "massHeading": "Menções em grupo",
     "massNote": "@here alcança os mesmos membros que @everyone. Menções diretas a você sempre notificam."
+  },
+  "coverEditor": {
+    "title": "Editar capa",
+    "subtitle": "Proporção oficial 15:4 • Alta resolução",
+    "minDimensionsError": "Escolha uma imagem com pelo menos {{width}} × {{height}} pixels.",
+    "loadError": "Não foi possível carregar a imagem selecionada.",
+    "dimensionErrorTitle": "Dimensões insuficientes",
+    "cropAreaLabel": "Ajuste de enquadramento",
+    "resetFraming": "Restaurar enquadramento",
+    "zoomIn": "Aumentar zoom",
+    "zoomOut": "Reduzir zoom",
+    "livePreviewLabel": "Pré-visualização em tempo real",
+    "desktopPreviewDesc": "Exibição oficial no card de exploração para desktop",
+    "mobilePreviewDesc": "Enquadramento compacto em telas de dispositivos móveis",
+    "desktopTab": "Desktop",
+    "mobileTab": "Celular",
+    "previewDescPlaceholder": "Espaço público da comunidade no Nuvio.",
+    "defaultSpaceName": "Espaço Nuvio",
+    "formatNote": "Exportação em 1800 × 480 px • WebP 85%",
+    "saving": "Salvando...",
+    "saveAction": "Salvar capa"
   }
 }

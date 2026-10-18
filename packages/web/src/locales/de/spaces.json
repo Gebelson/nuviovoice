@@ -269,6 +269,7 @@
       "management": "Verwaltung",
       "tabs": {
         "overview": "Übersicht",
+        "appearance": "Erscheinungsbild",
         "discovery": "Entdecken",
         "roles": "Rollen",
         "bans": "Sperren"
@@ -282,14 +283,15 @@
       "colorLabel": "Symbolfarbe",
       "bannerLabel": "Space-Banner",
       "bannerAlt": "Space-Banner",
-      "bannerHint": "Das Banner wird auf der öffentlichen Space-Karte, in Entdecken und in der Space-Kopfzeile angezeigt. Empfohlenes Seitenverhältnis 16:9 (mind. 1280×720). PNG, JPG oder WEBP bis zu 5 MB.",
+      "bannerHint": "Das Banner wird auf der öffentlichen Space-Karte, in Entdecken und in der Space-Kopfzeile angezeigt. Offizielles Seitenverhältnis 15:4 (1800 × 480 px, mind. 900 × 240 px). PNG, JPG oder WEBP bis zu 5 MB.",
       "uploadBanner": "Banner hochladen",
       "changeBanner": "Banner ändern",
+      "repositionBanner": "Titelbild neu positionieren",
       "removeBanner": "Banner entfernen",
-      "bannerDimensions": "Empfohlene Abmessung: 16:9 (mindestens 1280×720 Pixel)",
+      "bannerDimensions": "Offizielles Verhältnis: 15:4 (1800 × 480 px, mindestens 900 × 240 px)",
       "bannerFormats": "Unterstützte Formate: PNG, JPG, JPEG oder WEBP",
       "bannerSize": "Maximale Dateigröße: 5 MB",
-      "bannerRatio": "16:9 · bis zu 5 MB",
+      "bannerRatio": "15:4 · bis zu 5 MB",
       "bannerCardPreview": "Vorschau der öffentlichen Space-Karte",
       "bannerInvalidType": "Bitte wähle eine gültige Bilddatei (PNG, JPG oder WEBP).",
       "bannerTooLarge": "Die Bilddatei darf maximal 5 MB groß sein.",
@@ -708,5 +710,26 @@
     "suppressRoles": "Rollenerwähnungen unterdrücken",
     "massHeading": "Gruppenerwähnungen",
     "massNote": "@here erreicht dieselben Mitglieder wie @everyone. Erwähnungen von dir mit Namen benachrichtigen dich immer."
+  },
+  "coverEditor": {
+    "title": "Titelbild bearbeiten",
+    "subtitle": "Offizielles 15:4-Verhältnis • Hohe Auflösung",
+    "minDimensionsError": "Bitte wählen Sie ein Bild mit mindestens {{width}} × {{height}} Pixeln.",
+    "loadError": "Das ausgewählte Bild konnte nicht geladen werden.",
+    "dimensionErrorTitle": "Unzureichende Abmessungen",
+    "cropAreaLabel": "Bildausschnitt anpassen",
+    "resetFraming": "Bildausschnitt zurücksetzen",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "livePreviewLabel": "Echtzeit-Vorschau",
+    "desktopPreviewDesc": "Offizielle Desktop-Entdeckungskartenansicht",
+    "mobilePreviewDesc": "Kompakter Bildausschnitt auf Mobilgeräten",
+    "desktopTab": "Desktop",
+    "mobileTab": "Mobil",
+    "previewDescPlaceholder": "Öffentlicher Community-Bereich auf Nuvio.",
+    "defaultSpaceName": "Nuvio-Space",
+    "formatNote": "Export in 1800 × 480 px • WebP 85%",
+    "saving": "Speichern...",
+    "saveAction": "Titelbild speichern"
   }
 }

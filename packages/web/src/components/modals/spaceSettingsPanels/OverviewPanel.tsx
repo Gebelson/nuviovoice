@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { ImageCropModal } from '../../ui/ImageCropModal';
+import { SpaceCoverEditor } from '../SpaceCoverEditor';
 import { Avatar } from '../../ui/Avatar';
 import { getSpaceGradient, SPACE_GRADIENT_MAP } from '../../../utils/gradients';
 import { AVATAR_COLORS } from '@concord/shared';
@@ -19,9 +20,10 @@ import { useAvatarColorNames } from './spaceOptions';
 
 interface OverviewPanelProps {
   spaceId: string;
+  mode?: 'all' | 'appearance';
 }
 
-export function OverviewPanel({ spaceId }: OverviewPanelProps) {
+export function OverviewPanel({ spaceId, mode = 'all' }: OverviewPanelProps) {
   const { t } = useTranslation(['spaces', 'common']);
   const colorNames = useAvatarColorNames();
   const spaces = useSpaceStore((s) => s.spaces);
@@ -215,6 +217,13 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
     }
   };
 
+  const handleRepositionBanner = () => {
+    const srcToReposition = bannerPreview || currentBannerUrl;
+    if (srcToReposition) {
+      setBannerCropSrc(srcToReposition);
+    }
+  };
+
   const handleRemoveBanner = () => {
     setShowRemoveBannerConfirm(true);
   };
@@ -323,7 +332,9 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
   return (
     <>
       <div className="space-y-5">
-        <h2 className="text-lg font-semibold text-txt-primary mb-6">{t('spaces:settings.nav.tabs.overview')}</h2>
+        <h2 className="text-lg font-semibold text-txt-primary mb-6">
+          {mode === 'appearance' ? t('spaces:settings.nav.tabs.appearance', { defaultValue: 'Aparência' }) : t('spaces:settings.nav.tabs.overview')}
+        </h2>
         {/* Space Identity */}
         <div>
           <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wider mb-1.5">{t('spaces:settings.overview.identity')}</div>
@@ -445,7 +456,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
               type="button"
               onClick={() => canManageSpace && bannerFileInputRef.current?.click()}
               disabled={!canManageSpace || uploadingBanner}
-              className={`relative w-full sm:w-64 h-36 rounded-lg bg-surface-input border border-border-soft flex items-center justify-center overflow-hidden group shadow-inner ${
+              className={`relative w-full sm:w-64 aspect-[15/4] rounded-lg bg-surface-input border border-border-soft flex items-center justify-center overflow-hidden group shadow-inner ${
                 canManageSpace ? 'hover:border-accent-primary cursor-pointer' : 'cursor-default'
               } transition-all`}
               title={canManageSpace ? t('spaces:settings.overview.changeBanner') : undefined}
@@ -455,7 +466,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
                   <img src={displayBannerSrc} alt={t('spaces:settings.overview.bannerAlt')} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                   {canManageSpace && (
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 backdrop-blur-[2px]">
-                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
@@ -465,12 +476,12 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
                 </>
               ) : (
                 <div
-                  className="w-full h-full flex flex-col items-center justify-center gap-2 p-4 text-center relative overflow-hidden"
+                  className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-3 text-center relative overflow-hidden"
                   style={{ background: getSpaceGradient(space.id, space.name, avatarColorState).gradient }}
                 >
                   <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]" />
                   <div className="relative z-10 flex flex-col items-center gap-1 text-white/90">
-                    <svg className="w-7 h-7 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <svg className="w-6 h-6 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                     </svg>
                     <span className="text-xs font-semibold">{t('spaces:settings.overview.uploadBanner')}</span>
@@ -500,6 +511,17 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
                   >
                     {displayBannerSrc ? t('spaces:settings.overview.changeBanner') : t('spaces:settings.overview.uploadBanner')}
                   </button>
+
+                  {canManageSpace && (displayBannerSrc || space.banner) && bannerFilename !== '' && (
+                    <button
+                      type="button"
+                      onClick={handleRepositionBanner}
+                      disabled={uploadingBanner}
+                      className="px-3 py-1.5 bg-surface-elevated hover:bg-surface-elevated/80 border border-border-soft text-txt-primary text-xs font-medium rounded-md transition-colors disabled:opacity-50"
+                    >
+                      {t('spaces:settings.overview.repositionBanner', { defaultValue: 'Reposicionar capa' })}
+                    </button>
+                  )}
 
                   {canManageSpace && (displayBannerSrc || space.banner) && bannerFilename !== '' && (
                     <button
@@ -544,8 +566,8 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
             <span className="block text-[11px] font-semibold text-txt-secondary uppercase tracking-wider mb-2">
               {t('spaces:settings.overview.bannerCardPreview')}
             </span>
-            <div className="w-full max-w-sm rounded-lg border border-border-soft bg-surface-channel overflow-hidden shadow-sm">
-              <div className="h-28 relative overflow-hidden">
+            <div className="w-full max-w-md rounded-lg border border-border-soft bg-surface-channel overflow-hidden shadow-sm">
+              <div className="w-full aspect-[15/4] relative overflow-hidden group/cardbanner">
                 {displayBannerSrc ? (
                   <img src={displayBannerSrc} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -558,7 +580,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
                   </div>
                 )}
                 <div
-                  className="absolute bottom-0 inset-x-0 h-14"
+                  className="absolute bottom-0 inset-x-0 h-14 pointer-events-none"
                   style={{ background: 'linear-gradient(to top, rgba(20,20,26,0.95), transparent)' }}
                 />
                 <div className="absolute top-2 right-2">
@@ -568,7 +590,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
                 </div>
               </div>
               <div className="p-3 pt-0 relative">
-                <div className="-mt-6 mb-2 flex items-end justify-between">
+                <div className="-mt-7 mb-2 flex items-end justify-between">
                   <div className="p-1 rounded-full bg-surface-channel shadow-md">
                     <Avatar
                       src={displayIconSrc}
@@ -598,18 +620,20 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
         </div>
 
         {/* Space Name */}
-        <div>
-          <label className="block text-xs text-txt-secondary mb-1.5">
-            {t('spaces:settings.overview.nameLabel')}
-          </label>
-          <input
-            type="text"
-            value={spaceName}
-            onChange={(e) => setSpaceName(e.target.value)}
-            className="input-standard w-full"
-            disabled={!canManageSpace}
-          />
-        </div>
+        {mode === 'all' && (
+          <div>
+            <label className="block text-xs text-txt-secondary mb-1.5">
+              {t('spaces:settings.overview.nameLabel')}
+            </label>
+            <input
+              type="text"
+              value={spaceName}
+              onChange={(e) => setSpaceName(e.target.value)}
+              className="input-standard w-full"
+              disabled={!canManageSpace}
+            />
+          </div>
+        )}
           </div>
         </div>
 
@@ -618,7 +642,7 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
           <div className="p-2 bg-accent-rose/10 border border-accent-rose/30 rounded text-txt-danger text-sm">{saveError}</div>
         )}
         {/* Danger Zone */}
-        {isOwner && (
+        {mode === 'all' && isOwner && (
           <div>
             <div className="text-[11px] font-semibold text-txt-danger uppercase tracking-wider mb-1.5">{t('common:labels.dangerZone')}</div>
             <div className="rounded-lg bg-white/[0.02] p-3.5 space-y-4">
@@ -774,15 +798,16 @@ export function OverviewPanel({ spaceId }: OverviewPanelProps) {
         maxOutputDimension={256}
       />
 
-      <ImageCropModal
+      <SpaceCoverEditor
         isOpen={bannerCropSrc !== null}
         onClose={() => setBannerCropSrc(null)}
         imageSrc={bannerCropSrc ?? ''}
-        onCropComplete={handleBannerCropComplete}
-        title={t('spaces:settings.overview.cropBannerTitle')}
-        cropShape="rect"
-        aspectRatio={16 / 9}
-        maxOutputDimension={1280}
+        onSave={handleBannerCropComplete}
+        spaceName={spaceName.trim() || space.name}
+        spaceIcon={displayIconSrc}
+        avatarColor={avatarColorState}
+        description={space.description}
+        visibility={space.visibility}
       />
 
       {/* Remove Banner Confirmation Modal */}

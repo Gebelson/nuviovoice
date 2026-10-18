@@ -13,11 +13,11 @@ const FFMPEG_TIMEOUT = 10_000; // 10 seconds
 
 let ffmpegAvailable: boolean | null = null;
 
-const PROFILE_LIMITS = { avatar: 256, icon: 256, banner: 1280 } as const;
+const PROFILE_LIMITS = { avatar: 256, icon: 256, banner: 1800 } as const;
 
 /**
  * Resize a profile image (avatar, icon, or banner) to the target max dimension.
- * Preserves animated GIF frames. No-op if the image is already small enough.
+ * Preserves animated GIF frames. Auto-orients EXIF for banners and applies 85% WebP quality.
  * Writes to a temp file then atomically renames to avoid corruption.
  */
 export async function resizeProfileImage(
@@ -28,12 +28,28 @@ export async function resizeProfileImage(
   try {
     const image = sharp(filepath, { animated: true });
     const metadata = await image.metadata();
-    if (!metadata.width || metadata.width <= maxDim) return;
+    if (!metadata.width) return;
+
+    const needsResize = metadata.width > maxDim;
+    const isBanner = type === 'banner';
+    if (!needsResize && !isBanner) return;
 
     const tmpPath = filepath + '.tmp';
-    await sharp(filepath, { animated: true })
-      .resize({ width: maxDim, withoutEnlargement: true })
-      .toFile(tmpPath);
+    let pipeline = sharp(filepath, { animated: true }).rotate();
+
+    if (needsResize) {
+      pipeline = pipeline.resize({ width: maxDim, withoutEnlargement: true });
+    }
+
+    if (isBanner) {
+      if (metadata.format === 'webp') {
+        pipeline = pipeline.webp({ quality: 85 });
+      } else if (metadata.format === 'jpeg') {
+        pipeline = pipeline.jpeg({ quality: 85 });
+      }
+    }
+
+    await pipeline.toFile(tmpPath);
     safeMoveFile(tmpPath, filepath);
   } catch (err) {
     // Non-fatal — the original file is still intact

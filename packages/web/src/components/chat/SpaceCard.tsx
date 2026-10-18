@@ -101,8 +101,8 @@ export function SpaceCard({
         ? 'border-accent-mint/20 hover:border-accent-mint/40'
         : 'border-border-soft hover:border-border-hard'
     }`}>
-      {/* Banner area */}
-      <div className="h-32 relative overflow-hidden group/cardbanner">
+      {/* Banner area (official 15:4 aspect ratio) */}
+      <div className="w-full aspect-[15/4] relative overflow-hidden group/cardbanner">
         {/* Background layer */}
         {bannerUrl ? (
           <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/cardbanner:scale-105" />

@@ -597,9 +597,9 @@ function JoinRequestsSection({ spaceId }: { spaceId: string }) {
   );
 }
 
-type SpaceSettingsTab = 'overview' | 'discovery' | 'members' | 'roles' | 'bans';
+type SpaceSettingsTab = 'overview' | 'appearance' | 'discovery' | 'members' | 'roles' | 'bans';
 
-const SPACE_SETTINGS_TABS: readonly SpaceSettingsTab[] = ['overview', 'discovery', 'members', 'roles', 'bans'];
+const SPACE_SETTINGS_TABS: readonly SpaceSettingsTab[] = ['overview', 'appearance', 'discovery', 'members', 'roles', 'bans'];
 
 function isSpaceSettingsTab(value: unknown): value is SpaceSettingsTab {
   return typeof value === 'string' && (SPACE_SETTINGS_TABS as readonly string[]).includes(value);
@@ -634,6 +634,7 @@ export function SpaceSettingsModal() {
     if (!isOpen) return;
     const allowed: Record<SpaceSettingsTab, boolean> = {
       overview: true,
+      appearance: canManageSpace,
       discovery: canManageSpace,
       members: true,
       roles: canManageRoles,
@@ -684,6 +685,9 @@ export function SpaceSettingsModal() {
             <div className="text-[10px] font-semibold text-txt-tertiary uppercase tracking-wider px-3 py-1">{t('spaces:settings.nav.general')}</div>
             <button onClick={() => handleTabClick('overview')} className={tabClass('overview')}>{t('spaces:settings.nav.tabs.overview')}</button>
             {canManageSpace && (
+              <button onClick={() => handleTabClick('appearance')} className={tabClass('appearance')}>{t('spaces:settings.nav.tabs.appearance', { defaultValue: 'Aparência' })}</button>
+            )}
+            {canManageSpace && (
               <button onClick={() => handleTabClick('discovery')} className={tabClass('discovery')}>{t('spaces:settings.nav.tabs.discovery')}</button>
             )}
 
@@ -721,6 +725,9 @@ export function SpaceSettingsModal() {
               <div className="text-[10px] font-semibold text-txt-tertiary uppercase tracking-wider px-3 py-1">{t('spaces:settings.nav.general')}</div>
               <button onClick={() => handleTabClick('overview')} className={tabClass('overview')}>{t('spaces:settings.nav.tabs.overview')}</button>
               {canManageSpace && (
+                <button onClick={() => handleTabClick('appearance')} className={tabClass('appearance')}>{t('spaces:settings.nav.tabs.appearance', { defaultValue: 'Aparência' })}</button>
+              )}
+              {canManageSpace && (
                 <button onClick={() => handleTabClick('discovery')} className={tabClass('discovery')}>{t('spaces:settings.nav.tabs.discovery')}</button>
               )}
 
@@ -755,7 +762,8 @@ export function SpaceSettingsModal() {
                 </button>
               )}
               <SettingsPanelSuspense key={tab}>
-                {tab === 'overview' && <OverviewPanel spaceId={currentSpaceId} />}
+                {tab === 'overview' && <OverviewPanel spaceId={currentSpaceId} mode="all" />}
+                {tab === 'appearance' && canManageSpace && <OverviewPanel spaceId={currentSpaceId} mode="appearance" />}
                 {tab === 'discovery' && canManageSpace && <DiscoveryPanel spaceId={currentSpaceId} />}
                 {tab === 'members' && <MembersPanel spaceId={currentSpaceId} />}
                 {tab === 'roles' && canManageRoles && <RolesPanel spaceId={currentSpaceId} />}

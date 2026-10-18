@@ -266,6 +266,7 @@
       "management": "管理",
       "tabs": {
         "overview": "概览",
+        "appearance": "外观",
         "discovery": "发现",
         "roles": "身份组",
         "bans": "封禁名单"
@@ -279,14 +280,15 @@
       "colorLabel": "图标颜色",
       "bannerLabel": "空间横幅",
       "bannerAlt": "空间横幅",
-      "bannerHint": "封面显示在公共空间卡片、探索和空间标题栏中。推荐 16:9 比例（最低 1280×720）。PNG、JPG 或 WEBP 格式，最大 5 MB。",
+      "bannerHint": "封面显示在公共空间卡片、探索和空间标题栏中。官方 15:4 比例（1800 × 480 像素，最低 900 × 240 像素）。PNG、JPG 或 WEBP 格式，最大 5 MB。",
       "uploadBanner": "上传横幅",
       "changeBanner": "更改横幅",
+      "repositionBanner": "调整封面位置",
       "removeBanner": "移除横幅",
-      "bannerDimensions": "推荐尺寸：16:9（最低 1280×720 像素）",
+      "bannerDimensions": "官方比例：15:4（1800 × 480 像素，最低 900 × 240 像素）",
       "bannerFormats": "支持格式：PNG、JPG、JPEG 或 WEBP",
       "bannerSize": "最大文件大小：5 MB",
-      "bannerRatio": "16:9 · 最大 5 MB",
+      "bannerRatio": "15:4 · 最大 5 MB",
       "bannerCardPreview": "探索 / 搜索卡片预览",
       "bannerInvalidType": "请选择有效的图片文件（PNG、JPG 或 WEBP）。",
       "bannerTooLarge": "图片大小不得超过 5 MB。",
@@ -695,5 +697,26 @@
     "suppressRoles": "屏蔽 @身份组 提醒",
     "massHeading": "群组提及",
     "massNote": "@here 与 @everyone 通知的成员相同。直接提及你的消息始终会通知你。"
+  },
+  "coverEditor": {
+    "title": "编辑封面",
+    "subtitle": "官方 15:4 比例 • 高分辨率",
+    "minDimensionsError": "请选择尺寸至少为 {{width}} × {{height}} 像素的图片。",
+    "loadError": "无法加载选定的图片。",
+    "dimensionErrorTitle": "尺寸不足",
+    "cropAreaLabel": "调整构图",
+    "resetFraming": "重置构图",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "livePreviewLabel": "实时预览",
+    "desktopPreviewDesc": "桌面端探索卡片官方展示",
+    "mobilePreviewDesc": "移动端屏幕上的紧凑构图",
+    "desktopTab": "桌面端",
+    "mobileTab": "移动端",
+    "previewDescPlaceholder": "Nuvio 上的公开社区空间。",
+    "defaultSpaceName": "Nuvio 空间",
+    "formatNote": "导出规格 1800 × 480 像素 • WebP 85%",
+    "saving": "正在保存...",
+    "saveAction": "保存封面"
   }
 }

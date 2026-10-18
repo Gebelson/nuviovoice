@@ -269,6 +269,7 @@
       "management": "Management",
       "tabs": {
         "overview": "Overview",
+        "appearance": "Appearance",
         "discovery": "Discovery",
         "roles": "Roles",
         "bans": "Bans"
@@ -282,14 +283,15 @@
       "colorLabel": "Icon Color",
       "bannerLabel": "Space Banner",
       "bannerAlt": "Space banner",
-      "bannerHint": "The cover is displayed on the public space card, in Explore, and in the space header. 16:9 aspect ratio recommended (min 1280×720). PNG, JPG, or WEBP up to 5 MB.",
+      "bannerHint": "The cover is displayed on the public space card, in Explore, and in the space header. Official 15:4 aspect ratio (1800 × 480 px, min 900 × 240 px). PNG, JPG, or WEBP up to 5 MB.",
       "uploadBanner": "Upload banner",
       "changeBanner": "Change banner",
+      "repositionBanner": "Reposition cover",
       "removeBanner": "Remove banner",
-      "bannerDimensions": "Recommended dimension: 16:9 (minimum 1280×720 pixels)",
+      "bannerDimensions": "Official ratio: 15:4 (1800 × 480 px, minimum 900 × 240 px)",
       "bannerFormats": "Accepted formats: PNG, JPG, JPEG or WEBP",
       "bannerSize": "Maximum file size: 5 MB",
-      "bannerRatio": "16:9 · up to 5 MB",
+      "bannerRatio": "15:4 · up to 5 MB",
       "bannerCardPreview": "Public space card preview in Explore / Search",
       "bannerInvalidType": "Please select a valid image file (PNG, JPG or WEBP).",
       "bannerTooLarge": "Image file size must be at most 5 MB.",
@@ -708,5 +710,26 @@
     "suppressRoles": "Suppress role mentions",
     "massHeading": "Group mentions",
     "massNote": "@here reaches the same members as @everyone. Mentions of you by name always notify you."
+  },
+  "coverEditor": {
+    "title": "Edit cover",
+    "subtitle": "Official 15:4 ratio • High resolution",
+    "minDimensionsError": "Please choose an image with at least {{width}} × {{height}} pixels.",
+    "loadError": "Could not load the selected image.",
+    "dimensionErrorTitle": "Insufficient dimensions",
+    "cropAreaLabel": "Framing adjustment",
+    "resetFraming": "Reset framing",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "livePreviewLabel": "Real-time preview",
+    "desktopPreviewDesc": "Official desktop exploration card preview",
+    "mobilePreviewDesc": "Compact framing on mobile screens",
+    "desktopTab": "Desktop",
+    "mobileTab": "Mobile",
+    "previewDescPlaceholder": "Public community space on Nuvio.",
+    "defaultSpaceName": "Nuvio Space",
+    "formatNote": "Export at 1800 × 480 px • WebP 85%",
+    "saving": "Saving...",
+    "saveAction": "Save cover"
   }
 }
