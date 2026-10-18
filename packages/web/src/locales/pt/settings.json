@@ -305,6 +305,15 @@
       "sectionTitle": "Status de atividade",
       "label": "Compartilhar status de atividade",
       "description": "Permite que outras pessoas vejam o que você está fazendo, como jogos que você está jogando ou músicas que está ouvindo."
+    },
+    "friendNotifications": {
+      "sectionTitle": "Notificações de pedidos de amizade",
+      "floatingLabel": "Exibir notificações flutuantes",
+      "floatingDescription": "Mostra um card interativo no canto superior direito quando você recebe um pedido de amizade.",
+      "soundLabel": "Som de notificação",
+      "soundDescription": "Reproduz um som discreto ao receber uma nova solicitação de amizade.",
+      "screenShareLabel": "Ocultar durante compartilhamento de tela",
+      "screenShareDescription": "Não exibe notificações flutuantes na tela enquanto você estiver transmitindo ou compartilhando sua tela."
     }
   },
   "connections": {

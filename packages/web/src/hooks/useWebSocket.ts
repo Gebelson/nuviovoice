@@ -8,6 +8,7 @@ import { useSpaceStore, getChannelOrigin, getMyUserIdForOrigin } from '../stores
 import { useChatStore } from '../stores/chatStore';
 import { useVoiceStore } from '../stores/voiceStore';
 import { useSocialStore } from '../stores/socialStore';
+import { useFriendRequestNotificationStore } from '../stores/friendRequestNotificationStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import type { ServerEvent, ClientEvent, ActiveCallInfo, Activity, FederatedIdentity, User } from '@concord/shared';
 import { resolveAssetUrl, normalizeUserAssets, normalizeMessageAssets } from '../utils/assetUrls';
@@ -1058,6 +1059,8 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       if (event.request.user) upsertUserView(event.request.user, origin);
       const { addIncomingRequest } = useSocialStore.getState();
       addIncomingRequest(event.request, origin);
+      const { pushNotification } = useFriendRequestNotificationStore.getState();
+      pushNotification(event.request, origin);
       break;
     }
 
@@ -1089,6 +1092,8 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       upsertUserView(event.friend as unknown as User, origin);
       const { addFriendFromAccepted } = useSocialStore.getState();
       addFriendFromAccepted(event.friend, event.requestId, origin);
+      const { resolveToast } = useFriendRequestNotificationStore.getState();
+      resolveToast(event.requestId, 'accepted');
       import('../stores/discoverStore').then(({ useDiscoverStore }) => {
         useDiscoverStore.getState().updateRelationship(event.friend.id, origin, 'friends');
       });
@@ -1107,6 +1112,8 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
     case 'friend_request_cancelled': {
       const { removeRequestById } = useSocialStore.getState();
       removeRequestById(event.requestId, origin, event.userId);
+      const { cancelToast } = useFriendRequestNotificationStore.getState();
+      cancelToast(event.requestId);
       import('../stores/discoverStore').then(({ useDiscoverStore }) => {
         useDiscoverStore.getState().updateRelationship(event.userId, origin, 'none');
       });
@@ -1116,6 +1123,8 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
     case 'friend_request_declined': {
       const { removeRequestById } = useSocialStore.getState();
       removeRequestById(event.requestId, origin, event.userId);
+      const { resolveToast } = useFriendRequestNotificationStore.getState();
+      resolveToast(event.requestId, 'declined');
       import('../stores/discoverStore').then(({ useDiscoverStore }) => {
         useDiscoverStore.getState().updateRelationship(event.userId, origin, 'none');
       });

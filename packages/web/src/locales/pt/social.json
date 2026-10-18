@@ -83,5 +83,19 @@
     "online": "Online — {{n}}",
     "offline": "Offline — {{n}}"
   },
-  "instanceNotConnected": "Não conectado a {{host}}. Conecte-se novamente e tente de novo."
+  "instanceNotConnected": "Não conectado a {{host}}. Conecte-se novamente e tente de novo.",
+  "notifications": {
+    "title": "Solicitação de amizade",
+    "received": "@{{name}} enviou um pedido de amizade.",
+    "accept": "Aceitar",
+    "decline": "Recusar",
+    "accepted": "Você e @{{name}} agora são amigos!",
+    "chat": "Conversar",
+    "dismiss": "Fechar notificação",
+    "centerTitle": "Central de Notificações",
+    "pendingCount_one": "{{count}} solicitação pendente",
+    "pendingCount_many": "{{count}} solicitações pendentes",
+    "pendingCount_other": "{{count}} solicitações pendentes",
+    "noPending": "Nenhuma notificação pendente"
+  }
 }

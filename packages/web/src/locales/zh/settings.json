@@ -303,6 +303,15 @@
       "sectionTitle": "活动状态",
       "label": "分享活动状态",
       "description": "允许他人查看您正在进行的活动，例如您正在玩的游戏或正在听的音乐。"
+    },
+    "friendNotifications": {
+      "sectionTitle": "好友请求通知",
+      "floatingLabel": "显示悬浮通知",
+      "floatingDescription": "收到好友请求时，在右上角显示可直接操作的交互卡片。",
+      "soundLabel": "通知提示音",
+      "soundDescription": "收到新的好友请求时播放提示音。",
+      "screenShareLabel": "屏幕共享时隐藏",
+      "screenShareDescription": "在屏幕共享或直播时不弹出悬浮通知。"
     }
   },
   "connections": {

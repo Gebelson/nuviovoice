@@ -85,5 +85,20 @@
     "online": "В сети — {{n}}",
     "offline": "Не в сети — {{n}}"
   },
-  "instanceNotConnected": "Нет подключения к {{host}}. Подключитесь снова и повторите попытку."
+  "instanceNotConnected": "Нет подключения к {{host}}. Подключитесь снова и повторите попытку.",
+  "notifications": {
+    "title": "Запрос в друзья",
+    "received": "@{{name}} отправил(а) вам запрос в друзья.",
+    "accept": "Принять",
+    "decline": "Отклонить",
+    "accepted": "Вы и @{{name}} теперь друзья!",
+    "chat": "Написать",
+    "dismiss": "Закрыть уведомление",
+    "centerTitle": "Уведомления",
+    "pendingCount_one": "{{count}} входящий запрос",
+    "pendingCount_few": "{{count}} входящих запроса",
+    "pendingCount_many": "{{count}} входящих запросов",
+    "pendingCount_other": "{{count}} входящих запроса",
+    "noPending": "Нет новых уведомлений"
+  }
 }

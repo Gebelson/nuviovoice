@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../stores/authStore';
 import { useActivityStore } from '../../../stores/activityStore';
+import { useFriendRequestNotificationStore } from '../../../stores/friendRequestNotificationStore';
 import { api } from '../../../api/client';
 import { Toggle } from '../../ui/Toggle';
 
@@ -77,6 +78,59 @@ export function PrivacyPanel() {
                   console.error('Failed to update activity visibility:', err);
                 }
               }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Friend Request Notifications */}
+      <div>
+        <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wider mb-1.5">
+          {t('settings:privacy.friendNotifications.sectionTitle', { defaultValue: 'Notificações de pedidos de amizade' })}
+        </div>
+        <div className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-3.5 space-y-3 divide-y divide-white/[0.04]">
+          <div className="flex items-center justify-between py-1">
+            <div className="flex-1 mr-4">
+              <div className="text-sm text-txt-primary">
+                {t('settings:privacy.friendNotifications.floatingLabel', { defaultValue: 'Exibir notificações flutuantes' })}
+              </div>
+              <div className="text-xs text-txt-tertiary mt-0.5">
+                {t('settings:privacy.friendNotifications.floatingDescription', { defaultValue: 'Mostra um card interativo no canto superior direito quando você recebe um pedido de amizade.' })}
+              </div>
+            </div>
+            <Toggle
+              enabled={useFriendRequestNotificationStore((s) => s.floatingEnabled)}
+              onChange={(val) => useFriendRequestNotificationStore.getState().setFloatingEnabled(val)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <div className="flex-1 mr-4">
+              <div className="text-sm text-txt-primary">
+                {t('settings:privacy.friendNotifications.soundLabel', { defaultValue: 'Som de notificação' })}
+              </div>
+              <div className="text-xs text-txt-tertiary mt-0.5">
+                {t('settings:privacy.friendNotifications.soundDescription', { defaultValue: 'Reproduz um som discreto ao receber uma nova solicitação de amizade.' })}
+              </div>
+            </div>
+            <Toggle
+              enabled={useFriendRequestNotificationStore((s) => s.soundEnabled)}
+              onChange={(val) => useFriendRequestNotificationStore.getState().setSoundEnabled(val)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <div className="flex-1 mr-4">
+              <div className="text-sm text-txt-primary">
+                {t('settings:privacy.friendNotifications.screenShareLabel', { defaultValue: 'Ocultar durante compartilhamento de tela' })}
+              </div>
+              <div className="text-xs text-txt-tertiary mt-0.5">
+                {t('settings:privacy.friendNotifications.screenShareDescription', { defaultValue: 'Não exibe notificações flutuantes na tela enquanto você estiver transmitindo ou compartilhando sua tela.' })}
+              </div>
+            </div>
+            <Toggle
+              enabled={useFriendRequestNotificationStore((s) => s.hideOnScreenShare)}
+              onChange={(val) => useFriendRequestNotificationStore.getState().setHideOnScreenShare(val)}
             />
           </div>
         </div>

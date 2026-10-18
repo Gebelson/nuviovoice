@@ -304,6 +304,15 @@
       "sectionTitle": "Aktivitätsstatus",
       "label": "Aktivitätsstatus teilen",
       "description": "Andere dürfen sehen, was du gerade machst, etwa welche Spiele du spielst oder welche Musik du hörst."
+    },
+    "friendNotifications": {
+      "sectionTitle": "Freundschaftsanfrage-Benachrichtigungen",
+      "floatingLabel": "Schwebende Benachrichtigungen anzeigen",
+      "floatingDescription": "Zeigt eine interaktive Karte in der oberen rechten Ecke an, wenn du eine Freundschaftsanfrage erhältst.",
+      "soundLabel": "Benachrichtigungston",
+      "soundDescription": "Spielt einen dezenten Ton ab, wenn eine neue Freundschaftsanfrage eingeht.",
+      "screenShareLabel": "Während der Bildschirmfreigabe ausblenden",
+      "screenShareDescription": "Schwebende Benachrichtigungen werden nicht angezeigt, während du deinen Bildschirm teilst."
     }
   },
   "connections": {

@@ -81,5 +81,18 @@
     "online": "Online — {{n}}",
     "offline": "Offline — {{n}}"
   },
-  "instanceNotConnected": "Not connected to {{host}}. Connect to it again and retry."
+  "instanceNotConnected": "Not connected to {{host}}. Connect to it again and retry.",
+  "notifications": {
+    "title": "Friend Request",
+    "received": "@{{name}} sent you a friend request.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "You and @{{name}} are now friends!",
+    "chat": "Message",
+    "dismiss": "Dismiss notification",
+    "centerTitle": "Notification Center",
+    "pendingCount_one": "{{count}} pending request",
+    "pendingCount_other": "{{count}} pending requests",
+    "noPending": "No pending notifications"
+  }
 }

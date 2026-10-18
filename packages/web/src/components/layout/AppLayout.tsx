@@ -31,6 +31,7 @@ import { GlobalAudioRenderer } from '../voice/GlobalAudioRenderer';
 import { NotificationController } from '../NotificationController';
 import { UserProfilePopoutLayer } from '../ui/UserProfilePopoutLayer';
 import { ToastContainer } from '../ui/ToastContainer';
+import { FriendRequestToastContainer } from '../notifications/FriendRequestToastContainer';
 import { UpdateToast } from '../ui/UpdateToast';
 import { InstanceUpdateToast } from '../ui/InstanceUpdateToast';
 import { ContextMenuRenderer } from '../ui/ContextMenuRenderer';
@@ -441,6 +442,7 @@ export function AppLayout() {
         <UpdateToast />
         <InstanceUpdateToast />
         <ToastContainer />
+        <FriendRequestToastContainer />
         <ContextMenuRenderer />
       </>
     );
@@ -492,6 +494,7 @@ export function AppLayout() {
           update toast. */}
       <InstanceUpdateToast />
       <ToastContainer />
+      <FriendRequestToastContainer />
       <ContextMenuRenderer />
     </div>
   );

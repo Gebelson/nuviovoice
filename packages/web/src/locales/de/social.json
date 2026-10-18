@@ -81,5 +81,18 @@
     "online": "Online – {{n}}",
     "offline": "Offline – {{n}}"
   },
-  "instanceNotConnected": "Keine Verbindung zu {{host}}. Verbinde dich erneut und versuche es noch einmal."
+  "instanceNotConnected": "Keine Verbindung zu {{host}}. Verbinde dich erneut und versuche es noch einmal.",
+  "notifications": {
+    "title": "Freundschaftsanfrage",
+    "received": "@{{name}} hat dir eine Freundschaftsanfrage gesendet.",
+    "accept": "Annehmen",
+    "decline": "Ablehnen",
+    "accepted": "Du und @{{name}} seid jetzt befreundet!",
+    "chat": "Nachricht",
+    "dismiss": "Benachrichtigung schließen",
+    "centerTitle": "Benachrichtigungen",
+    "pendingCount_one": "{{count}} ausstehende Anfrage",
+    "pendingCount_other": "{{count}} ausstehende Anfragen",
+    "noPending": "Keine ausstehenden Benachrichtigungen"
+  }
 }

@@ -304,6 +304,15 @@
       "sectionTitle": "Activity Status",
       "label": "Share Activity Status",
       "description": "Allow others to see what you're up to, like games you're playing or music you're listening to."
+    },
+    "friendNotifications": {
+      "sectionTitle": "Friend Request Notifications",
+      "floatingLabel": "Show floating notifications",
+      "floatingDescription": "Display an interactive card in the top-right corner when you receive a friend request.",
+      "soundLabel": "Notification sound",
+      "soundDescription": "Play a discreet sound when receiving a new friend request.",
+      "screenShareLabel": "Hide during screen sharing",
+      "screenShareDescription": "Do not show floating notifications while sharing your screen."
     }
   },
   "connections": {

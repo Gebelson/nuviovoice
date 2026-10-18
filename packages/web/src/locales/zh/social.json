@@ -79,5 +79,17 @@
     "online": "在线 — {{n}}",
     "offline": "离线 — {{n}}"
   },
-  "instanceNotConnected": "未连接到 {{host}}。请重新连接后再试。"
+  "instanceNotConnected": "未连接到 {{host}}。请重新连接后再试。",
+  "notifications": {
+    "title": "好友请求",
+    "received": "@{{name}} 向你发送了好友请求。",
+    "accept": "接受",
+    "decline": "拒绝",
+    "accepted": "你和 @{{name}} 现在是好友了！",
+    "chat": "发消息",
+    "dismiss": "关闭通知",
+    "centerTitle": "通知中心",
+    "pendingCount_other": "{{count}} 个待处理的好友请求",
+    "noPending": "暂无待处理通知"
+  }
 }

@@ -12,6 +12,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useFederationStore } from '../../stores/federationStore';
 import { Avatar } from '../ui/Avatar';
 import { MemberListToggleButton } from '../layout/MemberListToggleButton';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { getAvatarGradient } from '../../utils/gradients';
 import { Mascot } from '../ui/Mascot';
@@ -372,6 +373,7 @@ export function FriendsPage({ mobile }: FriendsPageProps) {
             </button>
           </div>
           <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
             <MemberListToggleButton />
           </div>
         </div>
