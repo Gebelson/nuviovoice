@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useUpdateStore,
@@ -7,21 +7,8 @@ import {
   statusVersion,
 } from '../../stores/updateStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useVoiceStore } from '../../stores/voiceStore';
 
-/**
- * The persistent update prompt.
- *
- * Renders nothing in a browser, nothing while an update is merely downloading
- * or being checked for, and nothing for a version the user has already
- * dismissed. When it does render, every button it offers actually does
- * something: a Restart button appears only on a build that can install in
- * place, and a build that cannot says so in plain words instead of presenting a
- * control that silently fails.
- *
- * Surface tier is `.glass-bubble`: this is a persistent floating control, which
- * is that tier's definition in docs/systems/design-system.md. It was previously
- * `.glass-pill`, which the spec reserves for inline decorations.
- */
 export function UpdateToast() {
   const { t } = useTranslation(['desktop', 'common']);
   const initialize = useUpdateStore((s) => s.initialize);
@@ -31,8 +18,14 @@ export function UpdateToast() {
   const install = useUpdateStore((s) => s.install);
   const openDownloadPage = useUpdateStore((s) => s.openDownloadPage);
   const addToast = useUIStore((s) => s.addToast);
+  const inActiveCall = useVoiceStore((s) => Boolean(s.currentVoiceChannelId));
+  const [confirmedInCall, setConfirmedInCall] = useState(false);
 
   useEffect(() => initialize(), [initialize]);
+
+  useEffect(() => {
+    if (!inActiveCall) setConfirmedInCall(false);
+  }, [inActiveCall]);
 
   if (!shouldPrompt(snapshot) || snapshot === null) return null;
 
@@ -44,9 +37,16 @@ export function UpdateToast() {
 
   const handleLater = () => {
     dismiss();
-    // The prompt is gone but the update is not lost, and the user has no way to
-    // know that unless they are told once, at the moment they need to know it.
     addToast(t('desktop:update.laterHint'), 'info', 5000);
+  };
+
+  const handleInstallClick = () => {
+    if (inActiveCall && !confirmedInCall) {
+      setConfirmedInCall(true);
+      addToast(t('desktop:update.laterHint'), 'warning', 5000);
+      return;
+    }
+    install();
   };
 
   let title: string;
@@ -86,9 +86,12 @@ export function UpdateToast() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-txt-primary">{title}</p>
-            {/* Deliberately wraps. The previous version truncated this line
-                mid-word inside a fixed-width pill. */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-txt-primary">{title}</p>
+              <span className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-accent-primary/15 text-accent-primary">
+                {version}
+              </span>
+            </div>
             <p className="text-xs text-txt-secondary mt-1 leading-relaxed">{body}</p>
           </div>
 
@@ -106,7 +109,7 @@ export function UpdateToast() {
         <div className="flex items-center gap-2 mt-3.5 pl-11">
           {canRestart ? (
             <button
-              onClick={install}
+              onClick={handleInstallClick}
               className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent-primary hover:bg-accent-primary/80 text-white transition-colors"
             >
               {t('desktop:update.restartNow')}

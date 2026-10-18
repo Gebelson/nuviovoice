@@ -1722,9 +1722,21 @@ export function buildReadyPayload(userId: string): {
         }
       }
 
+      let parsedTags: string[] = [];
+      if (spaceRow.tags) {
+        try {
+          const raw = JSON.parse(spaceRow.tags);
+          if (Array.isArray(raw)) parsedTags = raw.filter((t): t is string => typeof t === 'string');
+        } catch {
+          parsedTags = [];
+        }
+      }
+
       spaces.push({
         id: spaceRow.id,
         name: spaceRow.name,
+        type: ((spaceRow.type as Space['type']) ?? (spaceRow.visibility === 'public' || spaceRow.visibility === 'request' ? 'public' : 'private')),
+        slug: spaceRow.slug ?? null,
         icon: spaceRow.icon,
         banner: spaceRow.banner ?? null,
         avatarColor: (spaceRow.avatarColor as Space['avatarColor']) ?? null,
@@ -1734,6 +1746,12 @@ export function buildReadyPayload(userId: string): {
         visibility: (spaceRow.visibility ?? 'private') as SpaceWithChannelsAndMembers['visibility'],
         directoryListed: spaceRow.directoryListed === 1,
         description: spaceRow.description ?? null,
+        fullDescription: spaceRow.fullDescription ?? null,
+        category: spaceRow.category ?? null,
+        tags: parsedTags,
+        rules: spaceRow.rules ?? null,
+        publicationStatus: (spaceRow.publicationStatus as Space['publicationStatus']) ?? 'draft',
+        publishedAt: spaceRow.publishedAt ?? null,
         createdAt: spaceRow.createdAt,
         channels: visibleChannels,
         categories: categoriesBySpace.get(spaceRow.id) ?? [],

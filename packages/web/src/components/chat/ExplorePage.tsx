@@ -1,23 +1,28 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import type { DirectoryEntry } from '@concord/shared';
+import { SPACE_CATEGORIES, type DirectoryEntry, type SpaceCategory } from '@concord/shared';
 import { api } from '../../api/client';
-import { useExploreStore } from '../../stores/exploreStore';
+import { useExploreStore, type TaggedExploreSpace } from '../../stores/exploreStore';
 import { useInstanceStore } from '../../stores/instanceStore';
 import { useDirectoryStore } from '../../stores/directoryStore';
 import { useSpaceStore } from '../../stores/spaceStore';
 import { useUIStore } from '../../stores/uiStore';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Mascot } from '../ui/Mascot';
+import { Modal } from '../ui/Modal';
+import { Avatar } from '../ui/Avatar';
 import { MemberListToggleButton } from '../layout/MemberListToggleButton';
 import { useFormatters } from '../../i18n/formatters';
 import { describeError } from '../../i18n/errors';
 import { deliveringHost } from '../../utils/identity';
+import { getSpaceGradient } from '../../utils/gradients';
 import { SpaceCard } from './SpaceCard';
 import { OuterSpaceSection } from './OuterSpaceSection';
 import { ConnectionChips } from './ConnectionChips';
 import { InstanceDiscoveryHint } from './InstanceDiscoveryHint';
+
+type ExploreSortOption = 'popular' | 'relevant' | 'recent';
 
 /** How long the search box waits after the last keystroke before both sections re-query. */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -41,23 +46,22 @@ export function ExplorePage() {
   const spaces = useExploreStore((s) => s.spaces);
   const isLoading = useExploreStore((s) => s.isLoading);
   const error = useExploreStore((s) => s.error);
-  // The instances that did not answer the fan-out the spaces above came from.
-  // Exclusive with `error`: a fan-out nobody answered publishes no list and
-  // leaves this empty, so the two notices can never both be on screen.
   const unansweredOrigins = useExploreStore((s) => s.unansweredOrigins);
   const searchQuery = useExploreStore((s) => s.searchQuery);
-  // What the spaces on screen were fetched for. The search box is live and
-  // the fetch behind it waits out the debounce, so the empty copy has to be
-  // decided from the query the results belong to; reading `searchQuery` made
-  // it flip to "no matches" while the results it described were still the
-  // ones for the previous query, and back again when the box was cleared.
   const resultsQuery = useExploreStore((s) => s.resultsQuery);
+  const selectedCategory = useExploreStore((s) => s.selectedCategory);
+  const sortBy = useExploreStore((s) => s.sortBy);
   const setSearchQuery = useExploreStore((s) => s.setSearchQuery);
+  const setSelectedCategory = useExploreStore((s) => s.setSelectedCategory);
+  const setSortBy = useExploreStore((s) => s.setSortBy);
   const fetchSpaces = useExploreStore((s) => s.fetchSpaces);
   const fetchMyRequests = useExploreStore((s) => s.fetchMyRequests);
+  const joinPublicSpace = useExploreStore((s) => s.joinSpace);
   const fetchDirectory = useDirectoryStore((s) => s.fetch);
 
   const [joinedCollapsed, setJoinedCollapsed] = useState(false);
+  const [previewSpace, setPreviewSpace] = useState<TaggedExploreSpace | null>(null);
+  const [previewJoining, setPreviewJoining] = useState(false);
 
   // Whether the home instance browses the directory at all: DIRECTORY_ENDPOINT
   // non-empty and the admin's browse setting on, which the server reports as
@@ -230,20 +234,34 @@ export function ExplorePage() {
   const hasUnjoined = unjoinedSpaces.length > 0;
   const hasJoined = joinedSpaces.length > 0;
 
+  const handlePreviewJoin = async () => {
+    if (!previewSpace) return;
+    setPreviewJoining(true);
+    try {
+      const joined = await joinPublicSpace(previewSpace.id, previewSpace._instanceOrigin);
+      setPreviewSpace(null);
+      handleJoinSuccess(joined.id);
+    } catch {
+      // handled in store/card
+    } finally {
+      setPreviewJoining(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-surface-chat h-full">
       {/* Header */}
-      <div className="h-12 px-4 flex items-center shadow-header flex-shrink-0 z-10 bg-surface-chat">
-        <div className="flex items-center gap-2 mr-4">
+      <div className="h-12 px-4 flex items-center shadow-header flex-shrink-0 z-10 bg-surface-chat gap-2">
+        <div className="flex items-center gap-2 mr-2">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="text-txt-tertiary">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z" />
           </svg>
           <span className="font-bold text-txt-primary">{t('spaces:explore.title')}</span>
         </div>
 
-        <div className="w-[1px] h-6 bg-surface-elevated mx-2" />
+        <div className="w-[1px] h-6 bg-surface-elevated mx-1" />
 
-        <div className="relative flex-1 max-w-xs ml-2">
+        <div className="relative flex-1 max-w-xs ml-1">
           <input
             type="text"
             placeholder={t('spaces:explore.searchPlaceholder')}
@@ -264,7 +282,17 @@ export function ExplorePage() {
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => openModal('createPublicSpace')}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-primary hover:bg-accent-primary/85 text-white text-xs font-semibold rounded-md transition-colors shadow-sm"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
+            <span>{t('spaces:explore.createPublicSpace')}</span>
+          </button>
           <MemberListToggleButton />
         </div>
       </div>
@@ -274,11 +302,56 @@ export function ExplorePage() {
         <div className="p-6 space-y-10">
           {/* Inner Space: the home instance and every connected instance */}
           <section>
-            <div className="mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-txt-tertiary">
-                {t('spaces:explore.inner.title')}
-              </span>
-              <p className="text-[13px] text-txt-tertiary">{t('spaces:explore.inner.subtitle')}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-txt-tertiary">
+                  {t('spaces:explore.inner.title')}
+                </span>
+                <p className="text-[13px] text-txt-tertiary">{t('spaces:explore.inner.subtitle')}</p>
+              </div>
+
+              {/* Sort selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-txt-tertiary">{t('spaces:explore.sort.label')}:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as ExploreSortOption)}
+                  className="input-standard py-1 px-2.5 text-xs"
+                >
+                  <option value="popular">{t('spaces:explore.sort.popular')}</option>
+                  <option value="relevant">{t('spaces:explore.sort.relevant')}</option>
+                  <option value="recent">{t('spaces:explore.sort.recent')}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Category filter bar */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-4 scrollbar-thin">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === 'all'
+                    ? 'bg-accent-primary text-white'
+                    : 'bg-surface-elevated text-txt-secondary hover:text-txt-primary'
+                }`}
+              >
+                {t('spaces:explore.categories.all')}
+              </button>
+              {SPACE_CATEGORIES.map((cat: SpaceCategory) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                    selectedCategory === cat
+                      ? 'bg-accent-primary text-white'
+                      : 'bg-surface-elevated text-txt-secondary hover:text-txt-primary'
+                  }`}
+                >
+                  {t(`spaces:explore.categories.${cat}`)}
+                </button>
+              ))}
             </div>
 
             {/* Connections that are out, with the way back in; nothing when all are healthy */}
@@ -298,11 +371,6 @@ export function ExplorePage() {
             {unansweredHosts.length > 0 && (
               <div className="mb-4 p-2.5 bg-accent-amber/10 border border-accent-amber/30 rounded text-[13px] text-accent-amber">
                 {t('spaces:explore.inner.unreachable', {
-                  // One host or several is the only distinction the forms
-                  // make, and none of them interpolates `count`, so the
-                  // numeral only selects. Russian `one` also fires for 21,
-                  // 31 and so on, which would put a singular noun and
-                  // predicate over a list of 21 hosts.
                   count: unansweredHosts.length === 1 ? 1 : 2,
                   hosts: unansweredHosts.join(', '),
                 })}
@@ -315,9 +383,6 @@ export function ExplorePage() {
               </div>
             ) : error ? (
               <div className="p-3 bg-accent-rose/10 border border-accent-rose/30 rounded text-sm text-txt-danger">
-                {/* The store keeps the failure as a fact; the words are this
-                    surface's, so they follow the reader's language and not
-                    whatever language was selected when the request failed. */}
                 {error.kind === 'none_answered'
                   ? t('spaces:explore.inner.noneAnswered')
                   : describeError(error.cause)}
@@ -327,7 +392,7 @@ export function ExplorePage() {
               <div className="flex flex-col items-center justify-center h-64 opacity-80">
                 <Mascot state="lonely" className="w-32 h-32 mb-3" />
                 <p className="text-txt-tertiary text-sm">
-                  {resultsQuery
+                  {resultsQuery || selectedCategory !== 'all'
                     ? t('spaces:explore.noMatches')
                     : t('spaces:explore.empty')}
                 </p>
@@ -342,6 +407,7 @@ export function ExplorePage() {
                         key={`${space.id}:${space._instanceOrigin}`}
                         space={space}
                         onJoinSuccess={handleJoinSuccess}
+                        onPreviewSpace={(s) => setPreviewSpace(s)}
                       />
                     ))}
                   </div>
@@ -394,6 +460,108 @@ export function ExplorePage() {
           )}
         </div>
       </div>
+
+      {/* Public Space Preview Modal (inspect before joining) */}
+      <Modal
+        isOpen={previewSpace !== null}
+        onClose={() => setPreviewSpace(null)}
+        title={previewSpace?.name ?? ''}
+        maxWidth="max-w-lg"
+      >
+        {previewSpace && (
+          <div className="space-y-4">
+            <div className="rounded-lg overflow-hidden border border-border-soft bg-surface-channel">
+              <div className="w-full aspect-[15/4] relative overflow-hidden">
+                {previewSpace.banner ? (
+                  <img
+                    src={
+                      previewSpace.banner.startsWith('http') || previewSpace.banner.startsWith('/')
+                        ? previewSpace.banner
+                        : `${previewSpace._instanceOrigin || ''}/api/uploads/${previewSpace.banner}`
+                    }
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full"
+                    style={{
+                      background: getSpaceGradient(previewSpace.id, previewSpace.name, previewSpace.avatarColor).gradient,
+                    }}
+                  />
+                )}
+              </div>
+              <div className="p-4 pt-0 relative">
+                <div className="-mt-7 mb-2 flex items-end justify-between">
+                  <div className="p-1 rounded-xl bg-surface-channel shadow-md">
+                    <Avatar
+                      src={previewSpace.icon}
+                      name={previewSpace.name}
+                      size={48}
+                      userId={previewSpace.id}
+                      avatarColor={previewSpace.avatarColor}
+                      palette="space"
+                    />
+                  </div>
+                  {previewSpace.category && (
+                    <span className="text-xs px-2.5 py-0.5 rounded bg-surface-elevated text-txt-secondary font-medium">
+                      {t(`spaces:explore.categories.${previewSpace.category as SpaceCategory}`)}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm text-txt-secondary">
+                  {previewSpace.fullDescription || previewSpace.description || t('spaces:explore.noDescription')}
+                </p>
+
+                {previewSpace.tags && previewSpace.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {previewSpace.tags.map((tag) => (
+                      <span key={tag} className="text-xs px-2 py-0.5 rounded bg-white/[0.04] text-txt-tertiary">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {previewSpace.rules && (
+                  <div className="mt-4 pt-3 border-t border-border-soft">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-txt-tertiary mb-1">
+                      {t('spaces:createPublic.fields.rules')}
+                    </div>
+                    <p className="text-xs text-txt-secondary whitespace-pre-line">{previewSpace.rules}</p>
+                  </div>
+                )}
+
+                <div className="mt-4 flex items-center justify-between text-xs text-txt-tertiary">
+                  <span>{t('spaces:explore.memberCount', { count: previewSpace.memberCount })}</span>
+                  {previewSpace.slug && <span className="font-mono">/{previewSpace.slug}</span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPreviewSpace(null)}
+                className="px-4 py-2 text-sm text-txt-secondary hover:text-txt-primary"
+              >
+                {t('common:actions.close')}
+              </button>
+              {previewSpace.visibility === 'public' && (
+                <button
+                  type="button"
+                  onClick={handlePreviewJoin}
+                  disabled={previewJoining}
+                  className="px-4 py-2 bg-accent-primary hover:bg-accent-primary/85 text-white text-sm font-medium rounded transition-colors disabled:opacity-50"
+                >
+                  {previewJoining ? t('spaces:explore.joining') : t('spaces:explore.join')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

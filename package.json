@@ -1,6 +1,6 @@
 {
   "name": "concord",
-  "version": "1.0.0",
+  "version": "1.12.0",
   "private": true,
   "description": "Nuvio — Plataforma moderna de comunicação em tempo real (voz, vídeo, compartilhamento de tela e chat social)",
   "license": "AGPL-3.0",
@@ -21,7 +21,7 @@
     "lint:prune": "eslint . --prune-suppressions",
     "test": "pnpm -r test",
     "dev:desktop": "pnpm --filter @concord/desktop dev",
-    "build:desktop": "pnpm --filter @concord/desktop build",
+    "build:desktop": "pnpm --filter @concord/shared build && pnpm --filter @concord/web build && pnpm --filter @concord/desktop build",
     "gen-icons": "node scripts/gen-icons.mjs",
     "gen-social-preview": "node scripts/gen-social-preview.mjs",
     "bump": "node scripts/bump-version.mjs"

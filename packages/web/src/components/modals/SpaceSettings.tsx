@@ -14,7 +14,7 @@ import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { OverviewPanel, MembersPanel, RolesPanel, BansPanel, SettingsPanelSuspense } from './lazySettingsPanels';
 import { useVisibilityOptions } from './spaceSettingsPanels/spaceOptions';
 import { ListInDirectoryConfirm } from './DirectoryConfirmations';
-import type { SpaceVisibility, JoinRequest, InstanceStreamingLimits } from '@concord/shared';
+import { isPublicSpace, type SpaceVisibility, type JoinRequest, type InstanceStreamingLimits } from '@concord/shared';
 
 const DESCRIPTION_MAX_LENGTH = 200;
 
@@ -624,6 +624,8 @@ export function SpaceSettingsModal() {
   const canManageSpace = hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_SPACE);
   const canManageRoles = hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_ROLES);
   const canBanMembers = hasPermissionBit(mySpacePerms, PermissionBits.BAN_MEMBERS);
+  const spaceIsPublic = space ? isPublicSpace(space) : false;
+  const canSeeDiscovery = canManageSpace && spaceIsPublic;
 
   // Reset tab and mobile view when modal opens. A caller may name the tab
   // to open on (`openModal('spaceSettings', { tab: 'discovery' })`); a tab
@@ -635,7 +637,7 @@ export function SpaceSettingsModal() {
     const allowed: Record<SpaceSettingsTab, boolean> = {
       overview: true,
       appearance: canManageSpace,
-      discovery: canManageSpace,
+      discovery: canSeeDiscovery,
       members: true,
       roles: canManageRoles,
       bans: canBanMembers,
@@ -687,7 +689,7 @@ export function SpaceSettingsModal() {
             {canManageSpace && (
               <button onClick={() => handleTabClick('appearance')} className={tabClass('appearance')}>{t('spaces:settings.nav.tabs.appearance', { defaultValue: 'Aparência' })}</button>
             )}
-            {canManageSpace && (
+            {canSeeDiscovery && (
               <button onClick={() => handleTabClick('discovery')} className={tabClass('discovery')}>{t('spaces:settings.nav.tabs.discovery')}</button>
             )}
 
@@ -727,7 +729,7 @@ export function SpaceSettingsModal() {
               {canManageSpace && (
                 <button onClick={() => handleTabClick('appearance')} className={tabClass('appearance')}>{t('spaces:settings.nav.tabs.appearance', { defaultValue: 'Aparência' })}</button>
               )}
-              {canManageSpace && (
+              {canSeeDiscovery && (
                 <button onClick={() => handleTabClick('discovery')} className={tabClass('discovery')}>{t('spaces:settings.nav.tabs.discovery')}</button>
               )}
 
@@ -764,7 +766,7 @@ export function SpaceSettingsModal() {
               <SettingsPanelSuspense key={tab}>
                 {tab === 'overview' && <OverviewPanel spaceId={currentSpaceId} mode="all" />}
                 {tab === 'appearance' && canManageSpace && <OverviewPanel spaceId={currentSpaceId} mode="appearance" />}
-                {tab === 'discovery' && canManageSpace && <DiscoveryPanel spaceId={currentSpaceId} />}
+                {tab === 'discovery' && canSeeDiscovery && <DiscoveryPanel spaceId={currentSpaceId} />}
                 {tab === 'members' && <MembersPanel spaceId={currentSpaceId} />}
                 {tab === 'roles' && canManageRoles && <RolesPanel spaceId={currentSpaceId} />}
                 {tab === 'bans' && canBanMembers && <BansPanel spaceId={currentSpaceId} />}

@@ -8,20 +8,19 @@ import { useTransferStore } from '../../stores/transferStore';
 import { useNavigate } from 'react-router-dom';
 import { waitForTransferAttachment } from '../../utils/waitForTransfer';
 import { AVATAR_COLORS } from '@concord/shared';
-import type { SpaceVisibility, AvatarColor } from '@concord/shared';
+import type { AvatarColor } from '@concord/shared';
 import { SPACE_GRADIENT_MAP, getSpaceGradient } from '../../utils/gradients';
 import { describeError } from '../../i18n/errors';
-import { useAvatarColorNames, useVisibilityOptions } from './spaceSettingsPanels/spaceOptions';
+import { useAvatarColorNames } from './spaceSettingsPanels/spaceOptions';
 
 const DESCRIPTION_MAX_LENGTH = 200;
 
 export function CreateSpaceModal() {
   const { t } = useTranslation(['spaces', 'common']);
-  const visibilityOptions = useVisibilityOptions();
   const colorNames = useAvatarColorNames();
   const [name, setName] = useState('');
-  const [visibility, setVisibility] = useState<SpaceVisibility>('private');
   const [description, setDescription] = useState('');
+  const [generateInvite, setGenerateInvite] = useState(true);
   const [iconFilename, setIconFilename] = useState<string | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -84,8 +83,8 @@ export function CreateSpaceModal() {
   const handleClose = () => {
     closeModal();
     setName('');
-    setVisibility('private');
     setDescription('');
+    setGenerateInvite(true);
     setIconFilename(null);
     if (iconPreview) URL.revokeObjectURL(iconPreview);
     setIconPreview(null);
@@ -109,8 +108,9 @@ export function CreateSpaceModal() {
         name: name.trim(),
         icon: iconFilename ?? undefined,
         avatarColor,
-        visibility,
+        visibility: 'private',
         description: description.trim() || undefined,
+        generateInvite,
       });
       handleClose();
       navigate(`/channels/${space.id}`);
@@ -225,39 +225,7 @@ export function CreateSpaceModal() {
           />
         </div>
 
-        {/* Visibility */}
-        <div className="mb-4">
-          <div className="text-[11px] text-txt-tertiary font-semibold uppercase tracking-wider mb-2">
-            {t('spaces:create.visibilityLabel')}
-          </div>
-          <div className="space-y-1.5">
-            {visibilityOptions.map((opt) => (
-              <label
-                key={opt.value}
-                className={`flex items-start gap-3 p-2.5 rounded cursor-pointer transition-colors ${
-                  visibility === opt.value
-                    ? 'bg-interactive-selected'
-                    : 'hover:bg-interactive-hover'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="create-visibility"
-                  value={opt.value}
-                  checked={visibility === opt.value}
-                  onChange={() => setVisibility(opt.value)}
-                  className="mt-0.5 accent-accent-primary"
-                />
-                <div>
-                  <div className="text-sm font-medium text-txt-primary">{opt.label}</div>
-                  <div className="text-xs text-txt-tertiary">{opt.desc}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Description */}
+        {/* Description (optional) */}
         <div className="mb-4">
           <div className="text-[11px] text-txt-tertiary font-semibold uppercase tracking-wider mb-1.5">
             {t('spaces:create.description.label')}
@@ -272,6 +240,26 @@ export function CreateSpaceModal() {
           <div className="text-[11px] text-txt-tertiary text-right">
             {t('spaces:create.description.counter', { length: description.length, max: DESCRIPTION_MAX_LENGTH })}
           </div>
+        </div>
+
+        {/* Initial Invite Setting */}
+        <div className="mb-4 p-3 rounded-lg bg-surface-layer/60 border border-border-subtle">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={generateInvite}
+              onChange={(e) => setGenerateInvite(e.target.checked)}
+              className="mt-0.5 accent-accent-primary rounded"
+            />
+            <div>
+              <div className="text-xs font-semibold text-txt-primary">
+                {t('spaces:create.inviteSetting.label')}
+              </div>
+              <div className="text-[11px] text-txt-tertiary mt-0.5">
+                {t('spaces:create.inviteSetting.description')}
+              </div>
+            </div>
+          </label>
         </div>
 
         {/* Actions */}

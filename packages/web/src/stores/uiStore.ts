@@ -5,6 +5,7 @@ import type { AnchorRect, Placement } from '../hooks/useFloatingPosition';
 
 type ModalType =
   | 'createSpace'
+  | 'createPublicSpace'
   | 'joinSpace'
   | 'createChannel'
   | 'createCategory'

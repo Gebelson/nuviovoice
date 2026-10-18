@@ -1,0 +1,59 @@
+name: Release Nuvio Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag da versão para publicar (ex: v1.12.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    name: Build & Publish Windows Installer
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared package
+        run: pnpm --filter @concord/shared build
+
+      - name: Run TypeScript checks
+        run: pnpm -r typecheck
+
+      - name: Run Desktop & Update unit tests
+        run: pnpm --filter @concord/desktop test
+
+      - name: Build shared Web frontend
+        run: pnpm --filter @concord/web build
+
+      - name: Build & Package Nuvio Desktop (Windows NSIS + Updater Metadata)
+        working-directory: packages/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          node scripts/copy-web.js
+          pnpm exec tsc
+          pnpm exec electron-builder --win --x64 --publish always

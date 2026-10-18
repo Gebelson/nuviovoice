@@ -25,6 +25,7 @@ export interface OuterCardProps {
 export interface SpaceCardProps {
   space: TaggedExploreSpace;
   onJoinSuccess: (spaceId: string) => void;
+  onPreviewSpace?: (space: TaggedExploreSpace) => void;
   outer?: OuterCardProps;
 }
 
@@ -36,6 +37,7 @@ export function outerEntryToSpace(entry: DirectoryEntry): TaggedExploreSpace {
 export function SpaceCard({
   space,
   onJoinSuccess,
+  onPreviewSpace,
   outer,
 }: SpaceCardProps) {
   const { t } = useTranslation(['spaces', 'common']);
@@ -177,14 +179,34 @@ export function SpaceCard({
 
       {/* Content */}
       <div className="px-4 pt-2 pb-4 flex flex-col flex-1">
-        <h3 className="text-[15px] font-bold text-txt-primary truncate mb-1">{space.name}</h3>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <h3 className="text-[15px] font-bold text-txt-primary truncate">{space.name}</h3>
+          {space.category && (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-surface-elevated text-txt-secondary font-medium flex-shrink-0">
+              {t(`spaces:explore.categories.${space.category as import('@concord/shared').SpaceCategory}`)}
+            </span>
+          )}
+        </div>
 
         {space.description ? (
-          <p className="text-[13px] text-txt-secondary line-clamp-2 mb-3 flex-1">
+          <p className="text-[13px] text-txt-secondary line-clamp-2 mb-2.5 flex-1">
             {space.description}
           </p>
         ) : (
-          <p className="text-[13px] text-txt-tertiary italic mb-3 flex-1">{t('spaces:explore.noDescription')}</p>
+          <p className="text-[13px] text-txt-tertiary italic mb-2.5 flex-1">{t('spaces:explore.noDescription')}</p>
+        )}
+
+        {space.tags && space.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2.5">
+            {space.tags.slice(0, 4).map((tag) => (
+              <span
+                key={tag}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-txt-tertiary"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
         )}
 
         <div className="flex items-center gap-3 text-[12px] text-txt-tertiary mb-3">
@@ -233,20 +255,31 @@ export function SpaceCard({
             {t('spaces:explore.viewSpace')}
           </button>
         ) : isPublic ? (
-          <button
-            onClick={handlePublicJoin}
-            disabled={joining}
-            className="w-full py-2 bg-accent-primary hover:bg-accent-primary-hover text-white text-sm font-medium rounded transition-colors disabled:opacity-50"
-          >
-            {joining ? (
-              <span className="flex items-center justify-center gap-2">
-                <LoadingSpinner />
-                {t('spaces:explore.joining')}
-              </span>
-            ) : (
-              t('spaces:explore.join')
+          <div className="flex gap-2">
+            {onPreviewSpace && (
+              <button
+                type="button"
+                onClick={() => onPreviewSpace(space)}
+                className="px-3 py-2 bg-surface-elevated hover:bg-surface-elevated/80 border border-border-soft text-txt-primary text-sm font-medium rounded transition-colors"
+              >
+                {t('spaces:explore.viewSpace')}
+              </button>
             )}
-          </button>
+            <button
+              onClick={handlePublicJoin}
+              disabled={joining}
+              className="flex-1 py-2 bg-accent-primary hover:bg-accent-primary-hover text-white text-sm font-medium rounded transition-colors disabled:opacity-50"
+            >
+              {joining ? (
+                <span className="flex items-center justify-center gap-2">
+                  <LoadingSpinner />
+                  {t('spaces:explore.joining')}
+                </span>
+              ) : (
+                t('spaces:explore.join')
+              )}
+            </button>
+          </div>
         ) : isPending ? (
           <button
             disabled
@@ -280,12 +313,23 @@ export function SpaceCard({
             </div>
           </div>
         ) : (
-          <button
-            onClick={openRequestForm}
-            className="w-full py-2 bg-accent-amber/20 hover:bg-accent-amber/30 text-accent-amber text-sm font-medium rounded transition-colors"
-          >
-            {t('spaces:explore.requestToJoin')}
-          </button>
+          <div className="flex gap-2">
+            {onPreviewSpace && (
+              <button
+                type="button"
+                onClick={() => onPreviewSpace(space)}
+                className="px-3 py-2 bg-surface-elevated hover:bg-surface-elevated/80 border border-border-soft text-txt-primary text-sm font-medium rounded transition-colors"
+              >
+                {t('spaces:explore.viewSpace')}
+              </button>
+            )}
+            <button
+              onClick={openRequestForm}
+              className="flex-1 py-2 bg-accent-amber/20 hover:bg-accent-amber/30 text-accent-amber text-sm font-medium rounded transition-colors"
+            >
+              {t('spaces:explore.requestToJoin')}
+            </button>
+          </div>
         )}
       </div>
     </div>

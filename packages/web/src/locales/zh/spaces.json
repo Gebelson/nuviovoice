@@ -1,6 +1,6 @@
 {
   "create": {
-    "title": "创建空间",
+    "title": "Criar espaço privado",
     "icon": {
       "upload": "上传",
       "previewAlt": "图标预览",
@@ -19,8 +19,13 @@
       "placeholder": "为您的空间写一段简短介绍…",
       "counter": "{{length}}/{{max}}"
     },
-    "submit": "创建",
-    "submitting": "正在创建…"
+    "submit": "Criar espaço privado",
+    "submitting": "正在创建…",
+    "subtitle": "Espaços privados são gratuitos e exclusivos para amigos, grupos fechados e equipes por convite.",
+    "inviteSetting": {
+      "label": "Gerar convite inicial automaticamente",
+      "description": "Cria um link de convite pronto para compartilhar assim que o espaço for criado."
+    }
   },
   "channel": {
     "create": {
@@ -256,6 +261,25 @@
       "pending": "待处理",
       "request": "申请",
       "sending": "正在发送…"
+    },
+    "createPublicSpace": "Criar espaço público",
+    "categories": {
+      "all": "Todas",
+      "gaming": "Jogos",
+      "music": "Música",
+      "education": "Educação",
+      "science_tech": "Ciência e Tecnologia",
+      "entertainment": "Entretenimento",
+      "art_design": "Arte e Design",
+      "sports": "Esportes",
+      "community": "Comunidade",
+      "other": "Outros"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "popular": "Mais populares",
+      "relevant": "Mais relevantes",
+      "recent": "Mais recentes"
     }
   },
   "settings": {
@@ -500,7 +524,7 @@
   },
   "sidebar": {
     "directMessages": "私信列表",
-    "addSpace": "添加空间",
+    "addSpace": "Criar espaço privado",
     "joinSpace": "加入空间",
     "exploreSpaces": "探索空间",
     "folder": {
@@ -718,5 +742,61 @@
     "formatNote": "导出规格 1800 × 480 像素 • WebP 85%",
     "saving": "正在保存...",
     "saveAction": "保存封面"
+  },
+  "createPublic": {
+    "title": "Criar espaço público",
+    "subtitle": "Crie uma comunidade aberta e listada na página Explorar para que qualquer pessoa possa descobrir.",
+    "steps": {
+      "info": "Informações",
+      "identity": "Identidade visual",
+      "settings": "Configurações",
+      "preview": "Pré-visualização",
+      "confirm": "Criar espaço"
+    },
+    "fields": {
+      "name": "Nome do espaço",
+      "namePlaceholder": "Comunidade Oficial",
+      "slug": "Identificador público (slug)",
+      "slugHint": "Usado no endereço público do espaço (apenas letras, números e hífens).",
+      "category": "Categoria principal",
+      "shortDescription": "Descrição curta (card do Explorar)",
+      "shortDescriptionPlaceholder": "Resumo que aparece no card da página Explorar...",
+      "fullDescription": "Descrição completa",
+      "fullDescriptionPlaceholder": "Apresente sua comunidade em detalhes...",
+      "tags": "Tags / palavras-chave",
+      "tagsPlaceholder": "Ex.: games, dev, musica (pressione Enter)",
+      "addTag": "Adicionar",
+      "entryMode": "Modo de entrada de membros",
+      "initialPermissions": "Permissões iniciais dos membros",
+      "rules": "Regras da comunidade",
+      "rulesPlaceholder": "1. Seja respeitoso com todos os membros...",
+      "slugPlaceholder": "meu-espaco-publico"
+    },
+    "slugAvailable": "Disponível",
+    "slugTaken": "Indisponível",
+    "uploadAvatar": "Enviar avatar",
+    "entryModes": {
+      "openTitle": "Entrada aberta",
+      "openDesc": "Qualquer pessoa pode entrar imediatamente pela página Explorar.",
+      "approvalTitle": "Entrada mediante aprovação",
+      "approvalDesc": "Visível em Explorar, mas novos membros precisam ter a solicitação aprovada."
+    },
+    "permissions": {
+      "standardTitle": "Padrão da comunidade",
+      "standardDesc": "Novos membros podem enviar mensagens, falar em canais de voz e compartilhar tela.",
+      "restrictedTitle": "Restrito (somente leitura inicial)",
+      "restrictedDesc": "Novos membros podem visualizar canais e conectar em voz, mas dependem de cargo para enviar mensagens."
+    },
+    "previewHint": "Veja como o card do seu espaço público será exibido na página Explorar:",
+    "publishNotice": "Ao confirmar, seu espaço público será publicado imediatamente na página Explorar e adicionado à área de espaços públicos na sua barra lateral.",
+    "nextStep": "Continuar",
+    "submit": "Criar espaço público",
+    "errors": {
+      "nameRequired": "O nome do espaço público é obrigatório.",
+      "slugInvalid": "Informe um identificador válido (3 a 48 caracteres: letras, números e hífens).",
+      "slugTaken": "Este identificador público já está em uso.",
+      "descriptionRequired": "A descrição curta é obrigatória para listagem no Explorar.",
+      "notEligible": "Sua conta não está elegível para criar um espaço público no momento."
+    }
   }
 }

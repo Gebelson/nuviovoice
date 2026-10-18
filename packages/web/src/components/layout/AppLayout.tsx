@@ -10,6 +10,7 @@ import { RightPanel } from './RightPanel';
 import { MobileShell } from './MobileShell';
 import { ImagePreview } from '../chat/ImagePreview';
 import { CreateSpaceModal } from '../modals/CreateSpace';
+import { CreatePublicSpaceModal } from '../modals/CreatePublicSpaceModal';
 import { JoinSpaceModal } from '../modals/JoinSpace';
 import { CreateChannelModal } from '../modals/CreateChannel';
 import { CreateCategoryModal } from '../modals/CreateCategory';
@@ -287,6 +288,11 @@ export function AppLayout() {
     return () => window.removeEventListener('resize', checkMobile);
   }, [setIsMobile]);
 
+  // Initial authoritative snapshot of joined spaces
+  useEffect(() => {
+    useSpaceStore.getState().loadSpaces().catch(() => {});
+  }, []);
+
   // Handle route params
   useEffect(() => {
     if (spaceId === '@me') {
@@ -412,6 +418,7 @@ export function AppLayout() {
         <MobileShell />
         {/* Modals still render globally for both mobile and desktop */}
         <CreateSpaceModal />
+        <CreatePublicSpaceModal />
         <JoinSpaceModal />
         <CreateChannelModal />
         <CreateCategoryModal />
@@ -465,6 +472,7 @@ export function AppLayout() {
 
       {/* Modals */}
       <CreateSpaceModal />
+      <CreatePublicSpaceModal />
       <JoinSpaceModal />
       <CreateChannelModal />
       <CreateCategoryModal />

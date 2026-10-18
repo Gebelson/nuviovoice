@@ -779,6 +779,8 @@ function registerIpcHandlers(): void {
       backendHost: host,
       isDesktop: true,
       version: app.getVersion(),
+      buildId: `nuvio-${app.getVersion()}-${process.platform}-${process.arch}`,
+      updateChannel: 'stable',
     };
   });
 
@@ -865,13 +867,7 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.on('check-for-updates', () => {
-    if (getUpdateCapability() === 'external') return;
-    try {
-      const { autoUpdater } = require('electron-updater');
-      autoUpdater.checkForUpdates().catch(() => {});
-    } catch {
-      // Auto-updater not available
-    }
+    void triggerUpdateCheck();
   });
 
   ipcMain.handle('get-update-status', () => getUpdateStore().get());
@@ -1149,6 +1145,84 @@ function notifyAboutUpdate(
   );
 }
 
+function compareSemver(a: string, b: string): number {
+  const pa = a.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = b.replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+function markUpToDate(store: UpdateStatusStore): void {
+  recoveryStore.update({ updateState: 'idle', lastCheckResult: 'up-to-date' });
+  store.setStatus({ phase: 'up-to-date', checkedAt: Date.now() });
+  setTimeout(() => {
+    if (recoveryStore.get().lastCheckResult === 'up-to-date') {
+      recoveryStore.update({ lastCheckResult: null });
+    }
+    if (store.get().status.phase === 'up-to-date') {
+      store.setStatus({ phase: 'idle' });
+    }
+  }, 15_000);
+}
+
+async function verifyAgainstGitHubReleases(store: UpdateStatusStore): Promise<boolean> {
+  try {
+    const res = await net.fetch('https://api.github.com/repos/Gebelson/nuviovoice/releases/latest', {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': `Nuvio-Desktop/${app.getVersion()}` },
+    });
+    if (res.status === 404) {
+      // No releases published yet -> current build is the latest version
+      markUpToDate(store);
+      return true;
+    }
+    if (!res.ok) return false;
+    const data = (await res.json()) as { tag_name?: unknown };
+    const latestTag = typeof data.tag_name === 'string' ? data.tag_name.replace(/^v/i, '').trim() : '';
+    if (!latestTag || compareSemver(latestTag, app.getVersion()) <= 0) {
+      markUpToDate(store);
+      return true;
+    }
+    // A newer release exists on GitHub
+    const capability = getUpdateCapability();
+    if (capability === 'manual' || !app.isPackaged) {
+      recoveryStore.update({ updateState: 'available-manual', updateVersion: latestTag });
+      store.setStatus({ phase: 'available', version: latestTag });
+      mainWindow?.webContents.send('update-available', { version: latestTag });
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+async function triggerUpdateCheck(): Promise<void> {
+  const capability = getUpdateCapability();
+  if (capability === 'external') return;
+  const store = getUpdateStore();
+  recoveryStore.update({ updateState: 'checking', lastCheckResult: null });
+  store.setStatus({ phase: 'checking' });
+
+  if (!app.isPackaged) {
+    const resolved = await verifyAgainstGitHubReleases(store);
+    if (!resolved) markUpToDate(store);
+    return;
+  }
+
+  try {
+    const { autoUpdater } = require('electron-updater');
+    await autoUpdater.checkForUpdates();
+  } catch {
+    const resolved = await verifyAgainstGitHubReleases(store);
+    if (!resolved) {
+      store.setStatus({ phase: 'failed', version: null, message: 'Update check failed' });
+    }
+  }
+}
+
 function initAutoUpdater(): void {
   const capability = getUpdateCapability();
   const store = getUpdateStore();
@@ -1162,31 +1236,17 @@ function initAutoUpdater(): void {
   try {
     const { autoUpdater } = require('electron-updater');
 
-    // A build that cannot install its own updates must not download them.
-    //
-    // With autoDownload on, an ad-hoc signed macOS build pulls the full release
-    // archive, hands it to Squirrel.Mac, and Squirrel rejects it because the
-    // running app's designated requirement is a literal cdhash that no other
-    // build can satisfy. The archive then sits on disk forever (228 MB measured
-    // on a real machine, since it is stored twice) and the whole cycle repeats
-    // on the next check. Turning the download off removes the wasted transfer,
-    // the wasted disk, and the spurious install error all at once.
     autoUpdater.autoDownload = capability === 'auto';
     autoUpdater.autoInstallOnAppQuit = capability === 'auto';
 
     if (capability === 'manual') {
-      // Reclaim whatever earlier versions of this app already stranded.
       purgeUpdaterCache(process.resourcesPath);
     }
 
     setAutoUpdater(autoUpdater);
 
     let updateConfirmed = false;
-    // The version the current check cycle is about. `download-progress` and the
-    // `error` event carry no version of their own, so it is tracked here.
     let pendingVersion: string | null = null;
-    // Last percent pushed to the renderer. download-progress fires per chunk;
-    // only whole-percent changes are worth an IPC message.
     let lastPercent = -1;
 
     autoUpdater.on('checking-for-update', () => {
@@ -1199,8 +1259,6 @@ function initAutoUpdater(): void {
     autoUpdater.on('update-available', (info: { version: string }) => {
       const version = info.version.slice(0, 32);
       pendingVersion = version;
-      // Only an auto-capable build is about to attempt anything, so only there
-      // can a later error be an install failure worth reporting.
       updateConfirmed = capability === 'auto';
 
       if (capability === 'auto') {
@@ -1213,8 +1271,6 @@ function initAutoUpdater(): void {
 
       mainWindow?.webContents.send('update-available', { version });
 
-      // In manual mode this is the end of the line, so this is the moment to
-      // tell the user. In auto mode the notification waits for the download.
       if (capability === 'manual') {
         notifyAboutUpdate(store.get(), autoUpdater);
       }
@@ -1223,16 +1279,7 @@ function initAutoUpdater(): void {
     autoUpdater.on('update-not-available', () => {
       updateConfirmed = false;
       pendingVersion = null;
-      recoveryStore.update({ updateState: 'idle', lastCheckResult: 'up-to-date' });
-      store.setStatus({ phase: 'up-to-date', checkedAt: Date.now() });
-      setTimeout(() => {
-        if (recoveryStore.get().lastCheckResult === 'up-to-date') {
-          recoveryStore.update({ lastCheckResult: null });
-        }
-        if (store.get().status.phase === 'up-to-date') {
-          store.setStatus({ phase: 'idle' });
-        }
-      }, 5_000);
+      markUpToDate(store);
     });
 
     autoUpdater.on('download-progress', (progress: { percent?: number; bytesPerSecond?: number }) => {
@@ -1260,48 +1307,50 @@ function initAutoUpdater(): void {
     autoUpdater.on('error', (err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
       const code = extractErrorCode(err);
-      recoveryStore.update({
-        updateState: 'error',
-        lastUpdateError: { message, code, at: Date.now() },
-        lastCheckResult: 'failed',
-      });
-      setTimeout(() => {
-        if (recoveryStore.get().lastCheckResult === 'failed') {
-          recoveryStore.update({ lastCheckResult: null });
-        }
-      }, 5_000);
 
       if (updateConfirmed) {
-        // An update was actually being applied. This is news.
+        recoveryStore.update({
+          updateState: 'error',
+          lastUpdateError: { message, code, at: Date.now() },
+          lastCheckResult: 'failed',
+        });
         store.setStatus({ phase: 'failed', version: pendingVersion, message });
         mainWindow?.webContents.send('update-error', { message, releaseUrl: RELEASES_URL });
         notifyAboutUpdate(store.get(), autoUpdater);
         return;
       }
 
-      // A check-phase failure: nothing was attempted, so there is nothing for
-      // the user to act on. Recorded with no version, which keeps it out of the
-      // toast (see shouldPromptForUpdate) while the settings panel still shows
-      // it. Interrupting someone because a background poll hit a flaky network
-      // is exactly the kind of noise this rewrite is removing.
-      store.setStatus({ phase: 'failed', version: null, message });
+      // Check-phase failure (e.g. 404 when no release or latest.yml exists yet):
+      // fallback to GitHub Releases API check before declaring failure.
+      void verifyAgainstGitHubReleases(store).then((resolved) => {
+        if (resolved) return;
+        recoveryStore.update({
+          updateState: 'error',
+          lastUpdateError: { message, code, at: Date.now() },
+          lastCheckResult: 'failed',
+        });
+        setTimeout(() => {
+          if (recoveryStore.get().lastCheckResult === 'failed') {
+            recoveryStore.update({ lastCheckResult: null });
+          }
+        }, 5_000);
+        store.setStatus({ phase: 'failed', version: null, message });
+      });
     });
 
-    // Initial check with 10s delay (existing behavior)
+    // Initial check after startup (non-blocking)
     setTimeout(() => {
       updateConfirmed = false;
-      autoUpdater.checkForUpdates().catch(() => {});
-    }, 10_000);
+      void triggerUpdateCheck();
+    }, 6_000);
 
-    // Periodic check every 4 hours (existing behavior)
+    // Periodic check every 4 hours
     setInterval(() => {
       updateConfirmed = false;
-      autoUpdater.checkForUpdates().catch(() => {});
+      void triggerUpdateCheck();
     }, 4 * 60 * 60 * 1000);
   } catch {
-    // Auto-updater unavailable — recovery surface still functions, just
-    // without update affordances. autoUpdaterRef stays null; recovery action
-    // handlers no-op on update-related actions.
+    // Auto-updater unavailable
   }
 }
 
@@ -1416,9 +1465,30 @@ if (!gotTheLock) {
       applyEditOnlyMenu();
     }
 
-    // Purge ALL stale caches so Electron always loads fresh code on launch
-    await session.defaultSession.clearStorageData({ storages: ['serviceworkers'] });
-    await session.defaultSession.clearCache();
+    // Versioned cache invalidation: purge stale HTTP/ServiceWorker/CacheStorage on version upgrade
+    // while strictly preserving localStorage (auth tokens, user settings, audio prefs) and IndexedDB.
+    try {
+      const versionStampPath = path.join(app.getPath('userData'), 'app-version.json');
+      const currentVer = app.getVersion();
+      let previousVer: string | null = null;
+      try {
+        const parsed = JSON.parse(fs.readFileSync(versionStampPath, 'utf-8')) as { version?: string };
+        previousVer = parsed.version ?? null;
+      } catch {}
+      if (previousVer !== currentVer) {
+        await session.defaultSession.clearStorageData({
+          storages: ['serviceworkers', 'cachestorage', 'shadercache'],
+        });
+        await session.defaultSession.clearCache();
+        fs.writeFileSync(versionStampPath, JSON.stringify({ version: currentVer, updatedAt: Date.now() }));
+      } else {
+        await session.defaultSession.clearStorageData({ storages: ['serviceworkers'] });
+        await session.defaultSession.clearCache();
+      }
+    } catch {
+      await session.defaultSession.clearStorageData({ storages: ['serviceworkers'] });
+      await session.defaultSession.clearCache();
+    }
 
     // Register custom protocol handler for nuvio-app://
     protocol.handle('nuvio-app', async (request) => {

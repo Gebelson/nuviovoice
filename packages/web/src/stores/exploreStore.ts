@@ -82,6 +82,8 @@ interface ExploreState {
    * that space having been deleted.
    */
   unansweredOrigins: string[];
+  selectedCategory: string;
+  sortBy: 'popular' | 'relevant' | 'recent';
 
   fetchSpaces: (query?: string) => Promise<void>;
   fetchMyRequests: () => Promise<void>;
@@ -96,6 +98,8 @@ interface ExploreState {
    */
   requestJoinSpace: (spaceId: string, origin: string, message?: string) => Promise<JoinRequest>;
   setSearchQuery: (q: string) => void;
+  setSelectedCategory: (category: string) => void;
+  setSortBy: (sort: 'popular' | 'relevant' | 'recent') => void;
   reset: () => void;
 }
 
@@ -161,6 +165,8 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
   totalAll: 0,
   error: null,
   unansweredOrigins: [],
+  selectedCategory: 'all',
+  sortBy: 'popular',
 
   fetchSpaces: async (query?: string) => {
     const seq = ++fetchSeq;
@@ -170,17 +176,17 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
 
     try {
       const connectedInstances = getConnectedInstances();
+      const { selectedCategory, sortBy } = get();
+      const opts = {
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        sort: sortBy,
+      };
 
-      // Home plus every connected remote instance, asked in parallel. Each
-      // call settles into a tagged result instead of rejecting, so a client
-      // that did not answer carries its own origin: `Promise.allSettled`
-      // gives a rejected slot no identity beyond its index, and the page has
-      // to name the host it could not reach.
       const fanOut: { origin: string; list: () => Promise<ExploreListResult> }[] = [
-        { origin: '', list: () => api.explore.list(query) },
+        { origin: '', list: () => api.explore.list(query, 50, 0, opts) },
         ...connectedInstances.map(inst => ({
           origin: inst.origin,
-          list: () => inst.api.explore.list(query),
+          list: () => inst.api.explore.list(query, 50, 0, opts),
         })),
       ];
 
@@ -329,6 +335,8 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
   },
 
   setSearchQuery: (q: string) => set({ searchQuery: q }),
+  setSelectedCategory: (selectedCategory: string) => set({ selectedCategory }),
+  setSortBy: (sortBy: 'popular' | 'relevant' | 'recent') => set({ sortBy }),
 
   reset: () => {
     // Orphan whatever is in flight: its answer belongs to the state this
@@ -345,6 +353,8 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
       totalAll: 0,
       error: null,
       unansweredOrigins: [],
+      selectedCategory: 'all',
+      sortBy: 'popular',
     });
   },
 }));

@@ -218,6 +218,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     resetUserStores();
     localStorage.setItem('backspace_token', token);
     set({ token, user, trueHomeStatus: seedTrueHomeStatus(user), myRowIds: new Map(), isLoading: false });
+    useSpaceStore.getState().loadSpaces().catch(() => {});
     useInstanceStore.getState().autoConnectAll().catch(() => {});
   },
 
@@ -260,6 +261,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // A value already in the page (the true home's report, or the kept
       // report a sign-in started from, with its expiry) is kept as it is.
       set({ user, trueHomeStatus: get().trueHomeStatus ?? seedTrueHomeStatus(user), isLoading: false });
+      // Load authoritative spaces snapshot from backend
+      useSpaceStore.getState().loadSpaces().catch(() => {});
       // Auto-connect to remote instances (fire-and-forget)
       useInstanceStore.getState().autoConnectAll().catch(() => {});
     } catch {

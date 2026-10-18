@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Space, Channel, ChannelCategory, MemberWithUser, SpaceWithChannelsAndMembers, Role, SpaceFolder, SpaceLayoutItem, DmChannel, DmMessageWithUser, User, UpdateSpaceRequest, CreateSpaceRequest, UpdateChannelRequest } from '@concord/shared';
+import type { Space, Channel, ChannelCategory, MemberWithUser, SpaceWithChannelsAndMembers, Role, SpaceFolder, SpaceLayoutItem, DmChannel, DmMessageWithUser, User, UpdateSpaceRequest, CreateSpaceRequest, CreatePublicSpaceRequest, UpdateChannelRequest } from '@concord/shared';
 import { api, BackspaceApiClient, HttpError } from '../api/client';
 import { JoinRequestRequiredError } from '../utils/joinErrors';
 import { resolveAssetUrl, normalizeUserAssets } from '../utils/assetUrls';
@@ -435,6 +435,7 @@ interface SpaceState {
    */
   loadSpaceDetail: (spaceId: string, options?: { quiet?: boolean }) => Promise<Channel[] | undefined>;
   createSpace: (data: CreateSpaceRequest) => Promise<Space>;
+  createPublicSpace: (data: CreatePublicSpaceRequest) => Promise<Space>;
   updateSpace: (spaceId: string, data: UpdateSpaceRequest) => Promise<void>;
   deleteSpace: (spaceId: string) => Promise<void>;
   joinSpace: (spaceId: string, inviteCode: string) => Promise<void>;
@@ -745,12 +746,23 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
 
   loadSpaces: async () => {
     try {
-      const spaces =await api.spaces.list();
-      set((state) => ({
-        spaces: spaces.map(s => ({ ...s, _instanceOrigin: '' })) as TaggedSpace[],
-      }));
-    } catch {
-      // Silently fail - will be populated from WS ready
+      const spaces = await api.spaces.list();
+      const currentSpaces = get().spaces;
+      const spaceById = new Map(currentSpaces.map(s => [s.id, s]));
+      const existingFromOtherOrigins = currentSpaces.filter(s => s._instanceOrigin !== '');
+      const homeSpaces: TaggedSpace[] = spaces.map(s => {
+        const existing = spaceById.get(s.id);
+        return {
+          ...s,
+          _instanceOrigin: '',
+          myRoleIds: existing?.myRoleIds ?? [],
+        };
+      });
+      set({
+        spaces: [...existingFromOtherOrigins, ...homeSpaces],
+      });
+    } catch (err) {
+      console.warn('[SpaceStore] Failed to load spaces from API:', err);
     }
   },
 
@@ -848,6 +860,13 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
 
   createSpace: async (data: CreateSpaceRequest) => {
     const space = await api.spaces.create(data);
+    const tagged: TaggedSpace = { ...space, _instanceOrigin: '' };
+    set((state) => ({ spaces: [...state.spaces, tagged] }));
+    return space;
+  },
+
+  createPublicSpace: async (data: CreatePublicSpaceRequest) => {
+    const space = await api.spaces.createPublic(data);
     const tagged: TaggedSpace = { ...space, _instanceOrigin: '' };
     set((state) => ({ spaces: [...state.spaces, tagged] }));
     return space;

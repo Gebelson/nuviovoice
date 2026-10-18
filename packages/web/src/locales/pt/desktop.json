@@ -7,16 +7,16 @@
       "body": "O Nuvio {{version}} foi baixado, mas a instalação falhou. Você pode instalá-lo manualmente."
     },
     "ready": {
-      "title": "Atualização pronta",
-      "body": "O Nuvio {{version}} foi baixado e está pronto para instalar."
+      "title": "Atualização pronta para instalar.",
+      "body": "Uma nova versão do Nuvio ({{version}}) foi baixada com melhorias e novidades. Reinicie para aplicar."
     },
     "available": {
-      "title": "O Nuvio {{version}} está disponível",
-      "body": "Esta versão não consegue se atualizar sozinha, então baixe a nova versão para atualizar.",
-      "bodyWithCurrent": "Você está na versão {{currentVersion}}. Esta versão não consegue se atualizar sozinha, então baixe a nova versão para atualizar."
+      "title": "Uma nova versão do Nuvio ({{version}}) está disponível!",
+      "body": "Esta atualização traz melhorias de estabilidade e novos recursos. Baixe a nova versão para continuar.",
+      "bodyWithCurrent": "Você está na versão {{currentVersion}}. Uma nova versão do Nuvio está disponível para download."
     },
-    "restartNow": "Reiniciar agora",
-    "download": "Baixar",
-    "later": "Depois"
+    "restartNow": "Atualizar agora",
+    "download": "Atualizar agora",
+    "later": "Mais tarde"
   }
 }

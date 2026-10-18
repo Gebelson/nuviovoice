@@ -18,6 +18,8 @@ import type {
   DmChannel,
   DmMessageWithUser,
   CreateSpaceRequest,
+  CreatePublicSpaceRequest,
+  PublicSpaceEligibilityResponse,
   UpdateSpaceRequest,
   CreateChannelRequest,
   UpdateChannelRequest,
@@ -256,6 +258,9 @@ export class BackspaceApiClient {
     list: () => Promise<Space[]>;
     get: (id: string) => Promise<SpaceWithChannelsAndMembers>;
     create: (data: CreateSpaceRequest) => Promise<Space>;
+    createPublic: (data: CreatePublicSpaceRequest) => Promise<Space>;
+    checkPublicEligibility: () => Promise<PublicSpaceEligibilityResponse>;
+    checkSlug: (slug: string, excludeId?: string) => Promise<{ available: boolean; normalizedSlug: string; reason?: string }>;
     update: (id: string, data: UpdateSpaceRequest) => Promise<Space>;
     delete: (id: string) => Promise<{ success: boolean }>;
     invite: (id: string) => Promise<{ inviteCode: string }>;
@@ -369,7 +374,13 @@ export class BackspaceApiClient {
   };
 
   readonly explore: {
-    list: (q?: string, limit?: number, offset?: number) => Promise<{ spaces: ExploreSpace[]; total: number; totalAll: number; discoveryEnabled: boolean }>;
+    list: (
+      q?: string,
+      limit?: number,
+      offset?: number,
+      opts?: { category?: string; sort?: 'popular' | 'relevant' | 'recent' },
+    ) => Promise<{ spaces: ExploreSpace[]; total: number; totalAll: number; discoveryEnabled: boolean }>;
+    preview: (spaceId: string) => Promise<ExploreSpace & { channels?: Array<{ id: string; name: string; type: string; topic: string | null }> }>;
     publicJoin: (spaceId: string) => Promise<SpaceWithChannelsAndMembers>;
     requestJoin: (spaceId: string, message?: string) => Promise<JoinRequest>;
     getJoinRequests: (spaceId: string, status?: string) => Promise<{ requests: JoinRequest[] }>;
@@ -603,6 +614,16 @@ export class BackspaceApiClient {
       list: () => request<Space[]>('GET', '/spaces'),
       get: (id: string) => request<SpaceWithChannelsAndMembers>('GET', `/spaces/${id}`),
       create: (data: CreateSpaceRequest) => request<Space>('POST', '/spaces', data),
+      createPublic: (data: CreatePublicSpaceRequest) => request<Space>('POST', '/spaces/public', data),
+      checkPublicEligibility: () => request<PublicSpaceEligibilityResponse>('GET', '/spaces/public/eligibility'),
+      checkSlug: (slug: string, excludeId?: string) => {
+        const params = new URLSearchParams({ slug });
+        if (excludeId) params.set('excludeId', excludeId);
+        return request<{ available: boolean; normalizedSlug: string; reason?: string }>(
+          'GET',
+          `/spaces/public/check-slug?${params}`,
+        );
+      },
       update: (id: string, data: UpdateSpaceRequest) => request<Space>('PATCH', `/spaces/${id}`, data),
       delete: (id: string) => request<{ success: boolean }>('DELETE', `/spaces/${id}`),
       invite: (id: string) => request<{ inviteCode: string }>('POST', `/spaces/${id}/invite`),
@@ -813,15 +834,21 @@ export class BackspaceApiClient {
     };
 
     this.explore = {
-      list: (q?: string, limit = 50, offset = 0) => {
+      list: (q?: string, limit = 50, offset = 0, opts?: { category?: string; sort?: 'popular' | 'relevant' | 'recent' }) => {
         const params = new URLSearchParams();
         if (q) params.set('q', q);
+        if (opts?.category && opts.category !== 'all') params.set('category', opts.category);
+        if (opts?.sort) params.set('sort', opts.sort);
         params.set('limit', String(limit));
         params.set('offset', String(offset));
         return request<{ spaces: ExploreSpace[]; total: number; totalAll: number; discoveryEnabled: boolean }>(
           'GET', `/spaces/explore?${params}`
         );
       },
+      preview: (spaceId: string) =>
+        request<ExploreSpace & { channels?: Array<{ id: string; name: string; type: string; topic: string | null }> }>(
+          'GET', `/spaces/${encodeURIComponent(spaceId)}/public-preview`
+        ),
       publicJoin: (spaceId: string) =>
         request<SpaceWithChannelsAndMembers>('POST', `/spaces/${spaceId}/public-join`),
       requestJoin: (spaceId: string, message?: string) =>
@@ -1002,10 +1029,9 @@ function handleUnauthorized(): void {
   }
 }
 
-const defaultApiBase =
-  typeof window !== 'undefined' && (window as any).nuvioConfig?.backendUrl
-    ? `${(window as any).nuvioConfig.backendUrl}/api`
-    : '/api';
+import { getResolvedApiBase } from '../config/backend';
+
+const defaultApiBase = getResolvedApiBase();
 
 export const api = new BackspaceApiClient(
   defaultApiBase,

@@ -67,6 +67,8 @@ export const users = sqliteTable('users', {
 export const spaces = sqliteTable('spaces', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  type: text('type').notNull().default('private'),
+  slug: text('slug'),
   icon: text('icon'),
   banner: text('banner'),
   avatarColor: text('avatar_color'),
@@ -76,8 +78,17 @@ export const spaces = sqliteTable('spaces', {
   visibility: text('visibility').default('private'),
   directoryListed: integer('directory_listed').notNull().default(0),
   description: text('description'),
+  fullDescription: text('full_description'),
+  category: text('category'),
+  tags: text('tags').default('[]'),
+  rules: text('rules'),
+  publicationStatus: text('publication_status').notNull().default('draft'),
+  publishedAt: integer('published_at'),
   createdAt: integer('created_at').notNull(),
-});
+}, (table) => ({
+  typePubIdx: index('idx_spaces_type_pub_status').on(table.type, table.publicationStatus),
+  slugUniqueIdx: uniqueIndex('idx_spaces_slug').on(table.slug),
+}));
 
 export const spaceMembers = sqliteTable('space_members', {
   spaceId: text('space_id').notNull().references(() => spaces.id, { onDelete: 'cascade' }),

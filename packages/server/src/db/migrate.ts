@@ -100,3 +100,103 @@ export function backfillOneOnOneDmMembership(db: Database.Database): void {
   run();
   if (restored > 0) console.log(`[backfill] restored ${restored} deleted-partner DM membership row(s)`);
 }
+
+export function slugifySpaceName(name: string, fallbackId: string): string {
+  const base = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 32);
+  const suffix = fallbackId.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toLowerCase() || 'space';
+  return base ? `${base}-${suffix}` : `space-${suffix}`;
+}
+
+/**
+ * Idempotent boot pass that classifies existing spaces into `type = 'public'`
+ * (`publication_status = 'published'`) vs `type = 'private'` (`publication_status = 'draft'`)
+ * based on their existing visibility, ensuring zero data loss and conservative
+ * privacy for ambiguous rows.
+ */
+export function migrateExistingSpacesSeparation(
+  db: Database.Database,
+  opts?: { beforeChanges?: () => void },
+): number {
+  // Find legacy public spaces (`visibility IN ('public', 'request')`) that still have the default `type = 'private'`
+  const needsPublicMigration = db.prepare(`
+    SELECT id, name, visibility, type, slug, category, publication_status, published_at, created_at
+    FROM spaces
+    WHERE visibility IN ('public', 'request')
+      AND (type IS NULL OR type = 'private')
+  `).all() as Array<{
+    id: string;
+    name: string;
+    visibility: string;
+    type: string;
+    slug: string | null;
+    category: string | null;
+    publication_status: string;
+    published_at: number | null;
+    created_at: number;
+  }>;
+
+  // Find private spaces (`visibility NOT IN ('public', 'request')` or NULL) that have inconsistent directory_listed or type
+  const needsPrivateSanitization = db.prepare(`
+    SELECT id
+    FROM spaces
+    WHERE (visibility IS NULL OR visibility NOT IN ('public', 'request'))
+      AND (type != 'private' OR directory_listed != 0 OR visibility IS NULL OR visibility != 'private')
+  `).all() as Array<{ id: string }>;
+
+  if (needsPublicMigration.length === 0 && needsPrivateSanitization.length === 0) {
+    return 0;
+  }
+
+  opts?.beforeChanges?.();
+
+  const updatePublic = db.prepare(`
+    UPDATE spaces
+    SET type = 'public',
+        slug = ?,
+        category = COALESCE(category, 'community'),
+        publication_status = 'published',
+        published_at = COALESCE(published_at, created_at)
+    WHERE id = ?
+  `);
+
+  const checkSlug = db.prepare(`SELECT id FROM spaces WHERE slug = ? AND id != ? LIMIT 1`);
+
+  const updatePrivate = db.prepare(`
+    UPDATE spaces
+    SET type = 'private',
+        visibility = 'private',
+        directory_listed = 0,
+        publication_status = 'draft',
+        slug = NULL
+    WHERE id = ?
+  `);
+
+  let changed = 0;
+  const run = db.transaction(() => {
+    for (const row of needsPublicMigration) {
+      let candidateSlug = row.slug || slugifySpaceName(row.name, row.id);
+      if (checkSlug.get(candidateSlug, row.id)) {
+        candidateSlug = `${candidateSlug}-${row.id.slice(0, 4).toLowerCase()}`;
+      }
+      updatePublic.run(candidateSlug, row.id);
+      changed++;
+    }
+    for (const row of needsPrivateSanitization) {
+      updatePrivate.run(row.id);
+      changed++;
+    }
+  });
+  run();
+
+  if (changed > 0) {
+    console.log(`[spaces-migration] classified/updated ${changed} existing space(s) into private/public separation`);
+  }
+  return changed;
+}
+

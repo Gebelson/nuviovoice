@@ -8,6 +8,7 @@ import { connectionManager } from '../ws/handler.js';
 import { sanitizeUser } from '../utils/sanitize.js';
 import { sendError } from '../utils/httpErrors.js';
 import { memberRolesView, rolesForViewer } from '../utils/permissionDataView.js';
+import { migrateExistingSpacesSeparation } from '../db/migrate.js';
 import type {
   ExploreSpace,
   JoinRequest,
@@ -15,6 +16,16 @@ import type {
   SpaceWithChannelsAndMembers,
   Channel,
 } from '@concord/shared';
+
+function parseTagsJson(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 function rowToJoinRequest(
   row: typeof schema.joinRequests.$inferSelect,
@@ -146,9 +157,16 @@ function buildFullSpace(spaceId: string, forUserId: string): SpaceWithChannelsAn
     }
   }
 
+  const effectiveType: SpaceWithChannelsAndMembers['type'] =
+    space.type === 'public' || space.visibility === 'public' || space.visibility === 'request'
+      ? 'public'
+      : 'private';
+
   return {
     id: space.id,
     name: space.name,
+    type: effectiveType,
+    slug: space.slug ?? null,
     icon: space.icon,
     banner: space.banner ?? null,
     avatarColor: (space.avatarColor as SpaceWithChannelsAndMembers['avatarColor']) ?? null,
@@ -158,6 +176,12 @@ function buildFullSpace(spaceId: string, forUserId: string): SpaceWithChannelsAn
     visibility: (space.visibility ?? 'private') as SpaceWithChannelsAndMembers['visibility'],
     directoryListed: space.directoryListed === 1,
     description: space.description ?? null,
+    fullDescription: space.fullDescription ?? null,
+    category: space.category ?? null,
+    tags: parseTagsJson(space.tags),
+    rules: space.rules ?? null,
+    publicationStatus: (space.publicationStatus as SpaceWithChannelsAndMembers['publicationStatus']) ?? (effectiveType === 'public' ? 'published' : 'draft'),
+    publishedAt: space.publishedAt ?? null,
     createdAt: space.createdAt,
     channels: visibleChannels,
     categories,
@@ -169,8 +193,16 @@ function buildFullSpace(spaceId: string, forUserId: string): SpaceWithChannelsAn
 
 export async function exploreRoutes(app: FastifyInstance): Promise<void> {
 
-  // GET /api/spaces/explore — list discoverable spaces
-  app.get<{ Querystring: { q?: string; limit?: string; offset?: string } }>('/api/spaces/explore', {
+  // GET /api/spaces/explore — list discoverable public spaces
+  app.get<{
+    Querystring: {
+      q?: string;
+      category?: string;
+      sort?: 'popular' | 'relevant' | 'recent';
+      limit?: string;
+      offset?: string;
+    };
+  }>('/api/spaces/explore', {
     preHandler: authenticate,
   }, async (request, reply) => {
     const db = getDb();
@@ -182,53 +214,81 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const q = request.query.q?.trim() ?? '';
+    const category = request.query.category?.trim() ?? '';
+    const sort = request.query.sort ?? 'popular';
     const limit = Math.min(Math.max(parseInt(request.query.limit ?? '50', 10) || 50, 1), 100);
     const offset = Math.max(parseInt(request.query.offset ?? '0', 10) || 0, 0);
 
-    // Get user's current space memberships to exclude
     const myMemberships = db.select({ spaceId: schema.spaceMembers.spaceId })
       .from(schema.spaceMembers)
       .where(eq(schema.spaceMembers.userId, request.userId))
       .all();
     const mySpaceIds = new Set(myMemberships.map(m => m.spaceId));
 
-    // Build raw SQL query for explore — we need a LEFT JOIN for member count
-    // which is more efficient to do with raw SQL
     const rawDb = getRawDb();
+    // Ensure any legacy public spaces are classified with type='public' and publication_status='published'
+    migrateExistingSpacesSeparation(rawDb);
 
-    // Count ALL discoverable spaces (including ones the user has joined) for context
+    const baseWhere = `s.type = 'public' AND s.publication_status = 'published' AND s.visibility IN ('public', 'request')`;
+
+    // Count ALL discoverable public spaces (including ones the user has joined) for context
     const totalAllRow = rawDb.prepare(
-      `SELECT COUNT(DISTINCT s.id) as total FROM spaces s WHERE s.visibility IN ('public', 'request')`
+      `SELECT COUNT(DISTINCT s.id) as total FROM spaces s WHERE ${baseWhere}`
     ).get() as { total: number };
 
-    let countSql = `SELECT COUNT(DISTINCT s.id) as total FROM spaces s WHERE s.visibility IN ('public', 'request')`;
+    let countSql = `SELECT COUNT(DISTINCT s.id) as total FROM spaces s WHERE ${baseWhere}`;
     let querySql = `
-      SELECT s.id, s.name, s.icon, s.banner, s.avatar_color, s.description, s.visibility, s.created_at,
+      SELECT s.id, s.name, s.type, s.slug, s.icon, s.banner, s.avatar_color,
+             s.description, s.full_description, s.category, s.tags, s.rules,
+             s.publication_status, s.published_at, s.visibility, s.created_at,
              COUNT(sm.user_id) as member_count
       FROM spaces s
       LEFT JOIN space_members sm ON sm.space_id = s.id
-      WHERE s.visibility IN ('public', 'request')
+      WHERE ${baseWhere}
     `;
 
-    const params: (string | number)[] = [];
+    const filterParams: (string | number)[] = [];
+
+    if (category && category !== 'all') {
+      querySql += ` AND s.category = ?`;
+      countSql += ` AND s.category = ?`;
+      filterParams.push(category);
+    }
 
     if (q) {
       const likePattern = `%${q}%`;
-      querySql += ` AND (s.name LIKE ? COLLATE NOCASE OR s.description LIKE ? COLLATE NOCASE)`;
-      countSql += ` AND (s.name LIKE ? COLLATE NOCASE OR s.description LIKE ? COLLATE NOCASE)`;
-      params.push(likePattern, likePattern);
+      const searchClause = ` AND (s.name LIKE ? COLLATE NOCASE OR s.description LIKE ? COLLATE NOCASE OR s.full_description LIKE ? COLLATE NOCASE OR s.slug LIKE ? COLLATE NOCASE OR s.tags LIKE ? COLLATE NOCASE)`;
+      querySql += searchClause;
+      countSql += searchClause;
+      filterParams.push(likePattern, likePattern, likePattern, likePattern, likePattern);
     }
 
-    querySql += ` GROUP BY s.id ORDER BY member_count DESC, s.created_at DESC LIMIT ? OFFSET ?`;
+    const queryParams = [...filterParams];
+    if (sort === 'recent') {
+      querySql += ` GROUP BY s.id ORDER BY COALESCE(s.published_at, s.created_at) DESC, member_count DESC LIMIT ? OFFSET ?`;
+    } else if (sort === 'relevant' && q) {
+      querySql += ` GROUP BY s.id ORDER BY CASE WHEN LOWER(s.name) = LOWER(?) THEN 0 WHEN LOWER(s.name) LIKE LOWER(?) THEN 1 ELSE 2 END ASC, member_count DESC, s.created_at DESC LIMIT ? OFFSET ?`;
+      queryParams.push(q, `${q}%`);
+    } else {
+      querySql += ` GROUP BY s.id ORDER BY member_count DESC, s.created_at DESC LIMIT ? OFFSET ?`;
+    }
 
-    const totalRow = rawDb.prepare(countSql).get(...params) as { total: number };
-    const rows = rawDb.prepare(querySql).all(...params, limit, offset) as {
+    const totalRow = rawDb.prepare(countSql).get(...filterParams) as { total: number };
+    const rows = rawDb.prepare(querySql).all(...queryParams, limit, offset) as {
       id: string;
       name: string;
+      type: string;
+      slug: string | null;
       icon: string | null;
       banner: string | null;
       avatar_color: string | null;
       description: string | null;
+      full_description: string | null;
+      category: string | null;
+      tags: string | null;
+      rules: string | null;
+      publication_status: string;
+      published_at: number | null;
       visibility: string;
       created_at: number;
       member_count: number;
@@ -237,10 +297,18 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
     const spaces: ExploreSpace[] = rows.map(r => ({
       id: r.id,
       name: r.name,
+      type: 'public',
+      slug: r.slug,
       icon: r.icon,
       banner: r.banner,
       avatarColor: (r.avatar_color as ExploreSpace['avatarColor']) ?? null,
       description: r.description,
+      fullDescription: r.full_description,
+      category: r.category,
+      tags: parseTagsJson(r.tags),
+      rules: r.rules,
+      publicationStatus: (r.publication_status as ExploreSpace['publicationStatus']) ?? 'published',
+      publishedAt: r.published_at,
       visibility: r.visibility as ExploreSpace['visibility'],
       memberCount: r.member_count,
       createdAt: r.created_at,
@@ -248,6 +316,70 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
     }));
 
     return reply.code(200).send({ spaces, total: totalRow.total, totalAll: totalAllRow.total, discoveryEnabled: true });
+  });
+
+  // GET /api/spaces/:id/public-preview — inspect a public space from Explore without joining it
+  app.get<{ Params: { id: string } }>('/api/spaces/:id/public-preview', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+    const rawDb = getRawDb();
+    migrateExistingSpacesSeparation(rawDb);
+
+    const space = db.select().from(schema.spaces).where(eq(schema.spaces.id, id)).get();
+    if (!space) {
+      return sendError(reply, 404, 'space_not_found');
+    }
+
+    if (
+      space.type !== 'public' ||
+      space.publicationStatus !== 'published' ||
+      (space.visibility !== 'public' && space.visibility !== 'request')
+    ) {
+      return sendError(reply, 403, 'space_not_public');
+    }
+
+    const memberCountRow = rawDb
+      .prepare(`SELECT COUNT(*) as cnt FROM space_members WHERE space_id = ?`)
+      .get(id) as { cnt: number };
+
+    const channels = db
+      .select({
+        id: schema.channels.id,
+        name: schema.channels.name,
+        type: schema.channels.type,
+        topic: schema.channels.topic,
+        position: schema.channels.position,
+      })
+      .from(schema.channels)
+      .where(eq(schema.channels.spaceId, id))
+      .orderBy(schema.channels.position)
+      .all();
+
+    const joined = isMember(id, request.userId);
+
+    return reply.code(200).send({
+      id: space.id,
+      name: space.name,
+      type: 'public',
+      slug: space.slug ?? null,
+      icon: space.icon,
+      banner: space.banner ?? null,
+      avatarColor: (space.avatarColor as ExploreSpace['avatarColor']) ?? null,
+      description: space.description ?? null,
+      fullDescription: space.fullDescription ?? null,
+      category: space.category ?? null,
+      tags: parseTagsJson(space.tags),
+      rules: space.rules ?? null,
+      publicationStatus: 'published',
+      publishedAt: space.publishedAt ?? null,
+      visibility: space.visibility as ExploreSpace['visibility'],
+      memberCount: memberCountRow?.cnt ?? 0,
+      createdAt: space.createdAt,
+      joined,
+      channels,
+    });
   });
 
   // POST /api/spaces/:id/public-join — join a public space without invite

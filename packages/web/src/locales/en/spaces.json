@@ -1,6 +1,6 @@
 {
   "create": {
-    "title": "Create a Space",
+    "title": "Create Private Space",
     "icon": {
       "upload": "Upload",
       "previewAlt": "Icon preview",
@@ -19,8 +19,13 @@
       "placeholder": "A short description for your space...",
       "counter": "{{length}}/{{max}}"
     },
-    "submit": "Create",
-    "submitting": "Creating..."
+    "submit": "Create Private Space",
+    "submitting": "Creating...",
+    "subtitle": "Private spaces are free and invite-only for friends, closed groups, and teams.",
+    "inviteSetting": {
+      "label": "Automatically generate initial invite link",
+      "description": "Creates a ready-to-share invite link as soon as the space is created."
+    }
   },
   "channel": {
     "create": {
@@ -259,6 +264,25 @@
       "pending": "Pending",
       "request": "Request",
       "sending": "Sending…"
+    },
+    "createPublicSpace": "Create Public Space",
+    "categories": {
+      "all": "All",
+      "gaming": "Gaming",
+      "music": "Music",
+      "education": "Education",
+      "science_tech": "Science & Tech",
+      "entertainment": "Entertainment",
+      "art_design": "Art & Design",
+      "sports": "Sports",
+      "community": "Community",
+      "other": "Other"
+    },
+    "sort": {
+      "label": "Sort by",
+      "popular": "Most Popular",
+      "relevant": "Most Relevant",
+      "recent": "Most Recent"
     }
   },
   "settings": {
@@ -505,7 +529,7 @@
   },
   "sidebar": {
     "directMessages": "Direct Messages",
-    "addSpace": "Add a Space",
+    "addSpace": "Create Private Space",
     "joinSpace": "Join a Space",
     "exploreSpaces": "Explore Spaces",
     "folder": {
@@ -731,5 +755,61 @@
     "formatNote": "Export at 1800 × 480 px • WebP 85%",
     "saving": "Saving...",
     "saveAction": "Save cover"
+  },
+  "createPublic": {
+    "title": "Create Public Space",
+    "subtitle": "Build an open community listed on the Explore page for anyone to discover.",
+    "steps": {
+      "info": "Information",
+      "identity": "Visual Identity",
+      "settings": "Settings",
+      "preview": "Preview",
+      "confirm": "Create Space"
+    },
+    "fields": {
+      "name": "Space Name",
+      "namePlaceholder": "Official Community",
+      "slug": "Public Identifier (slug)",
+      "slugHint": "Used in the public space URL (lowercase letters, numbers, and hyphens).",
+      "category": "Primary Category",
+      "shortDescription": "Short Description (Explore card)",
+      "shortDescriptionPlaceholder": "Short summary shown on the Explore card...",
+      "fullDescription": "Full Description",
+      "fullDescriptionPlaceholder": "Describe your community in detail...",
+      "tags": "Tags / Keywords",
+      "tagsPlaceholder": "e.g. gaming, dev, music (press Enter)",
+      "addTag": "Add",
+      "entryMode": "Member Entry Mode",
+      "initialPermissions": "Initial Member Permissions",
+      "rules": "Community Rules",
+      "rulesPlaceholder": "1. Be respectful to all members...",
+      "slugPlaceholder": "my-public-space"
+    },
+    "slugAvailable": "Available",
+    "slugTaken": "Taken",
+    "uploadAvatar": "Upload Avatar",
+    "entryModes": {
+      "openTitle": "Open Entry",
+      "openDesc": "Anyone can join immediately from the Explore page.",
+      "approvalTitle": "Approval Required",
+      "approvalDesc": "Listed in Explore, but new members must have their join request approved."
+    },
+    "permissions": {
+      "standardTitle": "Standard Community",
+      "standardDesc": "New members can send messages, speak in voice channels, and share their screen.",
+      "restrictedTitle": "Restricted (Read-Only Initially)",
+      "restrictedDesc": "New members can view channels and join voice, but require a role to send messages."
+    },
+    "previewHint": "Here is how your public space card will appear on the Explore page:",
+    "publishNotice": "Once confirmed, your public space will be published on the Explore page and added to the public spaces section of your sidebar.",
+    "nextStep": "Continue",
+    "submit": "Create Public Space",
+    "errors": {
+      "nameRequired": "Public space name is required.",
+      "slugInvalid": "Please enter a valid identifier (3-48 characters: lowercase letters, numbers, hyphens).",
+      "slugTaken": "This public identifier is already taken.",
+      "descriptionRequired": "A short description is required for listing in Explore.",
+      "notEligible": "Your account is not currently eligible to create a public space."
+    }
   }
 }

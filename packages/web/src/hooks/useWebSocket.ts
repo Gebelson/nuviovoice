@@ -122,16 +122,14 @@ function stopHeartbeat(conn: ConnectionState): void {
   }
 }
 
+import { getResolvedWsUrl } from '../config/backend';
+
 // ─── WS URL construction ─────────────────────────────────────────────────────
 
 function buildWsUrl(origin: string): string {
   if (!origin) {
-    if (typeof window !== 'undefined' && (window as any).nuvioConfig?.wsUrl) {
-      return `${(window as any).nuvioConfig.wsUrl}/ws`;
-    }
-    // Home instance — derive from current page
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.host}/ws`;
+    const resolvedWs = getResolvedWsUrl();
+    return `${resolvedWs}/ws`;
   }
   // Remote instance — derive from origin URL
   const url = new URL(origin);
@@ -843,18 +841,29 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       break;
     }
 
-    case 'member_joined':
+    case 'member_joined': {
       if (!isHome) normalizeUserAssets(event.member.user, origin);
       upsertUserView(event.member.user, origin);
       if (isLoadedRosterSpace(event.spaceId, origin)) addMember(event.spaceId, event.member);
+      const myId = isHome ? useAuthStore.getState().user?.id : getMyUserIdForOrigin(origin);
+      if (event.member.userId === myId) {
+        void useSpaceStore.getState().loadSpaces();
+      }
       break;
+    }
 
     case 'member_updated':
       if (event.spaceId === event.member.spaceId) applySpaceMemberUpdate(origin, event.member);
       break;
-    case 'member_left':
+
+    case 'member_left': {
       if (isLoadedRosterSpace(event.spaceId, origin)) removeMember(event.spaceId, event.userId);
+      const myId = isHome ? useAuthStore.getState().user?.id : getMyUserIdForOrigin(origin);
+      if (event.userId === myId) {
+        useSpaceStore.getState().removeSpace(event.spaceId);
+      }
       break;
+    }
 
     case 'member_banned': {
       // The current user has been banned from a space — remove it from the sidebar

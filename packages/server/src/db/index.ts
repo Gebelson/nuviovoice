@@ -4,7 +4,7 @@ import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { config } from '../config.js';
 import * as schema from './schema.js';
-import { ensureDefaults, backfillOneOnOneDmMembership } from './migrate.js';
+import { ensureDefaults, backfillOneOnOneDmMembership, migrateExistingSpacesSeparation } from './migrate.js';
 import { normalizeAllRolePositions } from './rolePositions.js';
 import { normalizeStoredPermissions } from './permissionStrings.js';
 import { setWorkerId } from '../utils/snowflake.js';
@@ -113,6 +113,10 @@ export function initDatabase() {
   if (permissionValuesRewritten > 0) {
     console.log(`[permissions] rewrote ${permissionValuesRewritten} stored permission value(s) to canonical form`);
   }
+
+  migrateExistingSpacesSeparation(sqlite, {
+    beforeChanges: snapshotBefore('private/public spaces classification'),
+  });
 
   // Initialize Snowflake worker ID from persisted value
   const settings = sqlite.prepare('SELECT worker_id FROM instance_settings WHERE id = 1').get() as { worker_id: number } | undefined;

@@ -122,10 +122,48 @@ export interface UserWithPassword extends User {
 // ─── Space (Community) Types ─────────────────────────────────────────────────
 
 export type SpaceVisibility = 'public' | 'request' | 'private';
+export type SpaceType = 'private' | 'public';
+export type PublicationStatus = 'draft' | 'published' | 'suspended';
+
+export const SPACE_CATEGORIES = [
+  'gaming',
+  'music',
+  'education',
+  'science_tech',
+  'entertainment',
+  'art_design',
+  'sports',
+  'community',
+  'other',
+] as const;
+
+export type SpaceCategory = (typeof SPACE_CATEGORIES)[number];
+
+export interface PublicSpaceProfile {
+  spaceId: string;
+  slug: string | null;
+  shortDescription: string | null;
+  fullDescription: string | null;
+  category: SpaceCategory | string | null;
+  tags: string[];
+  coverUrl: string | null;
+  rules: string | null;
+  memberEntryMode: 'public' | 'request';
+  publicationStatus: PublicationStatus;
+  publishedAt: number | null;
+}
+
+export interface PublicSpaceEligibilityResponse {
+  allowed: boolean;
+  reason?: string;
+  code?: string;
+}
 
 export interface Space {
   id: string;
   name: string;
+  type?: SpaceType;
+  slug?: string | null;
   icon: string | null;
   banner: string | null;
   avatarColor: AvatarColor | null;
@@ -140,6 +178,12 @@ export interface Space {
   visibility: SpaceVisibility;
   directoryListed: boolean;
   description: string | null;
+  fullDescription?: string | null;
+  category?: SpaceCategory | string | null;
+  tags?: string[];
+  rules?: string | null;
+  publicationStatus?: PublicationStatus;
+  publishedAt?: number | null;
   createdAt: number;
 }
 
@@ -159,15 +203,24 @@ export interface InvitePreview {
    * to a request when the join answers `join_request_required`.
    */
   visibility?: SpaceVisibility;
+  type?: SpaceType;
 }
 
 export interface ExploreSpace {
   id: string;
   name: string;
+  type?: SpaceType;
+  slug?: string | null;
   icon: string | null;
   banner: string | null;
   avatarColor: AvatarColor | null;
   description: string | null;
+  fullDescription?: string | null;
+  category?: SpaceCategory | string | null;
+  tags?: string[];
+  rules?: string | null;
+  publicationStatus?: PublicationStatus;
+  publishedAt?: number | null;
   visibility: SpaceVisibility;
   memberCount: number;
   createdAt: number;
@@ -870,6 +923,22 @@ export interface CreateSpaceRequest {
   avatarColor?: string;
   visibility?: SpaceVisibility;
   description?: string;
+  generateInvite?: boolean;
+}
+
+export interface CreatePublicSpaceRequest {
+  name: string;
+  slug: string;
+  description: string;
+  fullDescription?: string;
+  category: SpaceCategory | string;
+  tags?: string[];
+  rules?: string;
+  icon?: string;
+  banner?: string;
+  avatarColor?: string;
+  visibility?: 'public' | 'request';
+  initialPermissions?: 'standard' | 'restricted';
 }
 
 export interface CreateChannelRequest {
@@ -890,12 +959,27 @@ export interface UpdateChannelRequest {
 export interface UpdateSpaceRequest {
   ownerTitle?: string | null;
   name?: string;
+  slug?: string | null;
   icon?: string;
   banner?: string;
   avatarColor?: string;
   visibility?: SpaceVisibility;
   directoryListed?: boolean;
   description?: string;
+  fullDescription?: string | null;
+  category?: SpaceCategory | string | null;
+  tags?: string[];
+  rules?: string | null;
+  publicationStatus?: PublicationStatus;
+}
+
+export function isPublicSpace(space: {
+  type?: SpaceType | string | null;
+  visibility?: SpaceVisibility | string | null;
+}): boolean {
+  if (space.type === 'public') return true;
+  if (space.type === 'private') return false;
+  return space.visibility === 'public' || space.visibility === 'request';
 }
 
 export interface UpdateUserRequest {

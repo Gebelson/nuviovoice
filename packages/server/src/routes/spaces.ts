@@ -16,6 +16,7 @@ import { resizeProfileImage } from '../utils/thumbnail.js';
 import { config } from '../config.js';
 import type {
   CreateSpaceRequest,
+  CreatePublicSpaceRequest,
   UpdateSpaceRequest,
   JoinSpaceRequest,
   Space,
@@ -25,7 +26,7 @@ import type {
   SpaceWithChannelsAndMembers,
   Role,
 } from '@concord/shared';
-import { AVATAR_COLORS } from '@concord/shared';
+import { AVATAR_COLORS, SPACE_CATEGORIES } from '@concord/shared';
 import { sanitizeUser } from '../utils/sanitize.js';
 import { checkVoicePermissions } from '../ws/events.js';
 import { getLocalInvitePreview } from '../utils/spaceInviteSnapshot.js';
@@ -35,11 +36,46 @@ import { canActOnMemberInSpace, canManageRoleInSpace, getHierarchyStanding } fro
 import { canActOnMember, canManageRoleAt } from '@concord/shared/src/permissions.js';
 import { moveRoleToPosition, normalizeRolePositions, positionNextTo } from '../db/rolePositions.js';
 import { memberRolesView, roleView, rolesForViewer, viewerReadsPermissionData } from '../utils/permissionDataView.js';
+import { canCreatePublicSpace, withPublicSpaceCreationLock } from '../services/publicSpaceEligibility.js';
+
+export function normalizeSpaceSlug(raw: string): string {
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+export function isValidSpaceSlug(slug: string): boolean {
+  return slug.length >= 3 && slug.length <= 40 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
+}
+
+function parseTagsJson(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 function rowToSpace(row: typeof schema.spaces.$inferSelect): Space {
+  const effectiveType: Space['type'] =
+    row.type === 'public' || row.type === 'private'
+      ? row.type
+      : row.visibility === 'public' || row.visibility === 'request'
+        ? 'public'
+        : 'private';
   return {
     id: row.id,
     name: row.name,
+    type: effectiveType,
+    slug: row.slug ?? null,
     icon: row.icon,
     banner: row.banner ?? null,
     avatarColor: (row.avatarColor as Space['avatarColor']) ?? null,
@@ -49,6 +85,12 @@ function rowToSpace(row: typeof schema.spaces.$inferSelect): Space {
     visibility: (row.visibility ?? 'private') as Space['visibility'],
     directoryListed: row.directoryListed === 1,
     description: row.description ?? null,
+    fullDescription: row.fullDescription ?? null,
+    category: row.category ?? null,
+    tags: parseTagsJson(row.tags),
+    rules: row.rules ?? null,
+    publicationStatus: (row.publicationStatus as Space['publicationStatus']) ?? (effectiveType === 'public' ? 'published' : 'draft'),
+    publishedAt: row.publishedAt ?? null,
     createdAt: row.createdAt,
   };
 }
@@ -225,11 +267,13 @@ function admitByInvite(spaceId: string, userId: string): void {
 }
 
 export async function spaceRoutes(app: FastifyInstance): Promise<void> {
-  // POST /api/spaces - Create a new server
-  app.post<{ Body: CreateSpaceRequest }>('/api/spaces', {
-    preHandler: authenticate,
-  }, async (request, reply) => {
-    const { name, icon, banner, avatarColor, visibility, description } = request.body;
+  // Helper handler for creating a Private Space (shared by POST /api/spaces and POST /api/spaces/private)
+  const createPrivateSpaceHandler = async (
+    request: import('fastify').FastifyRequest<{ Body: CreateSpaceRequest }>,
+    reply: import('fastify').FastifyReply,
+  ) => {
+    const bodyRecord = (request.body ?? {}) as unknown as Record<string, unknown>;
+    const { name, icon, banner, avatarColor, visibility, description, generateInvite } = request.body ?? ({} as CreateSpaceRequest);
 
     if (!name || typeof name !== 'string') {
       return sendError(reply, 400, 'space_name_required');
@@ -240,9 +284,13 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 400, 'space_name_length', { min: 1, max: 100 });
     }
 
-    // Validate visibility
-    const validVisibilities = ['public', 'request', 'private'];
-    const safeVisibility = visibility && validVisibilities.includes(visibility) ? visibility : 'private';
+    // Private space endpoint strictly forbids creating public/request spaces
+    if (
+      bodyRecord.type === 'public' ||
+      (visibility !== undefined && visibility !== 'private')
+    ) {
+      return sendError(reply, 400, 'space_visibility_invalid');
+    }
 
     // Validate description
     const safeDescription = description ? description.trim().slice(0, 200) || null : null;
@@ -259,20 +307,29 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
     const channelId = generateSnowflake();
     const voiceChannelId = generateSnowflake();
     const now = Date.now();
-    const inviteCode = generateInviteCode();
+    const inviteCode = generateInvite === false ? null : generateInviteCode();
 
-    // Create server, owner membership, default categories + channels, and @everyone role atomically
+    // Create private space, owner membership, default categories + channels, and @everyone role atomically
     db.transaction((tx) => {
       tx.insert(schema.spaces).values({
         id: spaceId,
         name: trimmedName,
+        type: 'private',
+        slug: null,
         icon: icon ?? null,
-        banner: banner ?? null,
+        banner: null, // Private space creation does not set public cover banner
         avatarColor: safeAvatarColor,
         ownerId: request.userId,
         inviteCode,
-        visibility: safeVisibility,
+        visibility: 'private',
+        directoryListed: 0,
         description: safeDescription,
+        fullDescription: null,
+        category: null,
+        tags: '[]',
+        rules: null,
+        publicationStatus: 'draft',
+        publishedAt: null,
         createdAt: now,
       }).run();
 
@@ -341,12 +398,26 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
     // Register the creator in connectionManager so they receive WS broadcasts for this space
     connectionManager.addUserSpace(request.userId, spaceId);
 
-    // Clean up attachment records for icon/banner — reference is now in spaces table
+    // Notify creator's other connected clients (desktop/web/mobile) about the new membership
+    const creatorUser = db.select().from(schema.users).where(eq(schema.users.id, request.userId)).get();
+    if (creatorUser) {
+      connectionManager.sendToUser(request.userId, {
+        type: 'member_joined',
+        spaceId,
+        member: {
+          spaceId,
+          userId: request.userId,
+          nickname: null,
+          roles: [],
+          joinedAt: now,
+          user: sanitizeUser(creatorUser, false),
+        },
+      });
+    }
+
+    // Clean up attachment records for icon — reference is now in spaces table
     if (icon && typeof icon === 'string' && icon.includes('/api/uploads/')) {
       deleteAttachmentByFilename(icon);
-    }
-    if (banner && typeof banner === 'string' && banner.includes('/api/uploads/')) {
-      deleteAttachmentByFilename(banner);
     }
 
     // Resize profile images to optimal dimensions
@@ -354,12 +425,289 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
       const filePath = path.join(config.uploadDir, path.basename(icon));
       await resizeProfileImage(filePath, 'icon');
     }
-    if (banner && typeof banner === 'string' && !banner.startsWith('http')) {
-      const filePath = path.join(config.uploadDir, path.basename(banner));
-      await resizeProfileImage(filePath, 'banner');
-    }
 
     return reply.code(201).send(rowToSpace(server));
+  };
+
+  // POST /api/spaces & POST /api/spaces/private - Create a new Private Space
+  app.post<{ Body: CreateSpaceRequest }>('/api/spaces', {
+    preHandler: authenticate,
+  }, createPrivateSpaceHandler);
+
+  app.post<{ Body: CreateSpaceRequest }>('/api/spaces/private', {
+    preHandler: authenticate,
+  }, createPrivateSpaceHandler);
+
+  // GET /api/spaces/public/eligibility - Check if user can create a Public Space (monetization extension point)
+  app.get('/api/spaces/public/eligibility', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const eligibility = await canCreatePublicSpace(request.userId);
+    return reply.code(200).send(eligibility);
+  });
+
+  // GET /api/spaces/public/check-slug - Check availability of a Public Space slug
+  app.get<{ Querystring: { slug?: string; excludeId?: string } }>('/api/spaces/public/check-slug', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const rawSlug = request.query.slug ?? '';
+    const normalizedSlug = normalizeSpaceSlug(rawSlug);
+    if (!isValidSpaceSlug(normalizedSlug)) {
+      return reply.code(200).send({
+        available: false,
+        normalizedSlug,
+        reason: 'invalid_format',
+      });
+    }
+    const db = getDb();
+    const existing = db
+      .select({ id: schema.spaces.id })
+      .from(schema.spaces)
+      .where(eq(schema.spaces.slug, normalizedSlug))
+      .get();
+
+    const available = !existing || (request.query.excludeId ? existing.id === request.query.excludeId : false);
+    return reply.code(200).send({
+      available,
+      normalizedSlug,
+      reason: available ? undefined : 'slug_taken',
+    });
+  });
+
+  // POST /api/spaces/public - Create and publish a new Public Space for Explore
+  app.post<{ Body: CreatePublicSpaceRequest }>('/api/spaces/public', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const lockOutcome = await withPublicSpaceCreationLock(request.userId, async () => {
+      const eligibility = await canCreatePublicSpace(request.userId);
+      if (!eligibility.allowed) {
+        return { status: 403 as const, code: (eligibility.code as ErrorCode) || 'forbidden', error: eligibility.reason };
+      }
+
+      const {
+        name,
+        slug,
+        description,
+        fullDescription,
+        category,
+        tags,
+        rules,
+        icon,
+        banner,
+        avatarColor,
+        visibility,
+        initialPermissions,
+      } = request.body ?? ({} as CreatePublicSpaceRequest);
+
+      if (!name || typeof name !== 'string') {
+        return { status: 400 as const, code: 'space_name_required' as const };
+      }
+
+      const trimmedName = name.trim();
+      if (trimmedName.length < 1 || trimmedName.length > 100) {
+        return { status: 400 as const, code: 'space_name_length' as const, details: { min: 1, max: 100 } };
+      }
+
+      if (!slug || typeof slug !== 'string') {
+        return { status: 400 as const, code: 'validation_failed' as const, error: 'Public space identifier (slug) is required' };
+      }
+
+      const normalizedSlug = normalizeSpaceSlug(slug);
+      if (!isValidSpaceSlug(normalizedSlug)) {
+        return { status: 400 as const, code: 'validation_failed' as const, error: 'Public space identifier (slug) must be 3-40 lowercase alphanumeric characters or hyphens' };
+      }
+
+      if (!description || typeof description !== 'string' || !description.trim()) {
+        return { status: 400 as const, code: 'validation_failed' as const, error: 'Short description is required for public spaces' };
+      }
+      const safeDescription = description.trim().slice(0, 200);
+      const safeFullDescription = fullDescription && typeof fullDescription === 'string'
+        ? fullDescription.trim().slice(0, 2000) || null
+        : null;
+
+      if (!category || typeof category !== 'string' || !(SPACE_CATEGORIES as readonly string[]).includes(category)) {
+        return { status: 400 as const, code: 'validation_failed' as const, error: 'Valid category is required for public spaces' };
+      }
+
+      const safeTags: string[] = Array.isArray(tags)
+        ? tags
+            .filter((t): t is string => typeof t === 'string')
+            .map((t) => t.trim().slice(0, 24))
+            .filter(Boolean)
+            .slice(0, 8)
+        : [];
+
+      const safeRules = rules && typeof rules === 'string'
+        ? rules.trim().slice(0, 2000) || null
+        : null;
+
+      const safeVisibility: 'public' | 'request' =
+        visibility === 'request' ? 'request' : 'public';
+
+      const safeAvatarColor = avatarColor && (AVATAR_COLORS as readonly string[]).includes(avatarColor)
+        ? avatarColor
+        : AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+
+      const db = getDb();
+
+      // Verify slug uniqueness
+      const existingSlug = db
+        .select({ id: schema.spaces.id })
+        .from(schema.spaces)
+        .where(eq(schema.spaces.slug, normalizedSlug))
+        .get();
+      if (existingSlug) {
+        return { status: 400 as const, code: 'validation_failed' as const, error: 'This public identifier (slug) is already in use' };
+      }
+
+      const spaceId = generateSnowflake();
+      const textCategoryId = generateSnowflake();
+      const voiceCategoryId = generateSnowflake();
+      const channelId = generateSnowflake();
+      const voiceChannelId = generateSnowflake();
+      const now = Date.now();
+      const inviteCode = generateInviteCode();
+
+      let everyonePerms = DEFAULT_EVERYONE_PERMISSIONS;
+      if (initialPermissions === 'restricted') {
+        everyonePerms = DEFAULT_EVERYONE_PERMISSIONS & ~(PermissionBits.CREATE_INVITE | PermissionBits.MENTION_EVERYONE);
+      }
+
+      db.transaction((tx) => {
+        tx.insert(schema.spaces).values({
+          id: spaceId,
+          name: trimmedName,
+          type: 'public',
+          slug: normalizedSlug,
+          icon: icon ?? null,
+          banner: banner ?? null,
+          avatarColor: safeAvatarColor,
+          ownerId: request.userId,
+          inviteCode,
+          visibility: safeVisibility,
+          directoryListed: 0,
+          description: safeDescription,
+          fullDescription: safeFullDescription,
+          category,
+          tags: JSON.stringify(safeTags),
+          rules: safeRules,
+          publicationStatus: 'published',
+          publishedAt: now,
+          createdAt: now,
+        }).run();
+
+        tx.insert(schema.spaceMembers).values({
+          spaceId,
+          userId: request.userId,
+          joinedAt: now,
+        }).run();
+
+        tx.insert(schema.channelCategories).values({
+          id: textCategoryId,
+          spaceId,
+          name: 'text-channels',
+          position: 0,
+          createdAt: now,
+        }).run();
+
+        tx.insert(schema.channelCategories).values({
+          id: voiceCategoryId,
+          spaceId,
+          name: 'voice-channels',
+          position: 1,
+          createdAt: now,
+        }).run();
+
+        tx.insert(schema.channels).values({
+          id: channelId,
+          spaceId,
+          name: 'general',
+          type: 'text',
+          position: 0,
+          categoryId: textCategoryId,
+          createdAt: now,
+        }).run();
+
+        tx.insert(schema.channels).values({
+          id: voiceChannelId,
+          spaceId,
+          name: 'voice',
+          type: 'voice',
+          position: 0,
+          categoryId: voiceCategoryId,
+          createdAt: now,
+        }).run();
+
+        tx.insert(schema.roles).values({
+          id: spaceId,
+          spaceId,
+          name: '@everyone',
+          color: '#b9bbbe',
+          position: 0,
+          permissions: permissionsToString(everyonePerms),
+          createdAt: now,
+        }).run();
+      });
+
+      const server = db.select().from(schema.spaces).where(eq(schema.spaces.id, spaceId)).get();
+      if (!server) {
+        return { status: 500 as const, code: 'space_create_failed' as const };
+      }
+
+      connectionManager.addUserSpace(request.userId, spaceId);
+
+      const creatorUser = db.select().from(schema.users).where(eq(schema.users.id, request.userId)).get();
+      if (creatorUser) {
+        connectionManager.sendToUser(request.userId, {
+          type: 'member_joined',
+          spaceId,
+          member: {
+            spaceId,
+            userId: request.userId,
+            nickname: null,
+            roles: [],
+            joinedAt: now,
+            user: sanitizeUser(creatorUser, false),
+          },
+        });
+      }
+
+      if (icon && typeof icon === 'string' && icon.includes('/api/uploads/')) {
+        deleteAttachmentByFilename(icon);
+      }
+      if (banner && typeof banner === 'string' && banner.includes('/api/uploads/')) {
+        deleteAttachmentByFilename(banner);
+      }
+
+      if (icon && typeof icon === 'string' && !icon.startsWith('http')) {
+        const filePath = path.join(config.uploadDir, path.basename(icon));
+        await resizeProfileImage(filePath, 'icon');
+      }
+      if (banner && typeof banner === 'string' && !banner.startsWith('http')) {
+        const filePath = path.join(config.uploadDir, path.basename(banner));
+        await resizeProfileImage(filePath, 'banner');
+      }
+
+      return { status: 201 as const, space: rowToSpace(server) };
+    });
+
+    if (!lockOutcome.locked) {
+      return sendError(reply, 429, 'rate_limited');
+    }
+
+    const res = lockOutcome.result;
+    if (res.status !== 201) {
+      if (res.error) {
+        return reply.code(res.status).send({
+          error: res.error,
+          code: res.code,
+          statusCode: res.status,
+        });
+      }
+      return sendError(reply, res.status, res.code, res.details);
+    }
+
+    return reply.code(201).send(res.space);
   });
 
   // GET /api/spaces - List user's servers
@@ -518,12 +866,33 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
     preHandler: authenticate,
   }, async (request, reply) => {
     const { id } = request.params;
-    const { name, icon, banner, avatarColor, visibility, description, directoryListed, ownerTitle } = request.body;
+    const bodyRecord = (request.body ?? {}) as Record<string, unknown>;
+    const {
+      name,
+      slug,
+      icon,
+      banner,
+      avatarColor,
+      visibility,
+      description,
+      fullDescription,
+      category,
+      tags,
+      rules,
+      publicationStatus,
+      directoryListed,
+      ownerTitle,
+    } = request.body;
     const db = getDb();
 
     const server = db.select().from(schema.spaces).where(eq(schema.spaces.id, id)).get();
     if (!server) {
       return sendError(reply, 404, 'space_not_found');
+    }
+
+    // Never allow changing `type` arbitrarily via client request
+    if (bodyRecord.type !== undefined) {
+      return sendError(reply, 403, 'forbidden');
     }
 
     // The title belongs to the owner, not to anyone granted MANAGE_SPACE.
@@ -533,6 +902,21 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
 
     if (!hasPermission(request.userId, id, PermissionBits.MANAGE_SPACE)) {
       return sendError(reply, 403, 'missing_permission', { permission: 'MANAGE_SPACE' });
+    }
+
+    const effectiveServerType =
+      server.type === 'public' || server.visibility === 'public' || server.visibility === 'request'
+        ? 'public'
+        : 'private';
+
+    // Private spaces can never be made public or published to Explore
+    if (effectiveServerType === 'private') {
+      if (visibility === 'public' || visibility === 'request') {
+        return sendError(reply, 400, 'space_visibility_invalid');
+      }
+      if (publicationStatus === 'published') {
+        return sendError(reply, 403, 'forbidden');
+      }
     }
 
     const updates: Partial<typeof schema.spaces.$inferInsert> = {};
@@ -551,6 +935,25 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
         return sendError(reply, 400, 'space_name_length', { min: 1, max: 100 });
       }
       updates.name = trimmedName;
+    }
+
+    if (slug !== undefined && effectiveServerType === 'public') {
+      if (slug === null || slug === '') {
+        return sendError(reply, 400, 'validation_failed');
+      }
+      const normalizedSlug = normalizeSpaceSlug(slug);
+      if (!isValidSpaceSlug(normalizedSlug)) {
+        return sendError(reply, 400, 'validation_failed');
+      }
+      const existingSlug = db
+        .select({ id: schema.spaces.id })
+        .from(schema.spaces)
+        .where(eq(schema.spaces.slug, normalizedSlug))
+        .get();
+      if (existingSlug && existingSlug.id !== id) {
+        return sendError(reply, 400, 'validation_failed');
+      }
+      updates.slug = normalizedSlug;
     }
 
     // Track old files for cleanup after update
@@ -588,6 +991,43 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
       updates.description = trimmed || null;
     }
 
+    if (fullDescription !== undefined && effectiveServerType === 'public') {
+      updates.fullDescription = fullDescription ? fullDescription.trim().slice(0, 2000) || null : null;
+    }
+
+    if (category !== undefined && effectiveServerType === 'public') {
+      if (category !== null && !(SPACE_CATEGORIES as readonly string[]).includes(category)) {
+        return sendError(reply, 400, 'validation_failed');
+      }
+      updates.category = category;
+    }
+
+    if (tags !== undefined && effectiveServerType === 'public') {
+      if (!Array.isArray(tags)) {
+        return sendError(reply, 400, 'validation_failed');
+      }
+      const safeTags = tags
+        .filter((t): t is string => typeof t === 'string')
+        .map((t) => t.trim().slice(0, 24))
+        .filter(Boolean)
+        .slice(0, 8);
+      updates.tags = JSON.stringify(safeTags);
+    }
+
+    if (rules !== undefined && effectiveServerType === 'public') {
+      updates.rules = rules ? rules.trim().slice(0, 2000) || null : null;
+    }
+
+    if (publicationStatus !== undefined && effectiveServerType === 'public') {
+      if (!['draft', 'published', 'suspended'].includes(publicationStatus)) {
+        return sendError(reply, 400, 'validation_failed');
+      }
+      updates.publicationStatus = publicationStatus;
+      if (publicationStatus === 'published' && !server.publishedAt) {
+        updates.publishedAt = Date.now();
+      }
+    }
+
     // Directory listing follows the same MANAGE_SPACE rule as visibility. A
     // private space is never listed: asking for it is refused, and a listed
     // space going private is unlisted in the same write (spec section 4).
@@ -596,7 +1036,7 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
       if (typeof directoryListed !== 'boolean') {
         return sendError(reply, 400, 'field_not_boolean', { field: 'directoryListed' });
       }
-      if (directoryListed && resultingVisibility === 'private') {
+      if (directoryListed && (resultingVisibility === 'private' || effectiveServerType === 'private')) {
         return sendError(reply, 400, 'directory_private_space');
       }
       updates.directoryListed = directoryListed ? 1 : 0;
@@ -697,6 +1137,19 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
     // Capture space icon/banner before deletion
     const spaceIcon = server.icon;
     const spaceBanner = server.banner;
+
+    // Notify all members of this space before deleting
+    const memberRows = db.select({ userId: schema.spaceMembers.userId })
+      .from(schema.spaceMembers)
+      .where(eq(schema.spaceMembers.spaceId, id))
+      .all();
+    for (const m of memberRows) {
+      connectionManager.sendToUser(m.userId, {
+        type: 'member_left',
+        spaceId: id,
+        userId: m.userId,
+      });
+    }
 
     // Delete all channels (messages cascade), members, folder refs, read states, then space atomically
     db.transaction((tx) => {
@@ -957,6 +1410,11 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
 
     // Broadcast member_left event
     connectionManager.sendToSpace(id, {
+      type: 'member_left',
+      spaceId: id,
+      userId: uid,
+    });
+    connectionManager.sendToUser(uid, {
       type: 'member_left',
       spaceId: id,
       userId: uid,

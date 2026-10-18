@@ -169,12 +169,22 @@ function UpdateSettings() {
     action = null;
   }
 
+  const nuvioCfg = (window as unknown as { nuvioConfig?: { buildId?: string; updateChannel?: string } }).nuvioConfig;
+  const buildId = nuvioCfg?.buildId ?? (currentVersion ? `nuvio-${currentVersion}` : null);
+
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between py-1">
         <div className="flex-1 mr-4 min-w-0">
-          <div className="text-sm text-txt-primary">
-            {currentVersion ? t('desktop.updates.versionLabel', { version: currentVersion }) : t('desktop.updates.appName')}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-txt-primary">
+              {currentVersion ? t('desktop.updates.versionLabel', { version: currentVersion }) : t('desktop.updates.appName')}
+            </span>
+            {buildId && (
+              <span className="px-1.5 py-0.5 text-[10px] font-mono rounded bg-white/[0.06] text-txt-tertiary">
+                {buildId}
+              </span>
+            )}
           </div>
           <div className={`text-xs mt-0.5 ${tone}`}>{detail}</div>
         </div>
@@ -185,6 +195,14 @@ function UpdateSettings() {
               className="px-3 py-1.5 text-sm font-medium text-white bg-accent-primary hover:bg-accent-primary/80 rounded-lg transition-colors"
             >
               {action.label}
+            </button>
+          )}
+          {!action && capability !== 'external' && (
+            <button
+              onClick={openDownloadPage}
+              className="px-3 py-1.5 text-sm text-txt-secondary hover:text-txt-primary bg-white/[0.04] hover:bg-white/[0.08] rounded-lg transition-colors"
+            >
+              {t('desktop.updates.download')}
             </button>
           )}
           {capability !== 'external' && (

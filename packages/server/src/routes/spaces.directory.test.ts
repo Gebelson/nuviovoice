@@ -128,8 +128,19 @@ describe('PATCH /api/spaces/:id directoryListed', () => {
     expect(readSpace()?.visibility).toBe('public');
   });
 
-  it('accepts directoryListed=true when the same PATCH makes a private space public', async () => {
-    seedSpace('private', 0);
+  it('accepts directoryListed=true when the same PATCH switches a public space from private visibility back to public', async () => {
+    testDb.insert(schema.spaces).values({
+      id: SPACE_ID,
+      name: 'Space',
+      type: 'public',
+      ownerId: OWNER_ID,
+      inviteCode: 'code-1',
+      visibility: 'private',
+      directoryListed: 0,
+      publicationStatus: 'draft',
+      createdAt: now,
+    }).run();
+    testDb.insert(schema.spaceMembers).values({ spaceId: SPACE_ID, userId: OWNER_ID, joinedAt: now }).run();
     const res = await patchSpace({ visibility: 'public', directoryListed: true });
     expect(res.statusCode).toBe(200);
     expect(res.json().directoryListed).toBe(true);
