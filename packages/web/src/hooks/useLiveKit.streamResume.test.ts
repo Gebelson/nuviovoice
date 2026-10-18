@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   audio: {
     releaseInputStream: vi.fn(), resumeContext: vi.fn(),
     setVoiceProcessing: vi.fn(), setRnnoiseEnabled: vi.fn(),
+    setInVoiceCall: vi.fn(), setNoiseSuppressionMode: vi.fn().mockResolvedValue(undefined),
     setInputDevice: vi.fn(), setInputVolume: vi.fn(),
     onResumed: vi.fn(() => vi.fn()), onInputTrackEnded: vi.fn(() => vi.fn()),
     getStreamGeneration: () => 1, getFreshTrack: () => null,

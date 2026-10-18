@@ -186,6 +186,8 @@
     "deafenShortcut": "拒听 (D)",
     "unmute": "取消静音",
     "mute": "静音",
+    "deactivateMic": "静音麦克风",
+    "activateMic": "取消静音麦克风",
     "undeafen": "取消拒听",
     "deafen": "拒听",
     "cameraOff": "关闭摄像头",

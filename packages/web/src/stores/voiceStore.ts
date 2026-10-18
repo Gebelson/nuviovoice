@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ParticipantInfo } from '../hooks/useLiveKit';
 import { AudioManager } from '../audio/AudioManager';
+import type { NoiseSuppressionMode } from '../audio/processors/types';
 import { useSpaceStore, getChannelOrigin, getMyUserIdForOrigin } from './spaceStore';
 import { useAuthStore } from './authStore';
 import { isElectron } from '../platform/platform';
@@ -204,9 +205,11 @@ export interface VoiceState {
   echoCancellation: boolean;
   autoGainControl: boolean;
   rnnoiseEnabled: boolean;
+  noiseSuppressionMode: NoiseSuppressionMode;
   setEchoCancellation: (enabled: boolean) => void;
   setAutoGainControl: (enabled: boolean) => void;
   setRnnoiseEnabled: (enabled: boolean) => void;
+  setNoiseSuppressionMode: (mode: NoiseSuppressionMode) => void;
   deafenedUserIds: Set<string>;
   setUserDeafened: (userId: string, deafened: boolean) => void;
   // WebSocket-based voice user status (visible without joining LiveKit)
@@ -607,13 +610,30 @@ export const useVoiceStore = create<VoiceState>()(
       setScreenShareConfig: (config) => set((state) => ({
         screenShareConfig: { ...state.screenShareConfig, ...config },
       })),
-      noiseSuppression: true,
+      noiseSuppression: false,
       echoCancellation: true,
       autoGainControl: true,
       rnnoiseEnabled: true,
+      noiseSuppressionMode: 'smart',
       setEchoCancellation: (enabled) => set({ echoCancellation: enabled }),
       setAutoGainControl: (enabled) => set({ autoGainControl: enabled }),
-      setRnnoiseEnabled: (enabled) => set({ rnnoiseEnabled: enabled }),
+      setRnnoiseEnabled: (enabled) => {
+        const mode: NoiseSuppressionMode = enabled ? 'smart' : 'disabled';
+        set({
+          rnnoiseEnabled: enabled,
+          noiseSuppression: false,
+          noiseSuppressionMode: mode,
+        });
+        AudioManager.getInstance().setNoiseSuppressionMode(mode).catch(() => {});
+      },
+      setNoiseSuppressionMode: (mode) => {
+        set({
+          noiseSuppressionMode: mode,
+          rnnoiseEnabled: mode === 'smart',
+          noiseSuppression: mode === 'standard',
+        });
+        AudioManager.getInstance().setNoiseSuppressionMode(mode).catch(() => {});
+      },
       deafenedUserIds: new Set(),
       setUserDeafened: (userId, deafened) => {
         set((state) => {
@@ -860,7 +880,7 @@ export const useVoiceStore = create<VoiceState>()(
     }),
     {
       name: 'backspace-voice-settings',
-      version: 14,
+      version: 15,
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
           persistedState.streamAttenuationEnabled = false;
@@ -929,12 +949,15 @@ export const useVoiceStore = create<VoiceState>()(
             persistedState.screenShareConfig.codec = 'vp9';
           }
         }
+        if (version < 15) {
+          if (!persistedState.noiseSuppressionMode) {
+            persistedState.noiseSuppressionMode = persistedState.rnnoiseEnabled !== false ? 'smart' : 'disabled';
+          }
+        }
         return persistedState;
       },
       storage: createJSONStorage(() => localStorage),
       // Only persist these keys. Maps and Sets are complex to serialize.
-      // noiseSuppression is intentionally excluded — always true internally,
-      // managed automatically by AudioManager based on RNNoise state.
       partialize: (state) => ({
         isMuted: state.isMuted,
         isDeafened: state.isDeafened,
@@ -948,6 +971,7 @@ export const useVoiceStore = create<VoiceState>()(
         echoCancellation: state.echoCancellation,
         autoGainControl: state.autoGainControl,
         rnnoiseEnabled: state.rnnoiseEnabled,
+        noiseSuppressionMode: state.noiseSuppressionMode,
         soundEffectVolume: state.soundEffectVolume,
         messageSoundAllChannels: state.messageSoundAllChannels,
         pipEnabled: state.pipEnabled,

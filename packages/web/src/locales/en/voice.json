@@ -186,6 +186,8 @@
     "deafenShortcut": "Deafen (D)",
     "unmute": "Unmute",
     "mute": "Mute",
+    "deactivateMic": "Mute microphone",
+    "activateMic": "Unmute microphone",
     "undeafen": "Undeafen",
     "deafen": "Deafen",
     "cameraOff": "Turn Off Camera",

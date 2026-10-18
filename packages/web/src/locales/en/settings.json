@@ -102,6 +102,41 @@
         "description": "While you are in a voice channel or call and look at something else, a small window keeps the call in view."
       }
     },
+    "noiseSuppression": {
+      "sectionTitle": "Noise Suppression",
+      "recommendedBadge": "Recommended",
+      "modes": {
+        "disabled": {
+          "title": "Disabled",
+          "description": "No additional noise suppression. Preserves echo cancellation and auto gain control."
+        },
+        "standard": {
+          "title": "Standard",
+          "description": "Native WebRTC noise suppression. Lightweight and battery efficient."
+        },
+        "smart": {
+          "title": "Smart (RNNoise)",
+          "description": "AI-powered real-time neural network via WebAssembly. Removes keyboard clicks, fans, and background noise while preserving voice clarity."
+        },
+        "advanced": {
+          "title": "Advanced (GTCRN)",
+          "description": "Deep convolutional-recurrent neural network for maximum suppression of complex noise. Requires a compatible device."
+        }
+      },
+      "loadingModel": "Loading AI model...",
+      "fallbackNotice": "Advanced processing is not supported on this device. Automatically switched to Smart mode.",
+      "test": {
+        "start": "Test Microphone",
+        "stop": "Stop Testing",
+        "listen": "Hear yourself",
+        "listeningOriginal": "Original audio",
+        "listeningFiltered": "Denoised audio",
+        "previewMode": "Preview Mode",
+        "inputMeter": "Input (Raw mic)",
+        "outputMeter": "Output (Processed voice)",
+        "headphoneTip": "We recommend using headphones during the test to avoid feedback loops."
+      }
+    },
     "processing": {
       "sectionTitle": "Voice Processing",
       "noiseSuppression": {

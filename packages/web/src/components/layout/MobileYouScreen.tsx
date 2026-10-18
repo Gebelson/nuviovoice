@@ -75,12 +75,6 @@ export function MobileYouScreen() {
       ),
       action: () => pushMobileScreen('settings-voice'),
     },
-    {
-      label: t('project:nav.label'),
-      icon: <BackspaceMark size={20} className="w-5 h-5" />,
-      action: () => pushMobileScreen('backspace'),
-      badge: hubUpdate.state === 'updated' ? <HubUpdateDot /> : null,
-    },
   ];
 
   return (

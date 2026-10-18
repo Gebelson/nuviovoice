@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Backspace — Connect</title>
+  <title>Nuvio — Connect</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
@@ -275,7 +275,7 @@
     <div class="container">
       <div class="card">
         <div class="header">
-          <h1 data-i18n="welcomeTitle">Welcome to Backspace</h1>
+          <h1 data-i18n="welcomeTitle">Welcome to Nuvio</h1>
           <p data-i18n="welcomeSubtitle">Connect to your instance</p>
         </div>
 
@@ -315,10 +315,10 @@
     // run, that is the OS locale. Keep in step with packages/desktop/src/l10n.ts.
     const STRINGS = {
       en: {
-        welcomeTitle: 'Welcome to Backspace',
+        welcomeTitle: 'Welcome to Nuvio',
         welcomeSubtitle: 'Connect to your instance',
         switchTitle: 'Switch instance',
-        switchSubtitle: 'Connect to a different Backspace instance, or cancel to stay.',
+        switchSubtitle: 'Connect to a different Nuvio instance, or cancel to stay.',
         urlLabel: 'Instance URL',
         connect: 'Connect',
         cancel: 'Cancel',
@@ -327,14 +327,14 @@
         errorTimeout: 'Connection timed out. Check the URL and try again.',
         errorUnreachable: 'Could not connect. Check the URL and try again.',
         errorStatus: 'Could not connect. The server answered with status {status}.',
-        errorNotBackspace: 'That address is not a Backspace instance.',
+        errorNotNuvio: 'That address is not a Nuvio instance.',
         errorOther: 'Could not connect: {message}',
       },
       ru: {
-        welcomeTitle: 'Добро пожаловать в Backspace',
+        welcomeTitle: 'Добро пожаловать в Nuvio',
         welcomeSubtitle: 'Подключитесь к своему серверу',
         switchTitle: 'Сменить сервер',
-        switchSubtitle: 'Подключитесь к другому серверу Backspace или отмените, чтобы остаться.',
+        switchSubtitle: 'Подключитесь к другому серверу Nuvio или отмените, чтобы остаться.',
         urlLabel: 'Адрес сервера',
         connect: 'Подключиться',
         cancel: 'Отмена',
@@ -343,14 +343,14 @@
         errorTimeout: 'Время ожидания истекло. Проверьте адрес и попробуйте снова.',
         errorUnreachable: 'Не удалось подключиться. Проверьте адрес и попробуйте снова.',
         errorStatus: 'Не удалось подключиться. Сервер ответил статусом {status}.',
-        errorNotBackspace: 'По этому адресу нет сервера Backspace.',
+        errorNotNuvio: 'По этому адресу нет сервера Nuvio.',
         errorOther: 'Не удалось подключиться: {message}',
       },
       de: {
-        welcomeTitle: 'Willkommen bei Backspace',
+        welcomeTitle: 'Willkommen bei Nuvio',
         welcomeSubtitle: 'Verbinde dich mit deiner Instanz',
         switchTitle: 'Instanz wechseln',
-        switchSubtitle: 'Verbinde dich mit einer anderen Backspace-Instanz oder brich ab, um zu bleiben.',
+        switchSubtitle: 'Verbinde dich mit einer anderen Nuvio-Instanz oder brich ab, um zu bleiben.',
         urlLabel: 'Instanz-URL',
         connect: 'Verbinden',
         cancel: 'Abbrechen',
@@ -359,14 +359,14 @@
         errorTimeout: 'Zeitüberschreitung. Prüfe die URL und versuche es erneut.',
         errorUnreachable: 'Verbindung nicht möglich. Prüfe die URL und versuche es erneut.',
         errorStatus: 'Verbindung nicht möglich. Der Server hat mit Status {status} geantwortet.',
-        errorNotBackspace: 'Unter dieser Adresse läuft keine Backspace-Instanz.',
+        errorNotNuvio: 'Unter dieser Adresse läuft keine Nuvio-Instanz.',
         errorOther: 'Verbindung nicht möglich: {message}',
       },
       pt: {
-        welcomeTitle: 'Boas-vindas ao Backspace',
+        welcomeTitle: 'Boas-vindas ao Nuvio',
         welcomeSubtitle: 'Conecte-se à sua instância',
         switchTitle: 'Mudar instância',
-        switchSubtitle: 'Conecte-se a outra instância do Backspace ou cancele para continuar nesta.',
+        switchSubtitle: 'Conecte-se a outra instância do Nuvio ou cancele para continuar nesta.',
         urlLabel: 'URL da instância',
         connect: 'Conectar',
         cancel: 'Cancelar',
@@ -375,14 +375,14 @@
         errorTimeout: 'A conexão expirou. Verifique a URL e tente de novo.',
         errorUnreachable: 'Não foi possível conectar. Verifique a URL e tente de novo.',
         errorStatus: 'Não foi possível conectar. O servidor respondeu com o status {status}.',
-        errorNotBackspace: 'Esse endereço não é uma instância do Backspace.',
+        errorNotNuvio: 'Esse endereço não é uma instância do Nuvio.',
         errorOther: 'Não foi possível conectar: {message}',
       },
       zh: {
-        welcomeTitle: '欢迎使用 Backspace',
+        welcomeTitle: '欢迎使用 Nuvio',
         welcomeSubtitle: '连接到您的实例',
         switchTitle: '切换实例',
-        switchSubtitle: '连接到其他 Backspace 实例，或取消以保留当前实例。',
+        switchSubtitle: '连接到其他 Nuvio 实例，或取消以保留当前实例。',
         urlLabel: '实例 URL',
         connect: '连接',
         cancel: '取消',
@@ -391,7 +391,7 @@
         errorTimeout: '连接超时。请检查 URL 并重试。',
         errorUnreachable: '无法连接。请检查 URL 并重试。',
         errorStatus: '无法连接。服务器返回状态码 {status}。',
-        errorNotBackspace: '该地址不是 Backspace 实例。',
+        errorNotNuvio: '该地址不是 Nuvio 实例。',
         errorOther: '无法连接：{message}',
       },
     };
@@ -500,7 +500,7 @@
         const data = await res.json();
 
         if (!data.name) {
-          throw Object.assign(new Error('Not a Backspace instance'), { pickerReason: 'not-backspace' });
+          throw Object.assign(new Error('Not a Nuvio instance'), { pickerReason: 'not-backspace' });
         }
 
         // Show instance info
@@ -521,7 +521,7 @@
         } else if (err.pickerReason === 'status') {
           showError(t('errorStatus', { status: String(err.status) }));
         } else if (err.pickerReason === 'not-backspace') {
-          showError(t('errorNotBackspace'));
+          showError(t('errorNotNuvio'));
         } else if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
           showError(t('errorUnreachable'));
         } else {

@@ -102,6 +102,41 @@
         "description": "当您在语音频道或通话中查看其他内容时，通话会显示在一个小窗口中，始终可见。"
       }
     },
+    "noiseSuppression": {
+      "sectionTitle": "降噪",
+      "recommendedBadge": "推荐",
+      "modes": {
+        "disabled": {
+          "title": "关闭",
+          "description": "无额外降噪。保留回声消除和自动增益控制。"
+        },
+        "standard": {
+          "title": "标准",
+          "description": "WebRTC原生内置降噪。轻量且省电。"
+        },
+        "smart": {
+          "title": "智能 (RNNoise)",
+          "description": "基于WebAssembly的实时AI神经网络。有效滤除键盘、鼠标及环境噪音，保留清晰人声。"
+        },
+        "advanced": {
+          "title": "高级 (GTCRN)",
+          "description": "深度卷积循环神经网络，极大程度消除复杂噪音。需要兼容的设备性能。"
+        }
+      },
+      "loadingModel": "正在加载AI模型...",
+      "fallbackNotice": "当前设备不支持高级降噪处理，已自动切换为智能模式。",
+      "test": {
+        "start": "测试麦克风",
+        "stop": "停止测试",
+        "listen": "收听自己的声音",
+        "listeningOriginal": "原始音频",
+        "listeningFiltered": "已降噪音频",
+        "previewMode": "试听模式",
+        "inputMeter": "输入 (麦克风原声)",
+        "outputMeter": "输出 (处理后人声)",
+        "headphoneTip": "建议测试时佩戴耳机，以防产生回音啸叫。"
+      }
+    },
     "processing": {
       "sectionTitle": "语音处理",
       "noiseSuppression": {

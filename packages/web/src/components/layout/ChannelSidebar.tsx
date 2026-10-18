@@ -494,18 +494,6 @@ export function ChannelSidebar() {
             <span className="font-medium text-[16px]">{t('spaces:sidebar.dmList.explore')}</span>
           </div>
 
-          <div
-            onClick={() => navigate('/backspace')}
-            className={`flex items-center gap-3 px-2 h-[42px] rounded-[6px] cursor-pointer mb-[2px] transition-colors group ${
-              activeHomeItem === 'backspace'
-                ? 'bg-interactive-selected text-white'
-                : 'text-txt-tertiary hover:bg-interactive-hover hover:text-txt-secondary'
-            }`}
-          >
-            <BackspaceMark className={`flex-shrink-0 ${activeHomeItem === 'backspace' ? 'text-white' : 'opacity-70 group-hover:opacity-100'}`} />
-            <span className="font-medium text-[16px]">{t('project:nav.label')}</span>
-            {hubUpdate.state === 'updated' && <HubUpdateDot className="ml-auto" />}
-          </div>
 
           <div className="mt-[18px] px-2 mb-1 flex items-center justify-between group">
             <span className="text-[12px] font-bold text-txt-tertiary tracking-wider">{t('spaces:sidebar.directMessages')}</span>

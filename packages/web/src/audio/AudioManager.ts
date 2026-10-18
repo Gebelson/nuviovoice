@@ -1,7 +1,5 @@
-import { RnnoiseWorkletNode, loadRnnoise } from '@sapphi-red/web-noise-suppressor';
-import rnnoiseWorkletPath from '@sapphi-red/web-noise-suppressor/rnnoiseWorklet.js?url';
-import rnnoiseWasmPath from '@sapphi-red/web-noise-suppressor/rnnoise.wasm?url';
-import rnnoiseWasmSimdPath from '@sapphi-red/web-noise-suppressor/rnnoise_simd.wasm?url';
+import { NoiseSuppressionController } from './processors/NoiseSuppressionController';
+import type { NoiseSuppressionMode, NoiseSuppressionStatus } from './processors/types';
 
 export class AudioManager {
   private static instance: AudioManager | null = null;
@@ -10,7 +8,12 @@ export class AudioManager {
   private inputSource: MediaStreamAudioSourceNode | null = null;
   private inputDestination: MediaStreamAudioDestinationNode | null = null;
   private silentGain: GainNode | null = null;
-  private analyser: AnalyserNode | null = null;
+  private analyser: AnalyserNode | null = null; // Points to processedAnalyser for backward compatibility
+  private rawInputAnalyser: AnalyserNode | null = null;
+  private processedAnalyser: AnalyserNode | null = null;
+  private testGain: GainNode | null = null;
+  private isMicTesting = false;
+  private testListenMode: 'original' | 'processed' = 'processed';
   private masterCompressor: DynamicsCompressorNode | null = null;
   private masterBoost: GainNode | null = null;
   
@@ -22,16 +25,14 @@ export class AudioManager {
   private listeners: Set<() => void> = new Set();
   private soundBuffers: Map<string, AudioBuffer> = new Map();
   private voiceEchoCancellation = true;
-  private voiceNoiseSuppression = true;
+  private voiceNoiseSuppression = false;
   private voiceAutoGainControl = true;
   private streamGeneration = 0;
   // Separate from streamGeneration: only leaving capture invalidates pending work.
   private inputReleaseGeneration = 0;
   private inputSwitchChain: Promise<MediaStream | null> = Promise.resolve(null);
-  private rnnoiseNode: AudioWorkletNode | null = null;
-  private stereoMerger: ChannelMergerNode | null = null;
-  private rnnoiseEnabled = false;
-  private rnnoiseReady = false;
+  private noiseSuppressionMode: NoiseSuppressionMode = 'smart';
+  private noiseSuppressionController = NoiseSuppressionController.getInstance();
   private keepAliveOscillator: OscillatorNode | null = null;
 
   // Cached `getUserMedia` denial. After a NotAllowedError, subsequent
@@ -67,8 +68,17 @@ export class AudioManager {
     
     this.inputGain = this.ctx.createGain();
     this.inputDestination = this.ctx.createMediaStreamDestination();
-    this.analyser = this.ctx.createAnalyser();
-    this.analyser.fftSize = 256;
+    
+    this.rawInputAnalyser = this.ctx.createAnalyser();
+    this.rawInputAnalyser.fftSize = 256;
+
+    this.processedAnalyser = this.ctx.createAnalyser();
+    this.processedAnalyser.fftSize = 256;
+    this.analyser = this.processedAnalyser; // Keep legacy analyser pointing to processed audio
+
+    this.testGain = this.ctx.createGain();
+    this.testGain.gain.setValueAtTime(0, this.ctx.currentTime);
+    this.testGain.connect(this.ctx.destination);
     
     this.silentGain = this.ctx.createGain();
     this.silentGain.gain.value = 0;
@@ -88,8 +98,8 @@ export class AudioManager {
     this.masterBoost.connect(this.masterCompressor);
     this.masterCompressor.connect(this.ctx.destination);
 
+    this.processedAnalyser.connect(this.inputGain);
     this.inputGain.connect(this.inputDestination);
-    this.inputGain.connect(this.analyser);
     this.inputGain.connect(this.silentGain);
     this.silentGain.connect(this.ctx.destination);
 
@@ -270,9 +280,9 @@ export class AudioManager {
       // Chrome AEC stays on during screen share — headphone users unaffected,
       // speaker users get proper echo cancellation.
 
-      // When RNNoise is active, force browser NS off — running both degrades quality.
-      // The user's noiseSuppression preference is preserved in the store for when RNNoise is disabled.
-      const effectiveNoiseSuppression = this.rnnoiseEnabled ? false : this.voiceNoiseSuppression;
+      // When smart or advanced AI suppression is active, force browser NS off — running both degrades quality.
+      // In standard mode, WebRTC native noise suppression is active.
+      const effectiveNoiseSuppression = this.noiseSuppressionMode === 'standard';
 
       const constraints = {
         audio: {
@@ -314,10 +324,10 @@ export class AudioManager {
 
       if (this.ctx && this.inputGain) {
         if (this.inputSource) {
-          this.inputSource.disconnect();
+          try { this.inputSource.disconnect(); } catch {}
         }
         this.inputSource = this.ctx.createMediaStreamSource(this.currentStream);
-        this.inputSource.connect(this.getInputTarget());
+        this.rewireInputGraph();
       }
 
       return this.currentStream;
@@ -426,73 +436,166 @@ export class AudioManager {
     return () => { this.inputTrackEndedListeners.delete(cb); };
   }
 
-  private getInputTarget(): AudioNode {
-    return (this.rnnoiseEnabled && this.rnnoiseNode) ? this.rnnoiseNode : this.inputGain!;
+  private inVoiceCall = false;
+
+  setInVoiceCall(inCall: boolean): void {
+    this.inVoiceCall = inCall;
   }
 
-  async setRnnoiseEnabled(enabled: boolean): Promise<void> {
-    if (enabled === this.rnnoiseEnabled && this.rnnoiseReady) return;
-    if (!this.isInitialized) this.initContext();
+  private rewireInputGraph(): void {
+    if (!this.ctx || !this.inputSource) return;
 
-    if (enabled && !this.rnnoiseReady) {
+    try {
+      this.inputSource.disconnect();
+    } catch {}
+
+    // 1. Raw input analyser: always receives unfiltered mic audio for the Input meter
+    if (this.rawInputAnalyser) {
       try {
-        console.log('[AudioManager] Loading RNNoise worklet...');
-        await this.ctx!.audioWorklet.addModule(rnnoiseWorkletPath);
-
-        // loadRnnoise handles SIMD feature detection and returns the right binary
-        const wasmBinary = await loadRnnoise({ url: rnnoiseWasmPath, simdUrl: rnnoiseWasmSimdPath });
-
-        this.rnnoiseNode = new RnnoiseWorkletNode(this.ctx!, {
-          wasmBinary,
-          maxChannels: 1,
-        });
-
-        // Explicit mono→stereo: RNNoise outputs 1 channel, so duplicate it
-        // to both L and R via a ChannelMergerNode. This is spec-guaranteed
-        // stereo, unlike relying on automatic up-mixing which fails in some
-        // browsers when the source is an AudioWorkletNode.
-        this.stereoMerger = this.ctx!.createChannelMerger(2);
-        this.rnnoiseNode.connect(this.stereoMerger, 0, 0); // mono → left
-        this.rnnoiseNode.connect(this.stereoMerger, 0, 1); // mono → right
-        this.stereoMerger.connect(this.inputGain!);
-
-        this.rnnoiseReady = true;
-        console.log('[AudioManager] RNNoise worklet loaded and connected (mono→stereo via ChannelMerger)');
+        this.inputSource.connect(this.rawInputAnalyser);
       } catch (err) {
-        console.error('[AudioManager] Failed to load RNNoise worklet:', err);
-        this.rnnoiseReady = false;
-        this.rnnoiseEnabled = false;
-        // Fall back to direct wiring
-        if (this.inputSource && this.inputGain) {
-          this.inputSource.disconnect();
-          this.inputSource.connect(this.inputGain);
-        }
-        return;
+        console.error('[AudioManager] Error connecting rawInputAnalyser:', err);
       }
     }
 
-    this.rnnoiseEnabled = enabled;
+    // 2. Route through noise suppressor worklet if active
+    const activeNode = this.noiseSuppressionController.getActiveNode();
+    const effectiveMode = this.noiseSuppressionController.getStatus().effectiveMode;
 
-    // Rewire the graph
-    if (this.inputSource) {
-      this.inputSource.disconnect();
-      this.inputSource.connect(this.getInputTarget());
-      console.log(`[AudioManager] RNNoise ${enabled ? 'enabled' : 'bypassed'} — inputSource → ${enabled ? 'rnnoiseNode' : 'inputGain'}`);
+    if (activeNode && (effectiveMode === 'smart' || effectiveMode === 'advanced')) {
+      try {
+        this.inputSource.connect(activeNode);
+        try { activeNode.disconnect(); } catch {}
+        if (this.processedAnalyser) {
+          activeNode.connect(this.processedAnalyser);
+        }
+      } catch (err) {
+        console.error('[AudioManager] Error wiring noise suppressor worklet node:', err);
+        if (this.processedAnalyser) {
+          try { this.inputSource.connect(this.processedAnalyser); } catch {}
+        }
+      }
+    } else {
+      // Disabled or Standard (native WebRTC noise suppression)
+      if (this.processedAnalyser) {
+        try {
+          this.inputSource.connect(this.processedAnalyser);
+        } catch (err) {
+          console.error('[AudioManager] Error connecting processedAnalyser:', err);
+        }
+      }
     }
 
-    // Force track re-publish so LiveKit picks up the new pipeline
-    this.streamGeneration++;
-    if (this.currentStream) {
-      // Detach listeners before stopping (see `_setInputDeviceImpl`).
-      const tracks = this.currentStream.getTracks();
-      tracks.forEach(t => { t.onended = null; });
-      tracks.forEach(t => t.stop());
-      this.currentStream = null;
+    // 3. Processed analyser feeds inputGain -> inputDestination (published track)
+    if (this.processedAnalyser && this.inputGain) {
+      try {
+        this.processedAnalyser.disconnect();
+        this.processedAnalyser.connect(this.inputGain);
+      } catch {}
+    }
+
+    this.updateMicTestRouting();
+  }
+
+  private updateMicTestRouting(): void {
+    if (!this.ctx || !this.testGain) return;
+    try {
+      if (this.rawInputAnalyser) this.rawInputAnalyser.disconnect(this.testGain);
+      if (this.processedAnalyser) this.processedAnalyser.disconnect(this.testGain);
+    } catch {}
+
+    if (this.isMicTesting && this.testGain.gain.value > 0) {
+      try {
+        if (this.testListenMode === 'original' && this.rawInputAnalyser) {
+          this.rawInputAnalyser.connect(this.testGain);
+        } else if (this.processedAnalyser) {
+          this.processedAnalyser.connect(this.testGain);
+        }
+      } catch (err) {
+        console.error('[AudioManager] Error updating mic test routing:', err);
+      }
     }
   }
 
+  async setNoiseSuppressionMode(mode: NoiseSuppressionMode): Promise<void> {
+    this.noiseSuppressionMode = mode;
+    if (!this.isInitialized) this.initContext();
+
+    await this.noiseSuppressionController.setMode(mode, this.ctx);
+    this.rewireInputGraph();
+
+    // Dynamically adjust WebRTC constraints on active tracks if supported
+    const effectiveNoiseSuppression = this.noiseSuppressionController.getStatus().effectiveMode === 'standard';
+    if (this.currentStream) {
+      const audioTrack = this.currentStream.getAudioTracks()[0];
+      if (audioTrack && typeof audioTrack.applyConstraints === 'function') {
+        try {
+          await audioTrack.applyConstraints({
+            noiseSuppression: effectiveNoiseSuppression,
+            echoCancellation: this.voiceEchoCancellation,
+            autoGainControl: this.voiceAutoGainControl,
+          } as any);
+        } catch (err) {
+          console.warn('[AudioManager] Failed to apply track constraints:', err);
+        }
+      }
+    }
+  }
+
+  getNoiseSuppressionMode(): NoiseSuppressionMode {
+    return this.noiseSuppressionMode;
+  }
+
+  getNoiseSuppressionStatus(): NoiseSuppressionStatus {
+    return this.noiseSuppressionController.getStatus();
+  }
+
+  // Backward-compatibility aliases
+  async setRnnoiseEnabled(enabled: boolean): Promise<void> {
+    await this.setNoiseSuppressionMode(enabled ? 'smart' : 'disabled');
+  }
+
   isRnnoiseEnabled(): boolean {
-    return this.rnnoiseEnabled;
+    return this.noiseSuppressionMode === 'smart';
+  }
+
+  // Microphone Test methods for Settings panel
+  async startMicTest(): Promise<void> {
+    await this.resumeContext();
+    this.isMicTesting = true;
+    if (!this.currentStream || !this.currentStream.active) {
+      await this.setInputDevice(this.currentInputDeviceId);
+    }
+    this.updateMicTestRouting();
+  }
+
+  setMicTestListening(listening: boolean, mode: 'original' | 'processed' = 'processed'): void {
+    this.testListenMode = mode;
+    if (this.testGain && this.ctx) {
+      this.testGain.gain.setValueAtTime(listening ? 0.8 : 0, this.ctx.currentTime);
+    }
+    this.updateMicTestRouting();
+  }
+
+  stopMicTest(): void {
+    this.isMicTesting = false;
+    if (this.testGain && this.ctx) {
+      this.testGain.gain.setValueAtTime(0, this.ctx.currentTime);
+    }
+    this.updateMicTestRouting();
+    if (!this.inVoiceCall) {
+      this.releaseInputStream();
+    }
+  }
+
+  getRawInputAnalyser(): AnalyserNode {
+    if (!this.isInitialized) this.initContext();
+    return this.rawInputAnalyser!;
+  }
+
+  getProcessedAnalyser(): AnalyserNode {
+    if (!this.isInitialized) this.initContext();
+    return this.processedAnalyser!;
   }
 
   setInputVolume(volume: number) {
@@ -537,9 +640,30 @@ export class AudioManager {
    */
   getFreshTrack(): MediaStreamTrack | null {
     if (!this.isInitialized) this.initContext();
-    const track = this.inputDestination!.stream.getAudioTracks()[0];
-    if (!track) return null;
-    return track.clone();
+    const isIOSDevice = typeof navigator !== 'undefined' && (
+      /\b(?:iPhone|iPad|iPod)\b/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+    // On iOS Safari, if the context is suspended or not ready, fallback to raw capture track
+    if (isIOSDevice && this.currentStream) {
+      if (!this.ctx || this.ctx.state !== 'running') {
+        const rawTrack = this.currentStream.getAudioTracks()[0];
+        if (rawTrack && rawTrack.readyState === 'live') {
+          return rawTrack.clone();
+        }
+      }
+    }
+    const track = this.inputDestination?.stream.getAudioTracks()[0];
+    if (track && track.readyState === 'live') {
+      return track.clone();
+    }
+    if (this.currentStream) {
+      const rawTrack = this.currentStream.getAudioTracks()[0];
+      if (rawTrack && rawTrack.readyState === 'live') {
+        return rawTrack.clone();
+      }
+    }
+    return null;
   }
 
   getAnalyserNode(): AnalyserNode {

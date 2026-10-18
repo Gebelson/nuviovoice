@@ -186,6 +186,8 @@
     "deafenShortcut": "Ensurdecer (D)",
     "unmute": "Reativar microfone",
     "mute": "Silenciar",
+    "deactivateMic": "Desativar microfone",
+    "activateMic": "Ativar microfone",
     "undeafen": "Desfazer ensurdecimento",
     "deafen": "Ensurdecer",
     "cameraOff": "Desligar câmera",

@@ -332,6 +332,7 @@ export function useLiveKit() {
   const noiseSuppression = useVoiceStore((s) => s.noiseSuppression);
   const autoGainControl = useVoiceStore((s) => s.autoGainControl);
   const rnnoiseEnabled = useVoiceStore((s) => s.rnnoiseEnabled);
+  const noiseSuppressionMode = useVoiceStore((s) => s.noiseSuppressionMode);
 
   const lastMicGenRef = useRef(0);
 
@@ -531,7 +532,7 @@ export function useLiveKit() {
 
         // Sync voice processing settings to AudioManager
         audioManager.setVoiceProcessing({ echoCancellation, noiseSuppression, autoGainControl });
-        await audioManager.setRnnoiseEnabled(rnnoiseEnabled);
+        await audioManager.setNoiseSuppressionMode(noiseSuppressionMode);
         if (!isCurrentRoom()) return;
 
         const micPub = r.localParticipant.getTrackPublications()
@@ -599,7 +600,7 @@ export function useLiveKit() {
       cancelled = true;
       unsubscribeResume();
     };
-  }, [isMuted, isDeafened, spaceMutedUserIds, spaceDeafenedUserIds, permissionMutedUserIds, inputDeviceId, inputVolume, isConnected, echoCancellation, noiseSuppression, autoGainControl, rnnoiseEnabled, micPermissionDenied]);
+  }, [isMuted, isDeafened, spaceMutedUserIds, spaceDeafenedUserIds, permissionMutedUserIds, inputDeviceId, inputVolume, isConnected, echoCancellation, noiseSuppression, autoGainControl, rnnoiseEnabled, noiseSuppressionMode, micPermissionDenied]);
 
   // Subscribe to upstream-input-track-end events from AudioManager whenever a
   // room is connected. The published mic track is a clone of a WebAudio
@@ -1045,6 +1046,7 @@ export function useLiveKit() {
           }
 
           if (connected) {
+            AudioManager.getInstance().setInVoiceCall(true);
             // A full reconnect republished every local track: the share goes
             // on if its publication came back, and ends here if not.
             settleScreenShareAfterReconnect(newRoom);
@@ -1079,6 +1081,7 @@ export function useLiveKit() {
         // The SDK emits Disconnected before rejecting an initial connect.
         // Keep that attempt current so its catch can report the failure.
         if (!initialConnectPending) _connectGeneration++;
+        AudioManager.getInstance().setInVoiceCall(false);
         AudioManager.getInstance().releaseInputStream();
         SpeakingDetector.getInstance().clear();
         setConnectionState(ConnectionState.Disconnected);
@@ -1143,6 +1146,7 @@ export function useLiveKit() {
       updateParticipants();
     } catch (err) {
       if (gen === _connectGeneration) {
+        AudioManager.getInstance().setInVoiceCall(false);
         AudioManager.getInstance().releaseInputStream();
         setConnectionError('connect_failed');
         useVoiceStore.getState().leaveVoice();
@@ -1156,6 +1160,7 @@ export function useLiveKit() {
     const gen = ++_connectGeneration;
     // Release before SDK teardown, even if token fetching has not made a Room
     // yet. A late teardown must never stop a subsequent call's fresh capture.
+    AudioManager.getInstance().setInVoiceCall(false);
     AudioManager.getInstance().releaseInputStream();
     SpeakingDetector.getInstance().clear();
     deactivateHwOverdrive();
@@ -1241,6 +1246,7 @@ export function useLiveKit() {
       _connectGeneration++;
       SpeakingDetector.getInstance().clear();
       deactivateHwOverdrive();
+      AudioManager.getInstance().setInVoiceCall(false);
       AudioManager.getInstance().releaseInputStream();
       const roomToDestroy = roomRef.current;
       roomRef.current = null;

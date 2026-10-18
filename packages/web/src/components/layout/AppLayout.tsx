@@ -54,18 +54,17 @@ export function AppLayout() {
   const { spaceId, channelId } = useParams<{ spaceId?: string; channelId?: string }>();
   const navigate = useNavigate();
   
-  // Global interaction handler to resume AudioContext
+  // Global interaction handler to resume AudioContext whenever suspended
   useEffect(() => {
     const resume = () => {
-      AudioManager.getInstance().resumeContext().then(() => {
-        window.removeEventListener('click', resume);
-        window.removeEventListener('keydown', resume);
-        window.removeEventListener('touchstart', resume);
-      });
+      const audio = AudioManager.getInstance();
+      if (audio.getContext()?.state === 'suspended') {
+        audio.resumeContext().catch(() => {});
+      }
     };
-    window.addEventListener('click', resume);
-    window.addEventListener('keydown', resume);
-    window.addEventListener('touchstart', resume);
+    window.addEventListener('click', resume, { passive: true });
+    window.addEventListener('keydown', resume, { passive: true });
+    window.addEventListener('touchstart', resume, { passive: true });
     return () => {
       window.removeEventListener('click', resume);
       window.removeEventListener('keydown', resume);

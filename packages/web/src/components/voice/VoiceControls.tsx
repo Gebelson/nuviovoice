@@ -1,23 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useVoiceStore } from '../../stores/voiceStore';
-import { useSpaceStore } from '../../stores/spaceStore';
+import { useSpaceStore, getChannelOrigin, getMyUserIdForOrigin } from '../../stores/spaceStore';
+import { useAuthStore } from '../../stores/authStore';
 import { ScreenShareSettingsPopover } from './ScreenShareSettingsPopover';
 import { ConnectionInfoPopover } from './ConnectionInfoPopover';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { handleCameraAction, handleDisconnectAction, handleScreenShareAction, reconnectVoice } from '../../utils/voiceActions';
+import { broadcastVoiceStatus, broadcastDeafenViaLiveKit } from '../../utils/voice';
 
 /**
  * VoiceControls renders the voice status + button rows.
  * It has NO wrapper/card styling — the parent provides the container.
  */
 export function VoiceControls() {
-  const { t } = useTranslation(['voice', 'common']);
+  const { t } = useTranslation(['voice', 'spaces', 'common']);
   const currentVoiceChannelId = useVoiceStore((s) => s.currentVoiceChannelId);
   const isCameraOn = useVoiceStore((s) => s.isCameraOn);
   const isScreenSharing = useVoiceStore((s) => s.isScreenSharing);
-  const rnnoiseEnabled = useVoiceStore((s) => s.rnnoiseEnabled);
-  const setRnnoiseEnabled = useVoiceStore((s) => s.setRnnoiseEnabled);
+  const isMuted = useVoiceStore((s) => s.isMuted);
+  const isDeafened = useVoiceStore((s) => s.isDeafened);
+  const spaceMutedUserIds = useVoiceStore((s) => s.spaceMutedUserIds);
+  const spaceDeafenedUserIds = useVoiceStore((s) => s.spaceDeafenedUserIds);
+  const permissionMutedUserIds = useVoiceStore((s) => s.permissionMutedUserIds);
   const connectionError = useVoiceStore((s) => s.connectionError);
   const isLiveKitConnected = useVoiceStore((s) => s.isLiveKitConnected);
   const voiceConnectionStatus = useVoiceStore((s) => s.voiceConnectionStatus);
@@ -36,6 +41,33 @@ export function VoiceControls() {
   const isDmCall = !!activeDmCall;
   const canSpeak = isDmCall || hasPermissionBit(channelPerms, PermissionBits.SPEAK);
   const canStream = isDmCall || hasPermissionBit(channelPerms, PermissionBits.STREAM);
+
+  const user = useAuthStore((s) => s.user);
+  const spaceId = useSpaceStore((s) => currentVoiceChannelId ? s.channelToSpaceMap.get(currentVoiceChannelId) : null);
+  const myOriginId = useSpaceStore((s) => currentVoiceChannelId ? getMyUserIdForOrigin(getChannelOrigin(currentVoiceChannelId)) : s.members.find(m => m.userId === user?.id)?.userId ?? user?.id);
+
+  const isSpaceMuted = !!(myOriginId && spaceId && spaceMutedUserIds.has(`${spaceId}:${myOriginId}`));
+  const isSpaceDeafened = !!(myOriginId && spaceId && spaceDeafenedUserIds.has(`${spaceId}:${myOriginId}`));
+  const isPermissionMuted = !!(myOriginId && spaceId && permissionMutedUserIds.has(`${spaceId}:${myOriginId}`));
+
+  const isMicDisabled = isMuted || isDeafened || isSpaceMuted || isSpaceDeafened || isPermissionMuted;
+
+  const localParticipant = useVoiceStore((s) => s.participants.find((p) => p.isLocal));
+  const isSpeaking = useVoiceStore((s) => (localParticipant ? s.speakingParticipantIds.has(localParticipant.identity) : false));
+
+  const handleMicToggle = () => {
+    if (isSpaceMuted || isSpaceDeafened || isPermissionMuted) return;
+    const wasDeafened = useVoiceStore.getState().isDeafened;
+    useVoiceStore.getState().toggleMic();
+    broadcastVoiceStatus();
+    if (wasDeafened && !useVoiceStore.getState().isDeafened) {
+      broadcastDeafenViaLiveKit();
+    }
+  };
+
+  const micTooltip = isMicDisabled
+    ? (isPermissionMuted ? t('spaces:sidebar.userArea.permissionMuted') : (isSpaceMuted || isSpaceDeafened) ? t('spaces:sidebar.userArea.spaceMuted') : t('voice:controls.activateMic'))
+    : t('voice:controls.deactivateMic');
 
   // A share that ends outside the menu (OS "Stop sharing" bar, track loss,
   // keybind) must not leave a stale settings popover anchored to the button.
@@ -209,30 +241,47 @@ export function VoiceControls() {
           </button>
         )}
 
-        {/* AI Noise Suppression (RNNoise) */}
+        {/* Microphone (Mute / Unmute) */}
         <button
-          onClick={() => setRnnoiseEnabled(!rnnoiseEnabled)}
+          onClick={handleMicToggle}
+          disabled={isSpaceMuted || isSpaceDeafened || isPermissionMuted}
           className={`${btnBase} ${
-            rnnoiseEnabled
-              ? 'bg-surface-base text-status-online hover:bg-surface-channel'
-              : btnDefaultStyle
+            isSpaceMuted || isSpaceDeafened || isPermissionMuted
+              ? 'bg-surface-base text-accent-amber/60 cursor-not-allowed'
+              : isMicDisabled
+                ? 'bg-surface-base text-[#929aab] hover:bg-surface-channel'
+                : isSpeaking
+                  ? 'bg-surface-base text-status-online hover:bg-surface-channel'
+                  : 'bg-surface-base text-[#929aab] hover:bg-surface-channel hover:text-txt-primary'
           }`}
-          title={rnnoiseEnabled ? t('voice:controls.noiseSuppressionOff') : t('voice:controls.noiseSuppressionOn')}
+          title={micTooltip}
+          aria-label={micTooltip}
+          aria-pressed={!isMicDisabled}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" opacity={rnnoiseEnabled ? 0.15 : 0.08} />
+            {/* Subtle circular halo matching reference */}
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+              opacity={!isMicDisabled && isSpeaking ? 0.22 : 0.08}
+            />
+            {/* Top pip */}
             <path d="M12 1a2 2 0 012 2v1a2 2 0 01-4 0V3a2 2 0 012-2z" />
+            {/* Mic capsule */}
             <path d="M12 7c-1.66 0-3 1.34-3 3v2c0 1.66 1.34 3 3 3s3-1.34 3-3v-2c0-1.66-1.34-3-3-3z" />
+            {/* Mic cradle and vertical stem */}
             <path d="M17 11v1c0 2.76-2.24 5-5 5s-5-2.24-5-5v-1H5v1c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92v-1h-2z" />
-            {rnnoiseEnabled ? (
-              <>
-                <circle cx="18" cy="5" r="1.2" fill="currentColor" />
-                <circle cx="20" cy="8" r="0.9" fill="currentColor" opacity="0.7" />
-                <circle cx="6" cy="5" r="1.2" fill="currentColor" />
-                <circle cx="4" cy="8" r="0.9" fill="currentColor" opacity="0.7" />
-              </>
-            ) : (
-              <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            {/* Diagonal cut / slash line when mic is muted / disabled */}
+            {isMicDisabled && (
+              <line
+                x1="4"
+                y1="4"
+                x2="20"
+                y2="20"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.4"
+              />
             )}
           </svg>
         </button>

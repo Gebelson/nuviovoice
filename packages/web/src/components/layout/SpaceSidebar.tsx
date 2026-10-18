@@ -1227,14 +1227,6 @@ export function SpaceSidebar() {
         actionType="add"
       />
 
-      <SidebarItem
-        id="join-space"
-        name={t('spaces:sidebar.joinSpace')}
-        active={false}
-        onClick={() => openModal('joinSpace')}
-        type="action"
-        actionType="join"
-      />
 
       <SidebarItem
         id="explore"

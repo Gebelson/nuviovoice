@@ -102,6 +102,41 @@
         "description": "Wenn du in einem Sprachkanal oder Anruf bist und dir etwas anderes ansiehst, bleibt der Anruf in einem kleinen Fenster sichtbar."
       }
     },
+    "noiseSuppression": {
+      "sectionTitle": "Rauschunterdrückung",
+      "recommendedBadge": "Empfohlen",
+      "modes": {
+        "disabled": {
+          "title": "Deaktiviert",
+          "description": "Keine zusätzliche Rauschunterdrückung. Echounterdrückung und automatische Verstärkung bleiben aktiv."
+        },
+        "standard": {
+          "title": "Standard",
+          "description": "Integrierte native WebRTC-Rauschunterdrückung. Ressourcenschonend und effizient."
+        },
+        "smart": {
+          "title": "Intelligent (RNNoise)",
+          "description": "KI-gestütztes neuronales Netz über WebAssembly. Filtert Tastatur-, Maus- und Umgebungsgeräusche bei klarer Stimme heraus."
+        },
+        "advanced": {
+          "title": "Erweitert (GTCRN)",
+          "description": "Deep Convolutional-Recurrent Neural Network für maximale Unterdrückung komplexer Störgeräusche. Erfordert kompatibles Gerät."
+        }
+      },
+      "loadingModel": "KI-Modell wird geladen...",
+      "fallbackNotice": "Erweiterte Verarbeitung wird auf diesem Gerät nicht unterstützt. Es wurde automatisch auf den Modus Intelligent umgeschaltet.",
+      "test": {
+        "start": "Mikrofon testen",
+        "stop": "Test beenden",
+        "listen": "Selbsttest anhören",
+        "listeningOriginal": "Original-Audio",
+        "listeningFiltered": "Gefiltertes Audio",
+        "previewMode": "Vorschau-Modus",
+        "inputMeter": "Eingang (Rohsignal)",
+        "outputMeter": "Ausgang (Gefilterte Stimme)",
+        "headphoneTip": "Wir empfehlen für den Test Kopfhörer zu verwenden, um Rückkopplungen zu vermeiden."
+      }
+    },
     "processing": {
       "sectionTitle": "Sprachverarbeitung",
       "noiseSuppression": {

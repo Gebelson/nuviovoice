@@ -26,6 +26,11 @@ interface UseAudioTrackPlayerOptions {
  *   - Full volume range (0.0 – 4.0+) via GainNode
  *   - Smooth transitions via setTargetAtTime (no clicks/pops)
  */
+const isIOS = () => typeof navigator !== 'undefined' && (
+  /\b(?:iPhone|iPad|iPod)\b/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+);
+
 export function useAudioTrackPlayer(
   opts: UseAudioTrackPlayerOptions,
 ): React.RefObject<HTMLAudioElement> {
@@ -61,7 +66,22 @@ export function useAudioTrackPlayer(
       return;
     }
 
-    // --- Keep-alive: attach track to <audio> element (always muted) ---
+    const ios = isIOS();
+
+    // On iOS / iPadOS (Safari and Chrome WebKit):
+    // WebKit has an issue routing remote WebRTC tracks through createMediaStreamSource.
+    // The native HTMLAudioElement with playsInline is the standard, reliable path on iOS.
+    if (ios) {
+      if (audioEl) {
+        audioEl.srcObject = new MediaStream([track]);
+        audioEl.muted = mutedRef.current;
+        audioEl.volume = Math.min(1, Math.max(0, volumeRef.current));
+        audioEl.play().catch(() => {});
+      }
+      return;
+    }
+
+    // --- Desktop / Android: Keep-alive: attach track to <audio> element (always muted) ---
     // Chrome needs an HTML element consuming the WebRTC track or it
     // stops the audio pipeline for that track entirely.
     if (audioEl) {
@@ -99,6 +119,12 @@ export function useAudioTrackPlayer(
 
   // Effect 2: Update gain when volume or muted changes (no graph rebuild)
   useEffect(() => {
+    if (isIOS() && audioRef.current) {
+      audioRef.current.muted = muted;
+      audioRef.current.volume = Math.min(1, Math.max(0, volume));
+      return;
+    }
+
     if (!gainRef.current) return;
 
     const ctx = AudioManager.getInstance().ensureContext();

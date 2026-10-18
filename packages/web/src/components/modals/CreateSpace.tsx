@@ -294,6 +294,18 @@ export function CreateSpaceModal() {
               </button>
             </div>
           </div>
+          <div className="text-center pt-2 pb-1 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => {
+                handleClose();
+                useUIStore.getState().openModal('joinSpace');
+              }}
+              className="text-xs text-txt-tertiary hover:text-txt-primary transition-colors underline"
+            >
+              {t('spaces:sidebar.joinSpace')}
+            </button>
+          </div>
         </div>
       </form>
     </Modal>

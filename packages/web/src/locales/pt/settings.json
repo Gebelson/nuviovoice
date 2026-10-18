@@ -102,6 +102,41 @@
         "description": "Enquanto você estiver em um canal de voz ou chamada e olhar para outra coisa, uma pequena janela mantém a chamada à vista."
       }
     },
+    "noiseSuppression": {
+      "sectionTitle": "Supressão de ruído",
+      "recommendedBadge": "Recomendado",
+      "modes": {
+        "disabled": {
+          "title": "Desativado",
+          "description": "Sem supressão adicional de ruído. Preserva cancelamento de eco e ganho automático."
+        },
+        "standard": {
+          "title": "Padrão",
+          "description": "Supressão de ruído nativa integrada ao WebRTC. Leve e eficiente."
+        },
+        "smart": {
+          "title": "Inteligente (RNNoise)",
+          "description": "Rede neural por IA via WebAssembly e AudioWorklet. Remove teclado, mouse e ruído ambiente preservando a clareza da voz."
+        },
+        "advanced": {
+          "title": "Avançado (GTCRN)",
+          "description": "Rede neural profunda convolucional-recorrente para eliminação máxima de ruídos complexos. Requer dispositivo compatível."
+        }
+      },
+      "loadingModel": "Carregando modelo de IA...",
+      "fallbackNotice": "O processamento avançado não está disponível neste dispositivo. Alternando automaticamente para o modo Inteligente.",
+      "test": {
+        "start": "Testar microfone",
+        "stop": "Parar teste",
+        "listen": "Ouvir a si mesmo",
+        "listeningOriginal": "Áudio original",
+        "listeningFiltered": "Áudio filtrado",
+        "previewMode": "Modo de prévia",
+        "inputMeter": "Entrada (Microfone bruto)",
+        "outputMeter": "Saída (Voz processada)",
+        "headphoneTip": "Recomendamos usar fones de ouvido para o teste para evitar microfonia."
+      }
+    },
     "processing": {
       "sectionTitle": "Processamento de voz",
       "noiseSuppression": {

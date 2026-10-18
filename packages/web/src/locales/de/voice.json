@@ -186,6 +186,8 @@
     "deafenShortcut": "Ton ausschalten (D)",
     "unmute": "Stummschaltung aufheben",
     "mute": "Stummschalten",
+    "deactivateMic": "Mikrofon stummschalten",
+    "activateMic": "Mikrofon aktivieren",
     "undeafen": "Ton einschalten",
     "deafen": "Ton ausschalten",
     "cameraOff": "Kamera ausschalten",

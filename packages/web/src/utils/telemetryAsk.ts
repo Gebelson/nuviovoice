@@ -32,9 +32,8 @@ function read(storage: Store): AskRecord {
  * and settle the ask for every admin; dismissals are local and never leave
  * the browser.
  */
-export function shouldShowAsk(status: TelemetryStatus | null, isAdmin: boolean, storage: Store, now: number): boolean {
-  if (!isAdmin || status === null || !status.askDue) return false;
-  return now >= read(storage).snoozedUntil;
+export function shouldShowAsk(_status: TelemetryStatus | null, _isAdmin: boolean, _storage: Store, _now: number): boolean {
+  return false;
 }
 
 /**
