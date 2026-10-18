@@ -175,7 +175,7 @@ export function FriendsPage({ mobile }: FriendsPageProps) {
             </h2>
             {onlineFriends.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full opacity-80">
-                <Mascot state="idle" className="w-32 h-32 mb-4" />
+                <Mascot state="idle" className="w-32 h-32 -mb-3" />
                 <p className="text-txt-tertiary text-sm">{t('social:empty.online')}</p>
               </div>
             ) : (

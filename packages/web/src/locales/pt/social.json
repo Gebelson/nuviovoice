@@ -13,7 +13,7 @@
     "offline": "Offline — {{n}}"
   },
   "empty": {
-    "online": "Ninguém está online agora.",
+    "online": "Ninguém por aqui...",
     "all": "Nenhum amigo ainda — adicione alguém!",
     "pending": "Nenhuma solicitação pendente — a Nori está tirando uma soneca.",
     "activity": "Está tudo quieto por enquanto... Quando seus amigos começarem uma atividade, ela aparecerá aqui!"
