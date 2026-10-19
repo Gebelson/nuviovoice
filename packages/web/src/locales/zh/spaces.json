@@ -799,5 +799,12 @@
       "descriptionRequired": "A descrição curta é obrigatória para listagem no Explorar.",
       "notEligible": "Sua conta não está elegível para criar um espaço público no momento."
     }
+  },
+  "downloadPage": {
+    "headerTitle": "下载",
+    "heroTitle": "充满乐趣与游戏的群组畅聊",
+    "heroSubtitle": "Nuvio 是与朋友聊天、畅玩或建立精彩社区的理想之选。打造您的专属空间，随心畅聊与畅玩。",
+    "downloadForWindows": "Windows 版下载",
+    "mockupAlt": "笔记本与显示器上的 Nuvio"
   }
 }

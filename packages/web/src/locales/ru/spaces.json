@@ -838,5 +838,12 @@
       "descriptionRequired": "A descrição curta é obrigatória para listagem no Explorar.",
       "notEligible": "Sua conta não está elegível para criar um espaço público no momento."
     }
+  },
+  "downloadPage": {
+    "headerTitle": "Скачать",
+    "heroTitle": "Групповой чат, полный веселья и игр",
+    "heroSubtitle": "Nuvio отлично подходит для общения с друзьями и игр или создания отличного сообщества. Настройте свое пространство, чтобы общаться, играть и отдыхать.",
+    "downloadForWindows": "Скачать для Windows",
+    "mockupAlt": "Nuvio на ноутбуке и мониторе"
   }
 }

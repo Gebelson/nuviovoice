@@ -10,6 +10,10 @@ describe('activeHomeNavItem', () => {
     expect(activeHomeNavItem('/backspace', null)).toBe('backspace');
   });
 
+  it('selects Download on /download', () => {
+    expect(activeHomeNavItem('/download', null)).toBe('download');
+  });
+
   it('selects Friends on the DM home with no channel open', () => {
     expect(activeHomeNavItem('/channels/@me', null)).toBe('friends');
   });

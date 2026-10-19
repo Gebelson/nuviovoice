@@ -812,5 +812,12 @@
       "descriptionRequired": "A short description is required for listing in Explore.",
       "notEligible": "Your account is not currently eligible to create a public space."
     }
+  },
+  "downloadPage": {
+    "headerTitle": "Download",
+    "heroTitle": "Group chat packed with fun and games",
+    "heroSubtitle": "Nuvio is great for gaming and chilling with friends, or even building a global community. Customize your space to chat, game, and hang out.",
+    "downloadForWindows": "Download for Windows",
+    "mockupAlt": "Nuvio on Laptop and Monitor"
   }
 }

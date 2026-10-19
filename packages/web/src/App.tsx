@@ -104,6 +104,18 @@ export function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/download"
+            element={
+              isElectron() ? (
+                <Navigate to="/channels/@me" replace />
+              ) : (
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              )
+            }
+          />
           <Route path="/" element={<Navigate to="/channels/@me" replace />} />
           <Route path="*" element={<Navigate to="/channels/@me" replace />} />
         </Routes>

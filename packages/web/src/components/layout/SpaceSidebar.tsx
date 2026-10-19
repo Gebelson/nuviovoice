@@ -1277,9 +1277,13 @@ export function SpaceSidebar() {
       <SidebarItem
         id="@me"
         name={t('spaces:sidebar.directMessages')}
-        // The Backspace page is reached from the DM sidebar, so `@me` stays
+        // The Backspace and Download pages are reached from the DM sidebar, so `@me` stays
         // lit there; `showDms` alone is only set on the `@me` route.
-        active={showDms || activeHomeNavItem(location.pathname, currentChannelId) === 'backspace'}
+        active={
+          showDms ||
+          activeHomeNavItem(location.pathname, currentChannelId) === 'backspace' ||
+          activeHomeNavItem(location.pathname, currentChannelId) === 'download'
+        }
         onClick={handleDmClick}
         type="dm"
         hasUnread={hasDmUnread}

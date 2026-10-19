@@ -812,5 +812,12 @@
       "descriptionRequired": "A descrição curta é obrigatória para listagem no Explorar.",
       "notEligible": "Sua conta não está elegível para criar um espaço público no momento."
     }
+  },
+  "downloadPage": {
+    "headerTitle": "Download",
+    "heroTitle": "Gruppen-Chat voller Spaß und Spiele",
+    "heroSubtitle": "Nuvio ist ideal, um mit Freunden zu chatten und zu entspannen oder eine tolle Community aufzubauen. Passe deinen Bereich an, um zu chatten, zu spielen und Spaß zu haben.",
+    "downloadForWindows": "Für Windows herunterladen",
+    "mockupAlt": "Nuvio auf Laptop und Monitor"
   }
 }

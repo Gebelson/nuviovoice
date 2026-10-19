@@ -825,5 +825,12 @@
       "descriptionRequired": "A descrição curta é obrigatória para listagem no Explorar.",
       "notEligible": "Sua conta não está elegível para criar um espaço público no momento."
     }
+  },
+  "downloadPage": {
+    "headerTitle": "Download",
+    "heroTitle": "Bate-papo em grupo repleto de diversão e jogos",
+    "heroSubtitle": "O Nuvio é ótimo para jogar e relaxar com os amigos, ou até mesmo para criar uma comunidade incrível. Personalize seu espaço para conversar, jogar e curtir.",
+    "downloadForWindows": "Baixar para Windows",
+    "mockupAlt": "Nuvio no Laptop e Monitor"
   }
 }

@@ -47,14 +47,13 @@ describe('ChannelSidebar — Baixar Nuvio replacement in Friends secondary menu'
     });
   });
 
-  it('replaces secondary Explore item with "Download Nuvio" / "Baixar Nuvio" on Web and opens DownloadDesktopModal on click without navigating to /explore', async () => {
+  it('replaces secondary Explore item with "Download Nuvio" / "Baixar Nuvio" on Web and navigates to /download on click', async () => {
     vi.spyOn(platformModule, 'isElectron').mockReturnValue(false);
     const user = userEvent.setup();
 
     render(
       <MemoryRouter initialEntries={['/channels/@me']}>
         <ChannelSidebar />
-        <DownloadDesktopModal />
         <LocationProbe />
       </MemoryRouter>,
     );
@@ -72,14 +71,23 @@ describe('ChannelSidebar — Baixar Nuvio replacement in Friends secondary menu'
     expect(downloadItem).toHaveTextContent(/Download Nuvio|Baixar Nuvio/i);
     expect(downloadItem.querySelector('svg polyline')).not.toBeNull();
 
-    // Clicking opens the download modal and does NOT navigate to /explore
+    // Clicking navigates to /download
     await user.click(downloadItem);
-    expect(useUIStore.getState().activeModal).toBe('downloadDesktop');
-    expect(screen.getByTestId('current-pathname')).toHaveTextContent('/channels/@me');
+    expect(screen.getByTestId('current-pathname')).toHaveTextContent('/download');
+  });
 
-    // Official Windows installer link is shown in the modal
-    const installerLink = screen.getByRole('link', { name: /Download for Windows|Baixar para Windows/i });
-    expect(installerLink).toHaveAttribute('href', expect.stringContaining('Nuvio-Setup.exe'));
+  it('highlights the "Baixar Nuvio" item when pathname is /download', () => {
+    vi.spyOn(platformModule, 'isElectron').mockReturnValue(false);
+
+    render(
+      <MemoryRouter initialEntries={['/download']}>
+        <ChannelSidebar />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    const downloadItem = screen.getByTestId('dm-sidebar-download-nuvio');
+    expect(downloadItem.className).toContain('bg-interactive-selected');
   });
 
   it('hides the "Baixar Nuvio" item inside Nuvio Desktop (isElectron === true)', () => {

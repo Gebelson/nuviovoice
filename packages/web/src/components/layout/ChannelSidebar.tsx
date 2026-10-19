@@ -428,6 +428,11 @@ export function ChannelSidebar() {
     navigate('/channels/@me');
   };
 
+  const handleDownloadClick = () => {
+    setCurrentChannel(null);
+    navigate('/download');
+  };
+
   const handleVoiceJoin = (channelId: string) => {
     // Don't re-join the same channel — prevents duplicate LiveKit connections.
     // A dropped session is the exception: the channel ID is kept so the user
@@ -492,10 +497,10 @@ export function ChannelSidebar() {
 
           {!isElectron() && (
             <div
-              onClick={() => openModal('downloadDesktop')}
+              onClick={handleDownloadClick}
               data-testid="dm-sidebar-download-nuvio"
               className={`flex items-center gap-3 px-2 h-[42px] rounded-[6px] cursor-pointer mb-[2px] transition-colors group ${
-                activeModal === 'downloadDesktop'
+                activeHomeItem === 'download'
                   ? 'bg-interactive-selected text-white'
                   : 'text-txt-tertiary hover:bg-interactive-hover hover:text-txt-secondary'
               }`}
@@ -510,7 +515,7 @@ export function ChannelSidebar() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className={`flex-shrink-0 ${
-                  activeModal === 'downloadDesktop' ? 'text-white' : 'opacity-70 group-hover:opacity-100'
+                  activeHomeItem === 'download' ? 'text-white' : 'opacity-70 group-hover:opacity-100'
                 }`}
               >
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
