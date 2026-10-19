@@ -34,6 +34,7 @@ import { DropdownItem } from '../modals/settingsPanels/_shared/SettingsPickerPri
 import type { UserSettingsTab } from '../modals/UserSettings';
 import { ChannelMutedIndicator } from '../notifications/ChannelMutedIndicator';
 import { isElectron } from '../../platform/platform';
+import { useUpdateStore } from '../../stores/updateStore';
 
 export function ChannelSidebar() {
   const { t } = useTranslation(['spaces', 'common', 'project']);
@@ -942,13 +943,31 @@ function UserAreaPanel({
   onDeafenToggle: () => void;
   onSettingsClick: (tab?: UserSettingsTab) => void;
 }) {
-  const { t } = useTranslation(['spaces', 'common', 'admin']);
+  const { t } = useTranslation(['spaces', 'common', 'admin', 'settings']);
   const [openPanel, setOpenPanel] = useState<'input' | 'output' | null>(null);
   const inputDeviceId = useVoiceStore((s) => s.inputDeviceId);
   const outputDeviceId = useVoiceStore((s) => s.outputDeviceId);
   const setInputDevice = useVoiceStore((s) => s.setInputDevice);
   const setOutputDevice = useVoiceStore((s) => s.setOutputDevice);
   const updateBadge = useInstanceUpdateBadge();
+  const updateSnapshot = useUpdateStore((s) => s.snapshot);
+  const initializeUpdateStore = useUpdateStore((s) => s.initialize);
+  const installUpdate = useUpdateStore((s) => s.install);
+  const isDesktop = isElectron();
+
+  useEffect(() => {
+    if (isDesktop) {
+      return initializeUpdateStore();
+    }
+  }, [isDesktop, initializeUpdateStore]);
+
+  const updateStatus = updateSnapshot?.status;
+  const updateVersion = updateStatus && 'version' in updateStatus ? updateStatus.version : undefined;
+  const downloadPercent = updateStatus && 'percent' in updateStatus ? Math.round(updateStatus.percent) : 0;
+  const isUpdateReady = isDesktop && updateStatus?.phase === 'ready';
+  const isUpdateDownloading = isDesktop && updateStatus?.phase === 'downloading';
+  const isUpdateAvailable = isDesktop && updateStatus?.phase === 'available';
+  const isUpdateChecking = isDesktop && updateStatus?.phase === 'checking';
   const shownStatus = useShownStatus(user, '', user.status);
 
   // Shared hook drives lists, permission state, and live devicechange refresh.
@@ -1301,18 +1320,73 @@ function UserAreaPanel({
             </svg>
           </button>
 
+          {/* Desktop Update indicator / button */}
+          {isDesktop && (isUpdateReady || isUpdateDownloading || isUpdateAvailable || isUpdateChecking) && (
+            <button
+              onClick={() => {
+                if (isUpdateReady) {
+                  installUpdate();
+                } else {
+                  onSettingsClick('desktop');
+                }
+              }}
+              className={`w-8 h-8 flex items-center justify-center rounded-[4px] transition-colors relative ${
+                isUpdateReady
+                  ? 'text-status-online hover:bg-status-online/20'
+                  : isUpdateDownloading
+                  ? 'text-accent-sky hover:bg-accent-sky/20'
+                  : 'text-accent-primary hover:bg-accent-primary/20'
+              }`}
+              title={
+                isUpdateReady
+                  ? t('settings:desktop.updates.readyToInstall', { version: updateVersion })
+                  : isUpdateDownloading
+                  ? t('settings:desktop.updates.downloading', { version: updateVersion ?? '', percent: downloadPercent })
+                  : isUpdateChecking
+                  ? t('settings:desktop.updates.checking')
+                  : t('settings:desktop.updates.available', { version: updateVersion })
+              }
+              aria-label={t('settings:desktop.updates.checkNow')}
+            >
+              {isUpdateDownloading || isUpdateChecking ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
+                  <line x1="12" y1="2" x2="12" y2="6" />
+                  <line x1="12" y1="18" x2="12" y2="22" />
+                  <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                  <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                  <line x1="2" y1="12" x2="6" y2="12" />
+                  <line x1="18" y1="12" x2="22" y2="12" />
+                  <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+                  <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isUpdateReady ? 'animate-bounce' : ''}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              )}
+              {isUpdateReady && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-status-online" />
+              )}
+              {isUpdateAvailable && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent-primary animate-ping" />
+              )}
+            </button>
+          )}
+
           {/* Settings */}
           <button
             onClick={() => onSettingsClick()}
             className="w-8 h-8 flex items-center justify-center text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover rounded-[4px] transition-colors relative"
             title={t('common:labels.settings')}
-            aria-label={updateBadge ? t('admin:updates.badge.settingsAriaLabel') : t('common:labels.settings')}
+            aria-label={updateBadge || isUpdateReady || isUpdateAvailable ? t('admin:updates.badge.settingsAriaLabel') : t('common:labels.settings')}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
             </svg>
-            {updateBadge && (
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent-amber" />
+            {(updateBadge || isUpdateReady || isUpdateAvailable) && (
+              <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isUpdateReady ? 'bg-status-online' : 'bg-accent-amber'}`} />
             )}
           </button>
         </div>

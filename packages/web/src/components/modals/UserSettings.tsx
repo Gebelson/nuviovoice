@@ -21,6 +21,7 @@ import {
 } from './lazySettingsPanels';
 import { isElectron } from '../../platform/platform';
 import { useInstanceUpdateBadge } from '../../hooks/useInstanceUpdateBadge';
+import { useUpdateStore } from '../../stores/updateStore';
 import { SettingsSectionsProvider, useSettingsSectionsContext } from './SettingsSectionsContext';
 import { HiButton } from '../telemetry/answers/HiButton';
 
@@ -118,6 +119,10 @@ export function UserSettingsModal() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const updateBadge = useInstanceUpdateBadge();
+  const desktopSnapshot = useUpdateStore((s) => s.snapshot);
+  const isDesktop = isElectron();
+  const desktopPhase = desktopSnapshot?.status.phase;
+  const hasDesktopUpdate = isDesktop && (desktopPhase === 'ready' || desktopPhase === 'available');
 
   const [tab, setTab] = useState<UserSettingsTab>('account');
   const [mobileView, setMobileView] = useState<'tabs' | 'content'>('tabs');
@@ -185,10 +190,13 @@ export function UserSettingsModal() {
             <button
               key={entry.id}
               onClick={() => handleTabClick(entry.id)}
-              className={tabClass(entry.id)}
+              className={`${tabClass(entry.id)} flex items-center justify-between`}
               aria-current={tab === entry.id ? 'page' : undefined}
             >
-              {t(entry.label)}
+              <span className="truncate">{t(entry.label)}</span>
+              {entry.id === 'desktop' && hasDesktopUpdate && (
+                <span className={`shrink-0 w-2 h-2 rounded-full ${desktopPhase === 'ready' ? 'bg-status-online animate-pulse' : 'bg-accent-primary'}`} />
+              )}
             </button>
           )
         ))}
