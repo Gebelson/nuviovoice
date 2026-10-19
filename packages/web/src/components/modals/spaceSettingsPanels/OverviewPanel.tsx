@@ -534,12 +534,6 @@ export function OverviewPanel({ spaceId, mode = 'all' }: OverviewPanelProps) {
                     </button>
                   )}
                 </div>
-
-                <div className="text-[11px] text-txt-tertiary space-y-1">
-                  <p>• {t('spaces:settings.overview.bannerDimensions')}</p>
-                  <p>• {t('spaces:settings.overview.bannerFormats')}</p>
-                  <p>• {t('spaces:settings.overview.bannerSize')}</p>
-                </div>
               </div>
 
               {bannerFilename === '' && (
