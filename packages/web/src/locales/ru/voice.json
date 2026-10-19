@@ -201,7 +201,12 @@
     "disconnect": "Отключиться",
     "connectionInfo": "Сведения о соединении",
     "noiseSuppressionOff": "Выключить ИИ-шумоподавление",
-    "noiseSuppressionOn": "Включить ИИ-шумоподавление"
+    "noiseSuppressionOn": "Включить ИИ-шумоподавление",
+    "popOutCall": "Открепить звонок",
+    "returnToMain": "Вернуться в Nuvio",
+    "pinAlwaysOnTop": "Закрепить поверх всех окон",
+    "unpinAlwaysOnTop": "Открепить от верха",
+    "closeFloatingWindow": "Закрыть плавающее окно"
   },
   "status": {
     "dmCall": "Личный звонок",

@@ -28,6 +28,7 @@ import { MemberRolesModal } from '../modals/MemberRolesModal';
 import { DownloadDesktopModal } from '../modals/DownloadDesktopModal';
 import { IncomingCallModal } from '../voice/IncomingCallModal';
 import { PictureInPicture } from '../voice/PictureInPicture';
+import { PopOutCallPortal } from '../voice/PopOutCallPortal';
 import { SoundController } from '../voice/SoundController';
 import { GlobalAudioRenderer } from '../voice/GlobalAudioRenderer';
 import { NotificationController } from '../NotificationController';
@@ -493,6 +494,7 @@ export function AppLayout() {
       <IncomingCallModal />
       <ImagePreview />
       <PictureInPicture />
+      <PopOutCallPortal />
       <SoundController />
       <GlobalAudioRenderer />
       <NotificationController />

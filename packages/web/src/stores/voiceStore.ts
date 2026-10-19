@@ -157,6 +157,12 @@ export interface VoiceState {
   setMessageSoundAllChannels: (allChannels: boolean) => void;
   pipEnabled: boolean;                       // true (default) = floating window shows while browsing other channels
   setPipEnabled: (enabled: boolean) => void;
+  pipAlwaysOnTop: boolean;                   // true (default) = keep popout always on top
+  setPipAlwaysOnTop: (alwaysOnTop: boolean) => void;
+  pipAutoOpenOnMinimize: boolean;            // false (default) = auto popout on window minimize
+  setPipAutoOpenOnMinimize: (enabled: boolean) => void;
+  isPopOutOpen: boolean;                     // live state: whether external pop-out window is active
+  setIsPopOutOpen: (open: boolean) => void;
   streamAttenuationEnabled: boolean;        // global toggle, default true
   streamAttenuationStrength: number;        // 0-100, default 50
   setStreamVolume: (userId: string, volume: number) => void;
@@ -338,6 +344,18 @@ export const useVoiceStore = create<VoiceState>()(
       setMessageSoundAllChannels: (allChannels) => set({ messageSoundAllChannels: allChannels }),
       pipEnabled: true,
       setPipEnabled: (enabled) => set({ pipEnabled: enabled }),
+      pipAlwaysOnTop: true,
+      setPipAlwaysOnTop: (alwaysOnTop) => {
+        set({ pipAlwaysOnTop: alwaysOnTop });
+        if (typeof window !== 'undefined') {
+          const api = (window as any).nuvio ?? (window as any).backspace;
+          api?.setPipAlwaysOnTop?.(alwaysOnTop);
+        }
+      },
+      pipAutoOpenOnMinimize: false,
+      setPipAutoOpenOnMinimize: (enabled) => set({ pipAutoOpenOnMinimize: enabled }),
+      isPopOutOpen: false,
+      setIsPopOutOpen: (open) => set({ isPopOutOpen: open }),
 
       // Stream widget state
       streamVolumes: new Map(),
@@ -975,6 +993,8 @@ export const useVoiceStore = create<VoiceState>()(
         soundEffectVolume: state.soundEffectVolume,
         messageSoundAllChannels: state.messageSoundAllChannels,
         pipEnabled: state.pipEnabled,
+        pipAlwaysOnTop: state.pipAlwaysOnTop,
+        pipAutoOpenOnMinimize: state.pipAutoOpenOnMinimize,
         streamAttenuationEnabled: state.streamAttenuationEnabled,
         streamAttenuationStrength: state.streamAttenuationStrength,
         // Per-user preferences (Map → plain object for JSON)

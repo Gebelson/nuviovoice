@@ -201,7 +201,12 @@
     "disconnect": "断开连接",
     "connectionInfo": "连接信息",
     "noiseSuppressionOff": "停用 AI 噪声抑制",
-    "noiseSuppressionOn": "启用 AI 噪声抑制"
+    "noiseSuppressionOn": "启用 AI 噪声抑制",
+    "popOutCall": "弹出通话窗口",
+    "returnToMain": "返回 Nuvio",
+    "pinAlwaysOnTop": "置顶固定",
+    "unpinAlwaysOnTop": "取消置顶",
+    "closeFloatingWindow": "关闭浮动窗口"
   },
   "status": {
     "dmCall": "私信通话",

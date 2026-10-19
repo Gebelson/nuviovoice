@@ -201,7 +201,12 @@
     "disconnect": "Desconectar",
     "connectionInfo": "Informações da conexão",
     "noiseSuppressionOff": "Desativar supressão de ruído com IA",
-    "noiseSuppressionOn": "Ativar supressão de ruído com IA"
+    "noiseSuppressionOn": "Ativar supressão de ruído com IA",
+    "popOutCall": "Descolar chamada",
+    "returnToMain": "Voltar ao Nuvio",
+    "pinAlwaysOnTop": "Fixar no topo",
+    "unpinAlwaysOnTop": "Desafixar do topo",
+    "closeFloatingWindow": "Fechar janela flutuante"
   },
   "status": {
     "dmCall": "Chamada em DM",

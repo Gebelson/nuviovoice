@@ -46,6 +46,30 @@ const desktopApi = {
     ipcRenderer.send('close-window');
   },
 
+  // Picture-in-Picture (Pop-Out Call) Window
+  bringMainWindowToFront: () => {
+    ipcRenderer.send('pip-bring-main-to-front');
+  },
+  setPipAlwaysOnTop: (alwaysOnTop: boolean) => {
+    ipcRenderer.send('pip-set-always-on-top', alwaysOnTop);
+  },
+  isPipAlwaysOnTop: (): Promise<boolean> => {
+    return ipcRenderer.invoke('pip-is-always-on-top');
+  },
+  closePipWindow: () => {
+    ipcRenderer.send('pip-close');
+  },
+  onMainWindowMinimized: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('main-window-minimized', handler);
+    return () => { ipcRenderer.removeListener('main-window-minimized', handler); };
+  },
+  onMainWindowRestored: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('main-window-restored', handler);
+    return () => { ipcRenderer.removeListener('main-window-restored', handler); };
+  },
+
   // Notifications & badge
   showNotification: (title: string, body: string, options?: { channelId?: string; spaceId?: string; userId?: string }) => {
     ipcRenderer.send('show-notification', { title, body, options });

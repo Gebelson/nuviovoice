@@ -100,6 +100,14 @@
       "showOnSwitch": {
         "label": "Mostrar janela flutuante durante chamadas",
         "description": "Enquanto você estiver em um canal de voz ou chamada e olhar para outra coisa, uma pequena janela mantém a chamada à vista."
+      },
+      "alwaysOnTop": {
+        "label": "Manter janela flutuante sempre no topo",
+        "description": "Mantém a janela descolada visível sobre outros aplicativos e jogos."
+      },
+      "autoOpenOnMinimize": {
+        "label": "Descolar chamada ao minimizar o Nuvio",
+        "description": "Abre a janela flutuante automaticamente quando o Nuvio é minimizado durante uma chamada."
       }
     },
     "noiseSuppression": {

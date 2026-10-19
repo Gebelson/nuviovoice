@@ -105,6 +105,7 @@ protocol.registerSchemesAsPrivileged([
 }
 
 let mainWindow: BrowserWindow | null = null;
+let pipWindow: BrowserWindow | null = null;
 const keybindManager = new KeybindManager();
 let tray: Tray | null = null;
 let isQuitting = false;
@@ -594,10 +595,38 @@ function createWindow(): void {
   mainWindow.on('blur', () => {
     mainWindow?.webContents.send('window-focus-changed', false);
   });
+  mainWindow.on('minimize', () => {
+    mainWindow?.webContents.send('main-window-minimized');
+  });
+  mainWindow.on('restore', () => {
+    mainWindow?.webContents.send('main-window-restored');
+  });
 
-  // Intercept own-instance /join/* URLs so they open in-app instead of the
-  // system browser. Other URLs continue to open externally.
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  // Intercept window opens: allow Document Picture-in-Picture / about:blank popouts
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    const { url, disposition, features } = details;
+    // Allow Document Picture-in-Picture and blank pop-out windows
+    if (url === 'about:blank' || url === '' || features?.includes('document-pip') || disposition === 'new-window') {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          title: 'Nuvio — Chamada',
+          icon: windowIconPath,
+          backgroundColor: '#0E1015',
+          minWidth: 320,
+          minHeight: 180,
+          alwaysOnTop: true,
+          autoHideMenuBar: true,
+          frame: true,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+          },
+        },
+      };
+    }
+
     try {
       const u = new URL(url);
       if (
@@ -613,6 +642,21 @@ function createWindow(): void {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('did-create-window', (childWindow) => {
+    pipWindow = childWindow;
+    childWindow.setMenu(null);
+    childWindow.setTitle('Nuvio — Chamada');
+    childWindow.setAlwaysOnTop(true, 'screen-saver');
+    try {
+      // Exclude from screen share / screen capture to prevent infinite mirror feedback loop
+      childWindow.setContentProtection(true);
+    } catch {}
+
+    childWindow.on('closed', () => {
+      pipWindow = null;
+    });
   });
 
   // Deny foreign top-level navigations. See navigationPolicy.ts for the
@@ -780,6 +824,33 @@ function registerIpcHandlers(): void {
 
   ipcMain.on('close-window', () => {
     mainWindow?.close();
+  });
+
+  // ─── Picture-in-Picture (Pop-Out Call) Window IPC ───────────────────────────
+  ipcMain.on('pip-bring-main-to-front', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  ipcMain.on('pip-set-always-on-top', (_event, flag: boolean) => {
+    if (pipWindow && !pipWindow.isDestroyed()) {
+      pipWindow.setAlwaysOnTop(flag, 'screen-saver');
+    }
+  });
+
+  ipcMain.handle('pip-is-always-on-top', () => {
+    return pipWindow && !pipWindow.isDestroyed() ? pipWindow.isAlwaysOnTop() : true;
+  });
+
+  ipcMain.on('pip-close', () => {
+    if (pipWindow && !pipWindow.isDestroyed()) {
+      pipWindow.close();
+    }
   });
 
   // Connected-origins sync — renderer pushes the current set of instance origins

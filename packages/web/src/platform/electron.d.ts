@@ -191,10 +191,19 @@ interface BackspaceElectronAPI {
   getRecoveryState: () => Promise<RecoveryState>;
   onRecoveryStateChanged: (cb: (state: RecoveryState) => void) => () => void;
   recoveryAction: (action: RecoveryAction) => void;
+
+  // Picture-in-Picture (Pop-Out Call) Window
+  bringMainWindowToFront?: () => void;
+  setPipAlwaysOnTop?: (alwaysOnTop: boolean) => void;
+  isPipAlwaysOnTop?: () => Promise<boolean>;
+  closePipWindow?: () => void;
+  onMainWindowMinimized?: (callback: () => void) => () => void;
+  onMainWindowRestored?: (callback: () => void) => () => void;
 }
 
 interface Window {
   backspace?: BackspaceElectronAPI;
+  nuvio?: BackspaceElectronAPI;
 }
 
 interface KeybindPortalStatus {

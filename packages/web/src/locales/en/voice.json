@@ -201,7 +201,12 @@
     "disconnect": "Disconnect",
     "connectionInfo": "Connection Info",
     "noiseSuppressionOff": "Disable AI Noise Suppression",
-    "noiseSuppressionOn": "Enable AI Noise Suppression"
+    "noiseSuppressionOn": "Enable AI Noise Suppression",
+    "popOutCall": "Pop out call",
+    "returnToMain": "Return to Nuvio",
+    "pinAlwaysOnTop": "Pin on top",
+    "unpinAlwaysOnTop": "Unpin from top",
+    "closeFloatingWindow": "Close floating window"
   },
   "status": {
     "dmCall": "DM Call",

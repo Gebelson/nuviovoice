@@ -100,6 +100,14 @@
       "showOnSwitch": {
         "label": "Schwebefenster während Anrufen anzeigen",
         "description": "Wenn du in einem Sprachkanal oder Anruf bist und dir etwas anderes ansiehst, bleibt der Anruf in einem kleinen Fenster sichtbar."
+      },
+      "alwaysOnTop": {
+        "label": "Schwebefenster immer im Vordergrund halten",
+        "description": "Hält das schwebende Fenster über anderen Apps und Spielen sichtbar."
+      },
+      "autoOpenOnMinimize": {
+        "label": "Anruf beim Minimieren von Nuvio ausdocken",
+        "description": "Öffnet das Schwebefenster automatisch, wenn Nuvio während eines Anrufs minimiert wird."
       }
     },
     "noiseSuppression": {

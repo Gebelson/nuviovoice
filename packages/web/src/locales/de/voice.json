@@ -201,7 +201,12 @@
     "disconnect": "Trennen",
     "connectionInfo": "Verbindungsinfo",
     "noiseSuppressionOff": "KI-Rauschunterdrückung ausschalten",
-    "noiseSuppressionOn": "KI-Rauschunterdrückung einschalten"
+    "noiseSuppressionOn": "KI-Rauschunterdrückung einschalten",
+    "popOutCall": "Anruf ausdocken",
+    "returnToMain": "Zurück zu Nuvio",
+    "pinAlwaysOnTop": "Immer im Vordergrund anheften",
+    "unpinAlwaysOnTop": "Lösen von Vordergrund",
+    "closeFloatingWindow": "Schwebendes Fenster schließen"
   },
   "status": {
     "dmCall": "Direktanruf",

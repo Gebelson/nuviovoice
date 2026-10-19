@@ -34,6 +34,7 @@ import { NotificationBell } from '../notifications/NotificationBell';
 import { ChannelHeaderTopic } from './ChannelHeaderTopic';
 import { isDmChannel } from '../../stores/spaceStore';
 import { usePointerReveal, VOICE_CHROME_ATTR } from '../../hooks/usePointerReveal';
+import { usePopOutCall } from '../../hooks/usePopOutCall';
 
 /**
  * Voice channel header, in both of its shapes.
@@ -61,7 +62,8 @@ function voiceHeaderClassName(fullscreen: boolean, revealed: boolean): string {
 
 export function MainContent() {
   // 1. ALL HOOKS AT THE TOP
-  const { t } = useTranslation(['spaces', 'common']);
+  const { t } = useTranslation(['spaces', 'common', 'voice']);
+  const { isSupported: isPopOutSupported, isPoppedOut, togglePopOut } = usePopOutCall();
   const channels = useSpaceStore((s) => s.channels);
   const currentChannelId = useChatStore((s) => s.currentChannelId);
   const currentSpaceId = useSpaceStore((s) => s.currentSpaceId);
@@ -277,6 +279,25 @@ export function MainContent() {
               )}
             </div>
             <div className={`flex items-center gap-1 flex-shrink-0 ${voiceFullscreen ? 'pointer-events-auto mr-24' : ''}`}>
+              {isPopOutSupported && (
+                <button
+                  onClick={togglePopOut}
+                  className={`w-8 h-8 flex items-center justify-center transition-colors rounded-[6px] ${
+                    isPoppedOut
+                      ? 'text-accent-primary bg-accent-primary/20'
+                      : 'text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover'
+                  }`}
+                  title={t('voice:controls.popOutCall', 'Descolar chamada')}
+                  aria-label={t('voice:controls.popOutCall', 'Descolar chamada')}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor" fillOpacity="0.2" />
+                    <polyline points="16 5 20 5 20 9" />
+                    <line x1="14" y1="10" x2="20" y2="4" />
+                  </svg>
+                </button>
+              )}
               <TransferIndicator />
               <MemberListToggleButton />
             </div>
@@ -524,6 +545,25 @@ export function MainContent() {
             )}
           </div>
           <div className={`flex items-center gap-1 flex-shrink-0 ${voiceFullscreen ? 'pointer-events-auto mr-24' : ''}`}>
+            {isPopOutSupported && (
+              <button
+                onClick={togglePopOut}
+                className={`w-8 h-8 flex items-center justify-center transition-colors rounded-[6px] ${
+                  isPoppedOut
+                    ? 'text-accent-primary bg-accent-primary/20'
+                    : 'text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover'
+                }`}
+                title={t('voice:controls.popOutCall', 'Descolar chamada')}
+                aria-label={t('voice:controls.popOutCall', 'Descolar chamada')}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" />
+                  <rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor" fillOpacity="0.2" />
+                  <polyline points="16 5 20 5 20 9" />
+                  <line x1="14" y1="10" x2="20" y2="4" />
+                </svg>
+              </button>
+            )}
             <NotificationBell />
             <TransferIndicator />
             <MemberListToggleButton />

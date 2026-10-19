@@ -8,6 +8,7 @@ import { ConnectionInfoPopover } from './ConnectionInfoPopover';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { handleCameraAction, handleDisconnectAction, handleScreenShareAction, reconnectVoice } from '../../utils/voiceActions';
 import { broadcastVoiceStatus, broadcastDeafenViaLiveKit } from '../../utils/voice';
+import { usePopOutCall } from '../../hooks/usePopOutCall';
 
 /**
  * VoiceControls renders the voice status + button rows.
@@ -41,6 +42,7 @@ export function VoiceControls() {
   const isDmCall = !!activeDmCall;
   const canSpeak = isDmCall || hasPermissionBit(channelPerms, PermissionBits.SPEAK);
   const canStream = isDmCall || hasPermissionBit(channelPerms, PermissionBits.STREAM);
+  const { isSupported: isPopOutSupported, isPoppedOut, togglePopOut } = usePopOutCall();
 
   const user = useAuthStore((s) => s.user);
   const spaceId = useSpaceStore((s) => currentVoiceChannelId ? s.channelToSpaceMap.get(currentVoiceChannelId) : null);
@@ -173,6 +175,25 @@ export function VoiceControls() {
               className="px-2 h-7 text-[12px] text-accent-primary hover:bg-interactive-hover rounded"
             >
               {t('voice:status.retry')}
+            </button>
+          )}
+          {isPopOutSupported && (
+            <button
+              onClick={togglePopOut}
+              className={`w-7 h-7 flex items-center justify-center transition-colors rounded ${
+                isPoppedOut
+                  ? 'text-accent-primary bg-accent-primary/20 hover:bg-accent-primary/30'
+                  : 'text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover'
+              }`}
+              title={t('voice:controls.popOutCall', 'Descolar chamada')}
+              aria-label={t('voice:controls.popOutCall', 'Descolar chamada')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor" fillOpacity="0.2" />
+                <polyline points="16 5 20 5 20 9" />
+                <line x1="14" y1="10" x2="20" y2="4" />
+              </svg>
             </button>
           )}
           <button

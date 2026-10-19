@@ -100,6 +100,14 @@
       "showOnSwitch": {
         "label": "Show floating window during calls",
         "description": "While you are in a voice channel or call and look at something else, a small window keeps the call in view."
+      },
+      "alwaysOnTop": {
+        "label": "Keep floating window always on top",
+        "description": "Keeps the detached window visible on top of other apps and games."
+      },
+      "autoOpenOnMinimize": {
+        "label": "Pop out call when minimizing Nuvio",
+        "description": "Automatically opens the floating window when Nuvio is minimized during an active call."
       }
     },
     "noiseSuppression": {

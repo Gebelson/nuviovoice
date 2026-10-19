@@ -11,6 +11,7 @@ import type { ParticipantInfo } from '../../hooks/useLiveKit';
 import { useVoiceParticipantMeta } from '../../hooks/useVoiceParticipantMeta';
 import { useActiveDmCall } from '../../hooks/useActiveDmCall';
 import { dmCallRoomKey } from '../../utils/dmCall';
+import { openPopOutCallWindow, isDocumentPipSupported } from '../../hooks/usePopOutCall';
 
 /** Stable fallback for useVoiceParticipantMeta when no participant exists */
 const EMPTY_PARTICIPANT: ParticipantInfo = {
@@ -136,6 +137,7 @@ export function PictureInPicture() {
   const watchingStreams = useVoiceStore((s) => s.watchingStreams);
   const speakingParticipantIds = useVoiceStore((s) => s.speakingParticipantIds);
   const pipEnabled = useVoiceStore((s) => s.pipEnabled);
+  const isPopOutOpen = useVoiceStore((s) => s.isPopOutOpen);
   const currentChannelId = useChatStore((s) => s.currentChannelId);
   const voiceFullscreen = useUIStore((s) => s.voiceFullscreen);
   const pipCollapsed = useUIStore((s) => s.pipCollapsed);
@@ -166,7 +168,7 @@ export function PictureInPicture() {
   // Visibility — split into wouldShow (ignores collapsed) and shouldShow (full check)
   const isInServerVoice = currentVoiceChannelId !== null && currentChannelId !== currentVoiceChannelId;
   const isInDmCall = activeDmCall !== null && currentChannelId !== dmCallChannel;
-  const wouldShow = (isInServerVoice || isInDmCall) && !voiceFullscreen && pipEnabled;
+  const wouldShow = (isInServerVoice || isInDmCall) && !voiceFullscreen && pipEnabled && !isPopOutOpen;
   const shouldShow = wouldShow && !pipCollapsed;
 
   // Reset pipCollapsed when wouldShow transitions false → true
@@ -458,6 +460,26 @@ export function PictureInPicture() {
         <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-accent-rose rounded text-[11px] font-bold text-white uppercase tracking-wide">
           {t('badges.live')}
         </div>
+      )}
+
+      {/* Pop-out button */}
+      {isDocumentPipSupported() && (
+        <button
+          data-pip-action="popout"
+          onClick={(e) => {
+            e.stopPropagation();
+            void openPopOutCallWindow();
+          }}
+          title={t('controls.popOutCall', 'Descolar chamada')}
+          className="absolute top-2 right-9 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
+          </svg>
+        </button>
       )}
 
       {/* Close button */}
