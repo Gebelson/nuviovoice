@@ -64,6 +64,25 @@ export function ensureDefaults(db: Database.Database): void {
       console.log(`[defaults] Promoted first user ${firstUser.id} to admin`);
     }
   }
+
+  // 4. Ensure voice_invites table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS voice_invites (
+      id TEXT PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+      channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER,
+      max_uses INTEGER,
+      used_count INTEGER NOT NULL DEFAULT 0,
+      revoked_at INTEGER
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_voice_invites_token ON voice_invites(token);
+    CREATE INDEX IF NOT EXISTS idx_voice_invites_space_id ON voice_invites(space_id);
+    CREATE INDEX IF NOT EXISTS idx_voice_invites_channel_id ON voice_invites(channel_id);
+  `);
 }
 
 /**

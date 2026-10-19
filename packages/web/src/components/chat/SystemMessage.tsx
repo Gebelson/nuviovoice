@@ -2,6 +2,7 @@ import type { DmChannel, MessageWithUser } from '@concord/shared';
 import { parseDmSystemEvent } from '@concord/shared/src/dmSystemEvents';
 import { useTranslation } from 'react-i18next';
 import { SpaceInviteCard } from './SpaceInviteCard';
+import { VoiceInviteCard } from './VoiceInviteCard';
 import { dmSystemActor, dmSystemActorName, dmSystemIcon, dmSystemText } from '../../utils/dmFormatters';
 
 interface SystemMessageProps {
@@ -33,6 +34,14 @@ export function SystemMessage({ message, dm }: SystemMessageProps) {
     return (
       <div className="px-4 py-1">
         <SpaceInviteCard payload={event} senderName={actorName} />
+      </div>
+    );
+  }
+
+  if (event?.event === 'voice_invite') {
+    return (
+      <div className="px-4 py-1">
+        <VoiceInviteCard payload={event} senderName={actorName} />
       </div>
     );
   }

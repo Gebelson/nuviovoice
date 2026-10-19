@@ -4,6 +4,7 @@ import { LoginPage } from './components/auth/LoginPage';
 import { RegisterPage } from './components/auth/RegisterPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { JoinPage } from './components/JoinPage';
+import { VoiceInvitePage } from './components/voice/VoiceInvitePage';
 import { SwAutoUpdate } from './components/ui/SwUpdatePrompt';
 import { TelemetryAsk } from './components/telemetry/TelemetryAsk';
 import { ScreenShareSetup } from './components/voice/ScreenShareSetup';
@@ -91,6 +92,10 @@ export function App() {
           <Route
             path="/invite/:inviteCode"
             element={<JoinPage />}
+          />
+          <Route
+            path="/voice/invite/:token"
+            element={<VoiceInvitePage />}
           />
           <Route
             path="/explore"

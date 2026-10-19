@@ -35,9 +35,11 @@ import type { UserSettingsTab } from '../modals/UserSettings';
 import { ChannelMutedIndicator } from '../notifications/ChannelMutedIndicator';
 import { isElectron } from '../../platform/platform';
 import { useUpdateStore } from '../../stores/updateStore';
+import { VoiceInvitePopover } from '../voice/VoiceInvitePopover';
 
 export function ChannelSidebar() {
   const { t } = useTranslation(['spaces', 'common', 'project']);
+  const [voiceInviteTarget, setVoiceInviteTarget] = useState<{ id: string; name: string } | null>(null);
   const spaces = useSpaceStore((s) => s.spaces);
   const currentSpaceId = useSpaceStore((s) => s.currentSpaceId);
   const loadingSpaceId = useSpaceStore((s) => s.loadingSpaceId);
@@ -734,6 +736,7 @@ export function ChannelSidebar() {
                     if (canConnect) handleVoiceJoin(channel.id);
                   }) : (() => handleChannelClick(channel.id))}
                   onSettingsClick={() => openModal('channelSettings', { channelId: channel.id })}
+                  onInviteClick={canCreateInvite ? () => setVoiceInviteTarget({ id: channel.id, name: channel.name }) : undefined}
                   channelDragHandlers={channelHandlers(channel.id)}
                   voiceUserHandlers={voiceUserHandlers}
                   voiceChannelDropZone={voiceChannelDropZone(channel.id)}
@@ -848,6 +851,7 @@ export function ChannelSidebar() {
                         if (canConnect) handleVoiceJoin(channel.id);
                       }) : (() => handleChannelClick(channel.id))}
                       onSettingsClick={() => openModal('channelSettings', { channelId: channel.id })}
+                      onInviteClick={canCreateInvite ? () => setVoiceInviteTarget({ id: channel.id, name: channel.name }) : undefined}
                       channelDragHandlers={channelHandlers(channel.id)}
                       voiceUserHandlers={voiceUserHandlers}
                       voiceChannelDropZone={voiceChannelDropZone(channel.id)}
@@ -916,6 +920,16 @@ export function ChannelSidebar() {
       variant="danger"
       loading={deleteCategoryLoading}
     />
+    {voiceInviteTarget && (
+      <VoiceInvitePopover
+        channelId={voiceInviteTarget.id}
+        channelName={voiceInviteTarget.name}
+        spaceName={space?.name}
+        isOpen={true}
+        onClose={() => setVoiceInviteTarget(null)}
+        className="fixed top-20 left-64 z-50 w-[360px] bg-surface-elevated/95 backdrop-blur-md border border-border-soft rounded-xl shadow-elevation-high p-4 text-txt-primary flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-150"
+      />
+    )}
     </>
   );
 }
@@ -1410,6 +1424,7 @@ function ChannelItem({
   voiceChannelDropZone,
   channelPermissions,
   handleVoiceJoin,
+  onInviteClick,
 }: {
   channel: Channel;
   isActive: boolean;
@@ -1418,6 +1433,7 @@ function ChannelItem({
   dropIndicator: 'before' | 'after' | null;
   onChannelClick: () => void;
   onSettingsClick: () => void;
+  onInviteClick?: () => void;
   channelDragHandlers: {
     draggable: boolean;
     onDragStart: (e: React.DragEvent) => void;
@@ -1460,6 +1476,7 @@ function ChannelItem({
           locked={!canConnect}
           canManage={canManage}
           onSettingsClick={onSettingsClick}
+          onInviteClick={onInviteClick}
           voiceUserHandlers={voiceUserHandlers}
           dropZone={voiceChannelDropZone}
         />

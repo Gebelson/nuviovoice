@@ -1108,6 +1108,54 @@ export interface SpaceInviteSystemPayload {
   };
 }
 
+/** JSON content shape for type='system' voice_invite messages. */
+export interface VoiceInviteSystemPayload {
+  event: 'voice_invite';
+  token: string;
+  spaceId: string;
+  channelId: string;
+  channelName: string;
+  spaceInstanceOrigin: string;
+  snapshot: {
+    spaceName: string;
+    icon: string | null;
+    avatarColor: AvatarColor | null;
+    memberCount: number;
+    description: string | null;
+    instanceName: string;
+  };
+  expiresAt?: number | null;
+}
+
+export interface VoiceInvitePreview {
+  token: string;
+  space: {
+    id: string;
+    name: string;
+    description: string | null;
+    icon: string | null;
+    banner: string | null;
+    avatarColor: AvatarColor | null;
+    memberCount: number;
+    visibility: SpaceVisibility;
+  };
+  channel: {
+    id: string;
+    name: string;
+    type: 'voice';
+    participantCount: number;
+  };
+  inviter: {
+    id: string;
+    displayName: string | null;
+    username: string;
+    avatar: string | null;
+  };
+  expiresAt: number | null;
+  maxUses: number | null;
+  usedCount: number;
+}
+
 export interface PaginatedQuery {
   before?: string;
   after?: string;

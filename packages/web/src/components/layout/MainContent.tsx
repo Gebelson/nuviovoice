@@ -35,6 +35,7 @@ import { ChannelHeaderTopic } from './ChannelHeaderTopic';
 import { isDmChannel } from '../../stores/spaceStore';
 import { usePointerReveal, VOICE_CHROME_ATTR } from '../../hooks/usePointerReveal';
 import { usePopOutCall } from '../../hooks/usePopOutCall';
+import { VoiceInvitePopover } from '../voice/VoiceInvitePopover';
 
 /**
  * Voice channel header, in both of its shapes.
@@ -67,6 +68,8 @@ export function MainContent() {
   const channels = useSpaceStore((s) => s.channels);
   const currentChannelId = useChatStore((s) => s.currentChannelId);
   const currentSpaceId = useSpaceStore((s) => s.currentSpaceId);
+  const spaces = useSpaceStore((s) => s.spaces);
+  const currentSpace = spaces.find((sp) => sp.id === currentSpaceId);
   const voiceChatOpen = useUIStore((s) => s.voiceChatOpen);
   const voiceFullscreen = useUIStore((s) => s.voiceFullscreen);
   const setVoiceFullscreen = useUIStore((s) => s.setVoiceFullscreen);
@@ -88,6 +91,8 @@ export function MainContent() {
   const openModal = useUIStore((s) => s.openModal);
 
   const voiceContainerRef = useRef<HTMLDivElement>(null);
+  const voiceInviteBtnRef = useRef<HTMLButtonElement>(null);
+  const [voiceInviteOpen, setVoiceInviteOpen] = useState(false);
   // Fullscreen chrome is revealed by pointer movement and hidden once the
   // pointer goes still. It cannot be `group-hover`: fullscreen makes this
   // container the whole viewport, so hover is true wherever the pointer is
@@ -107,9 +112,10 @@ export function MainContent() {
   const _FALLBACK_USER = { id: '', username: '', createdAt: 0, isAdmin: false, replicatedInstances: [] } as unknown as User;
   const _canonicalFirstOther = useCanonicalUserView(_rawFirstOther ?? _FALLBACK_USER, dmViewer.origin);
 
-  // Reset search when channel changes
+  // Reset search and voice invite when channel changes
   useEffect(() => {
     setSearchOpen(false);
+    setVoiceInviteOpen(false);
   }, [currentChannelId]);
 
   // Handle actual browser fullscreen API.
@@ -487,15 +493,36 @@ export function MainContent() {
 
     if (!isInThisChannel) {
       return (
-        <div className="flex-1 flex flex-col bg-surface-base">
+        <div className="flex-1 flex flex-col bg-surface-base relative">
           <div className="h-12 px-5 flex items-center justify-between border-b border-border-hard flex-shrink-0 bg-surface-base">
             <div className="flex items-center gap-[10px]">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="text-txt-tertiary">
                 <path d="M11 5L6 9H2V15H6L11 19V5ZM15.54 8.46C16.48 9.4 17 10.67 17 12S16.48 14.6 15.54 15.54L14.12 14.12C14.69 13.55 15 12.79 15 12S14.69 10.45 14.12 9.88L15.54 8.46Z" />
               </svg>
               <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary">{channel.name}</span>
+              <button
+                ref={voiceInviteBtnRef}
+                onClick={() => setVoiceInviteOpen((v) => !v)}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-txt-secondary hover:text-white bg-white/[0.06] hover:bg-white/[0.12] rounded-full transition-colors ml-1.5"
+                title={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+                <span>{t('voice:invite.inviteToVoice', 'Convidar para voz')}</span>
+              </button>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => setVoiceInviteOpen((v) => !v)}
+                className="w-8 h-8 flex items-center justify-center transition-colors rounded-[6px] text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover"
+                title={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+                aria-label={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+              </button>
               <NotificationBell />
               <TransferIndicator />
               <MemberListToggleButton />
@@ -507,13 +534,32 @@ export function MainContent() {
               <h2 className="text-[28px] font-bold text-white mb-3">{channel.name}</h2>
               <p className="text-txt-tertiary text-[15px]">{t('spaces:main.voice.empty')}</p>
             </div>
-            <button
-              onClick={() => joinVoiceChannel(currentChannelId, useVoiceStore.getState().connectFn ?? undefined)}
-              className="relative z-10 px-8 py-3 bg-accent-primary hover:bg-accent-primary-hover text-white font-semibold rounded-full transition-all text-[15px] shadow-[0_4px_20px_rgb(var(--accent-primary)/0.3)]"
-            >
-              {t('spaces:main.voice.join')}
-            </button>
+            <div className="flex items-center gap-3 relative z-10">
+              <button
+                onClick={() => joinVoiceChannel(currentChannelId, useVoiceStore.getState().connectFn ?? undefined)}
+                className="px-8 py-3 bg-accent-primary hover:bg-accent-primary-hover text-white font-semibold rounded-full transition-all text-[15px] shadow-[0_4px_20px_rgb(var(--accent-primary)/0.3)]"
+              >
+                {t('spaces:main.voice.join')}
+              </button>
+              <button
+                onClick={() => setVoiceInviteOpen(true)}
+                className="px-5 py-3 bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold rounded-full transition-all text-[15px] flex items-center gap-2 border border-white/10"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+                <span>{t('voice:invite.inviteToVoice', 'Convidar para voz')}</span>
+              </button>
+            </div>
           </div>
+          <VoiceInvitePopover
+            channelId={channel.id}
+            channelName={channel.name}
+            spaceName={currentSpace?.name}
+            isOpen={voiceInviteOpen}
+            onClose={() => setVoiceInviteOpen(false)}
+            anchorRef={voiceInviteBtnRef}
+          />
         </div>
       );
     }
@@ -533,6 +579,16 @@ export function MainContent() {
               <path d="M11 5L6 9H2V15H6L11 19V5ZM15.54 8.46C16.48 9.4 17 10.67 17 12S16.48 14.6 15.54 15.54L14.12 14.12C14.69 13.55 15 12.79 15 12S14.69 10.45 14.12 9.88L15.54 8.46Z" />
             </svg>
             <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary">{channel.name}</span>
+            <button
+              onClick={() => setVoiceInviteOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-txt-secondary hover:text-white bg-white/[0.06] hover:bg-white/[0.12] rounded-full transition-colors ml-1.5"
+              title={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
+              <span>{t('voice:invite.inviteToVoice', 'Convidar para voz')}</span>
+            </button>
             {connectionError ? (
               <span className="text-xs text-txt-danger font-medium ml-2">{t('spaces:main.voice.connectionFailed')}</span>
             ) : isLiveKitConnected ? (
@@ -545,6 +601,16 @@ export function MainContent() {
             )}
           </div>
           <div className={`flex items-center gap-1 flex-shrink-0 ${voiceFullscreen ? 'pointer-events-auto mr-24' : ''}`}>
+            <button
+              onClick={() => setVoiceInviteOpen((v) => !v)}
+              className="w-8 h-8 flex items-center justify-center transition-colors rounded-[6px] text-txt-tertiary hover:text-txt-primary hover:bg-interactive-hover"
+              title={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+              aria-label={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
+            </button>
             {isPopOutSupported && (
               <button
                 onClick={togglePopOut}
@@ -579,6 +645,13 @@ export function MainContent() {
             <VoiceChatPanel channelId={currentChannelId} channelName={channel.name} />
           )}
         </div>
+        <VoiceInvitePopover
+          channelId={channel.id}
+          channelName={channel.name}
+          spaceName={currentSpace?.name}
+          isOpen={voiceInviteOpen}
+          onClose={() => setVoiceInviteOpen(false)}
+        />
       </div>
     );
   }

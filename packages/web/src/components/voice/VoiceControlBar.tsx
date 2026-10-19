@@ -9,6 +9,7 @@ import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { handleMuteAction, handleDeafenAction, handleCameraAction, handleScreenShareAction, handleDisconnectAction } from '../../utils/voiceActions';
 import { VOICE_CHROME_ATTR } from '../../hooks/usePointerReveal';
 import { usePopOutCall } from '../../hooks/usePopOutCall';
+import { VoiceInvitePopover } from './VoiceInvitePopover';
 
 const btnBase = 'w-10 h-10 flex items-center justify-center rounded-full transition-colors';
 const btnDefault = `${btnBase} bg-surface-channel text-txt-secondary hover:bg-surface-elevated hover:text-txt-primary`;
@@ -44,6 +45,9 @@ export function VoiceControlBar({ revealed = false }: { revealed?: boolean }) {
   const canSpeak = isDmCall || hasPermissionBit(channelPerms, PermissionBits.SPEAK);
   const canStream = isDmCall || hasPermissionBit(channelPerms, PermissionBits.STREAM);
   const { isSupported: isPopOutSupported, isPoppedOut, togglePopOut } = usePopOutCall();
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const voiceChannel = useSpaceStore((s) => s.channels.find((c) => c.id === currentVoiceChannelId));
+  const space = useSpaceStore((s) => s.spaces.find((sp) => sp.id === spaceId));
   // The screen-share button is the single entry point to stream settings:
   // idle → opens the OS/Electron source picker; live → opens the settings
   // popover (quality controls + the red stop action).
@@ -52,7 +56,7 @@ export function VoiceControlBar({ revealed = false }: { revealed?: boolean }) {
 
   // An open share menu pins the bar: the popover hangs off it, so letting the
   // idle timer pull it away would take the menu with it.
-  const fullscreenVisibility = revealed || shareMenuOpen
+  const fullscreenVisibility = revealed || shareMenuOpen || inviteOpen
     ? 'opacity-100'
     : 'opacity-0 focus-within:opacity-100 [@media(hover:none)]:opacity-100 [@media(any-pointer:coarse)]:opacity-100';
   const containerClassName = voiceFullscreen
@@ -251,6 +255,22 @@ export function VoiceControlBar({ revealed = false }: { revealed?: boolean }) {
           </button>
         )}
 
+        {/* Convidar para voz */}
+        {!isDmCall && currentVoiceChannelId && (
+          <button
+            onClick={() => setInviteOpen((v) => !v)}
+            className={inviteOpen
+              ? `${btnBase} bg-accent-primary/20 text-accent-primary`
+              : btnDefault
+            }
+            title={t('voice:invite.inviteToVoice', 'Convidar para voz')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          </button>
+        )}
+
         {/* Separator */}
         <div className="w-[1px] h-6 bg-white/10 mx-0.5" />
 
@@ -265,6 +285,17 @@ export function VoiceControlBar({ revealed = false }: { revealed?: boolean }) {
           </svg>
         </button>
       </div>
+
+      {!isDmCall && currentVoiceChannelId && (
+        <VoiceInvitePopover
+          channelId={currentVoiceChannelId}
+          channelName={voiceChannel?.name ?? 'Voz'}
+          spaceName={space?.name}
+          isOpen={inviteOpen}
+          onClose={() => setInviteOpen(false)}
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[360px] bg-surface-elevated/95 backdrop-blur-md border border-border-soft rounded-xl shadow-elevation-high p-4 text-txt-primary flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
+        />
+      )}
     </div>
   );
 }

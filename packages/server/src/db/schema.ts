@@ -939,3 +939,22 @@ export const botCommands = sqliteTable('bot_commands', {
   spaceIdx: index('idx_bot_commands_space_id').on(table.spaceId),
 }));
 
+// Direct Voice Channel Invites
+export const voiceInvites = sqliteTable('voice_invites', {
+  id: text('id').primaryKey(),
+  token: text('token').notNull().unique(),
+  spaceId: text('space_id').notNull().references(() => spaces.id, { onDelete: 'cascade' }),
+  channelId: text('channel_id').notNull().references(() => channels.id, { onDelete: 'cascade' }),
+  createdBy: text('created_by').notNull().references(() => users.id),
+  createdAt: integer('created_at').notNull(),
+  expiresAt: integer('expires_at'),
+  maxUses: integer('max_uses'),
+  usedCount: integer('used_count').notNull().default(0),
+  revokedAt: integer('revoked_at'),
+}, (table) => ({
+  tokenIdx: uniqueIndex('idx_voice_invites_token').on(table.token),
+  spaceIdx: index('idx_voice_invites_space_id').on(table.spaceId),
+  channelIdx: index('idx_voice_invites_channel_id').on(table.channelId),
+}));
+
+

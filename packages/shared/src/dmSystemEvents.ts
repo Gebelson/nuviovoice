@@ -1,4 +1,4 @@
-import { AVATAR_COLORS, type AvatarColor, type SpaceInviteSystemPayload } from './types.js';
+import { AVATAR_COLORS, type AvatarColor, type SpaceInviteSystemPayload, type VoiceInviteSystemPayload } from './types.js';
 
 /**
  * The content of a DM system message (`dm_messages.type = 'system'`), stored
@@ -18,10 +18,11 @@ export type DmSystemEvent =
   | { event: 'owner_changed'; newOwnerId: string; newOwnerDisplayName: string }
   | { event: 'name_changed'; oldName: string | null; newName: string | null }
   | { event: 'icon_changed' }
-  | SpaceInviteSystemPayload;
+  | SpaceInviteSystemPayload
+  | VoiceInviteSystemPayload;
 
 /** The system events a peer may relay as a message. */
-export const RELAYABLE_DM_SYSTEM_EVENTS: ReadonlySet<DmSystemEvent['event']> = new Set(['space_invite']);
+export const RELAYABLE_DM_SYSTEM_EVENTS: ReadonlySet<DmSystemEvent['event']> = new Set(['space_invite', 'voice_invite']);
 
 type Fields = Record<string, unknown>;
 
@@ -147,7 +148,48 @@ export function parseDmSystemEvent(content: string | null | undefined): DmSystem
       return { event: 'icon_changed' };
     case 'space_invite':
       return parseSpaceInvite(data);
+    case 'voice_invite':
+      return parseVoiceInvite(data);
     default:
       return null;
   }
+}
+
+function parseVoiceInvite(data: Fields): VoiceInviteSystemPayload | null {
+  const token = text(data.token);
+  const spaceId = text(data.spaceId);
+  const channelId = text(data.channelId);
+  const channelName = text(data.channelName);
+  const spaceInstanceOrigin = text(data.spaceInstanceOrigin);
+  const snapshot = data.snapshot;
+  if (!token || !spaceId || !channelId || !channelName || !spaceInstanceOrigin || !isFields(snapshot)) return null;
+  if (spaceInstanceOrigin !== '' && !isHttpOrigin(spaceInstanceOrigin)) return null;
+
+  const spaceName = text(snapshot.spaceName);
+  const icon = optionalText(snapshot.icon);
+  const description = optionalText(snapshot.description);
+  const instanceName = typeof snapshot.instanceName === 'string' ? snapshot.instanceName : null;
+  const memberCount = snapshot.memberCount;
+  if (!spaceName || icon === undefined || description === undefined || instanceName === null) return null;
+  if (typeof memberCount !== 'number' || !Number.isInteger(memberCount) || memberCount < 0) return null;
+
+  const expiresAt = typeof data.expiresAt === 'number' ? data.expiresAt : null;
+
+  return {
+    event: 'voice_invite',
+    token,
+    spaceId,
+    channelId,
+    channelName,
+    spaceInstanceOrigin,
+    snapshot: {
+      spaceName,
+      icon,
+      avatarColor: avatarColor(snapshot.avatarColor),
+      memberCount,
+      description,
+      instanceName,
+    },
+    expiresAt,
+  };
 }

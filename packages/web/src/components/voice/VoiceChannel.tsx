@@ -45,6 +45,7 @@ interface VoiceChannelProps {
   locked?: boolean;
   canManage?: boolean;
   onSettingsClick?: () => void;
+  onInviteClick?: () => void;
   voiceUserHandlers?: (userId: string, channelId: string) => {
     draggable: boolean;
     isBeingDragged: boolean;
@@ -62,7 +63,7 @@ interface VoiceChannelProps {
 }
 
 /** Wrapper component for the volume slider so it can use hooks (useState). */
-export function VoiceChannel({ channelId, channelName, onClick, locked, canManage, onSettingsClick, voiceUserHandlers, dropZone }: VoiceChannelProps) {
+export function VoiceChannel({ channelId, channelName, onClick, locked, canManage, onSettingsClick, onInviteClick, voiceUserHandlers, dropZone }: VoiceChannelProps) {
   const { t } = useTranslation(['voice', 'common']);
   const serverVoiceUsers = useVoiceStore((s) => s.voiceUsers.get(channelId)) ?? EMPTY_VOICE_USERS;
   const currentVoiceChannel = useVoiceStore((s) => s.currentVoiceChannelId);
@@ -179,6 +180,23 @@ export function VoiceChannel({ channelId, channelName, onClick, locked, canManag
         )}
         <span className="truncate text-[15px] font-medium flex-1 text-left">{channelName}</span>
         <span className="relative flex flex-shrink-0 items-center">
+          {onInviteClick && (
+            <svg
+              data-testid="voice-channel-invite"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+              className={`pointer-events-none absolute right-full ${canManage ? 'mr-6' : 'mr-1'} opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 text-txt-tertiary hover:text-txt-primary transition-opacity`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onInviteClick?.();
+              }}
+            >
+              <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          )}
           {canManage && (
             <svg
               data-testid="voice-channel-settings"

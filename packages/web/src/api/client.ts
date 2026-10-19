@@ -81,6 +81,7 @@ import type {
   CheckInviteResponse,
   SpaceInviteRequest,
   SpaceInviteResponse,
+  VoiceInvitePreview,
   AttachProofResponse,
   ReattachRequest,
   ReattachResponse,
@@ -429,6 +430,38 @@ export class BackspaceApiClient {
     reinstate: (id: string, body: ReinstateInviteRequest) => Promise<ReinstateInviteResponse>;
     delete: (id: string) => Promise<{ success: boolean }>;
     redemptions: (id: string) => Promise<{ redemptions: InviteRedemption[] }>;
+  };
+
+  readonly voiceInvites: {
+    create: (channelId: string, data?: { expiresInSeconds?: number | null; maxUses?: number | null }) => Promise<{
+      id: string;
+      token: string;
+      spaceId: string;
+      channelId: string;
+      expiresAt: number | null;
+      maxUses: number | null;
+      usedCount: number;
+      inviteUrl: string;
+    }>;
+    preview: (token: string) => Promise<VoiceInvitePreview>;
+    join: (token: string) => Promise<{
+      space: { id: string; name: string };
+      channel: { id: string; name: string; type: 'voice' };
+    }>;
+    list: (channelId: string) => Promise<Array<{
+      id: string;
+      token: string;
+      spaceId: string;
+      channelId: string;
+      createdBy: string;
+      createdAt: number;
+      expiresAt: number | null;
+      maxUses: number | null;
+      usedCount: number;
+      revokedAt: number | null;
+    }>>;
+    revoke: (id: string) => Promise<{ success: boolean }>;
+    sendDm: (targetUserId: string, token: string) => Promise<{ success: boolean; messageId: string }>;
   };
 
   readonly admin: {
@@ -973,6 +1006,27 @@ export class BackspaceApiClient {
         request<{ success: boolean }>('DELETE', `/admin/invites/${id}`),
       redemptions: (id: string) =>
         request<{ redemptions: InviteRedemption[] }>('GET', `/admin/invites/${id}/redemptions`),
+    };
+
+    this.voiceInvites = {
+      create: (channelId: string, data?: { expiresInSeconds?: number | null; maxUses?: number | null }) =>
+        request<{ id: string; token: string; spaceId: string; channelId: string; expiresAt: number | null; maxUses: number | null; usedCount: number; inviteUrl: string }>(
+          'POST', `/channels/${channelId}/voice-invites`, data
+        ),
+      preview: (token: string) =>
+        request<VoiceInvitePreview>('GET', `/voice-invites/${encodeURIComponent(token)}/preview`, undefined, false),
+      join: (token: string) =>
+        request<{ space: { id: string; name: string }; channel: { id: string; name: string; type: 'voice' } }>(
+          'POST', `/voice-invites/${encodeURIComponent(token)}/join`
+        ),
+      list: (channelId: string) =>
+        request<Array<{ id: string; token: string; spaceId: string; channelId: string; createdBy: string; createdAt: number; expiresAt: number | null; maxUses: number | null; usedCount: number; revokedAt: number | null }>>(
+          'GET', `/channels/${channelId}/voice-invites`
+        ),
+      revoke: (id: string) =>
+        request<{ success: boolean }>('DELETE', `/voice-invites/${id}`),
+      sendDm: (targetUserId: string, token: string) =>
+        request<{ success: boolean; messageId: string }>('POST', '/dm/voice-invite', { targetUserId, token }),
     };
 
     this.admin = {

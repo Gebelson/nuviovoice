@@ -141,3 +141,21 @@ export function spaceInviteUrl(instanceOrigin: string, inviteCode: string): stri
   if (isOfficialOrigin(instanceOrigin)) return `${PUBLIC_WEB_ORIGIN}${path}`;
   return new URL(`/join/${encodeURIComponent(inviteCode)}`, instanceOrigin).toString();
 }
+
+/**
+ * The public canonical URL for a direct voice channel invite.
+ */
+export function voiceInviteUrl(token: string): string {
+  return `${PUBLIC_WEB_ORIGIN}/voice/invite/${encodeURIComponent(token)}`;
+}
+
+/**
+ * Parse a voice invite URL or token.
+ */
+export function parseVoiceInviteToken(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(/(?:voice\/invite\/|^)([A-Za-z0-9_-]{8,64})\/?$/);
+  return match && match[1] ? match[1] : null;
+}
+
