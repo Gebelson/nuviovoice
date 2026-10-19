@@ -587,6 +587,7 @@
     },
     "dmList": {
       "explore": "Обзор",
+      "downloadNuvio": "Скачать Nuvio",
       "newDm": "Новое личное сообщение",
       "empty": "Пока нет бесед.",
       "leaveGroup": "Покинуть группу",

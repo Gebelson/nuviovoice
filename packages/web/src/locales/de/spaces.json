@@ -571,6 +571,7 @@
     },
     "dmList": {
       "explore": "Entdecken",
+      "downloadNuvio": "Nuvio herunterladen",
       "newDm": "Neue Direktnachricht",
       "empty": "Noch keine Unterhaltungen.",
       "leaveGroup": "Gruppe verlassen",

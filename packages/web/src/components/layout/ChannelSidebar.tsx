@@ -33,6 +33,7 @@ import { HubUpdateDot } from '../projectHub/HubUpdateDot';
 import { DropdownItem } from '../modals/settingsPanels/_shared/SettingsPickerPrimitives';
 import type { UserSettingsTab } from '../modals/UserSettings';
 import { ChannelMutedIndicator } from '../notifications/ChannelMutedIndicator';
+import { isElectron } from '../../platform/platform';
 
 export function ChannelSidebar() {
   const { t } = useTranslation(['spaces', 'common', 'project']);
@@ -45,6 +46,7 @@ export function ChannelSidebar() {
   const setCurrentChannel = useChatStore((s) => s.setCurrentChannel);
   const unreadChannels = useChatStore((s) => s.unreadChannels);
   const openModal = useUIStore((s) => s.openModal);
+  const activeModal = useUIStore((s) => s.activeModal);
   const user = useAuthStore((s) => s.user);
   const members = useSpaceStore((s) => s.members);
   const currentVoiceChannelId = useVoiceStore((s) => s.currentVoiceChannelId);
@@ -488,19 +490,38 @@ export function ChannelSidebar() {
             <span className="font-medium text-[16px]">{t('common:labels.friends')}</span>
           </div>
 
-          <div
-            onClick={() => navigate('/explore')}
-            className={`flex items-center gap-3 px-2 h-[42px] rounded-[6px] cursor-pointer mb-[2px] transition-colors group ${
-              activeHomeItem === 'explore'
-                ? 'bg-interactive-selected text-white'
-                : 'text-txt-tertiary hover:bg-interactive-hover hover:text-txt-secondary'
-            }`}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={`flex-shrink-0 ${activeHomeItem === 'explore' ? 'text-white' : 'opacity-70 group-hover:opacity-100'}`}>
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z" />
-            </svg>
-            <span className="font-medium text-[16px]">{t('spaces:sidebar.dmList.explore')}</span>
-          </div>
+          {!isElectron() && (
+            <div
+              onClick={() => openModal('downloadDesktop')}
+              data-testid="dm-sidebar-download-nuvio"
+              className={`flex items-center gap-3 px-2 h-[42px] rounded-[6px] cursor-pointer mb-[2px] transition-colors group ${
+                activeModal === 'downloadDesktop'
+                  ? 'bg-interactive-selected text-white'
+                  : 'text-txt-tertiary hover:bg-interactive-hover hover:text-txt-secondary'
+              }`}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`flex-shrink-0 ${
+                  activeModal === 'downloadDesktop' ? 'text-white' : 'opacity-70 group-hover:opacity-100'
+                }`}
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span className="font-medium text-[16px]">
+                {t('spaces:sidebar.dmList.downloadNuvio', { defaultValue: 'Baixar Nuvio' })}
+              </span>
+            </div>
+          )}
 
 
           <div className="mt-[18px] px-2 mb-1 flex items-center justify-between group">

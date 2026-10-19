@@ -21,6 +21,7 @@ type ModalType =
   | 'userProfile'
   | 'connectAndJoin'
   | 'memberRoles'
+  | 'downloadDesktop'
   | null;
 
 /**

@@ -25,6 +25,7 @@ import { GroupDmSettings } from '../modals/GroupDmSettings';
 import { UserProfileModal } from '../modals/UserProfileModal';
 import { ConnectAndJoinModal } from '../modals/ConnectAndJoinModal';
 import { MemberRolesModal } from '../modals/MemberRolesModal';
+import { DownloadDesktopModal } from '../modals/DownloadDesktopModal';
 import { IncomingCallModal } from '../voice/IncomingCallModal';
 import { PictureInPicture } from '../voice/PictureInPicture';
 import { SoundController } from '../voice/SoundController';
@@ -432,6 +433,7 @@ export function AppLayout() {
         <GroupDmSettings />
         <UserProfileModal />
         <ConnectAndJoinModal />
+        <DownloadDesktopModal />
         {/* MemberRolesModal is desktop-only: it opens from the profile card's
             Edit Roles, and its two-pane layout has no mobile form. */}
         <IncomingCallModal />
@@ -487,6 +489,7 @@ export function AppLayout() {
       <UserProfileModal />
       <ConnectAndJoinModal />
       <MemberRolesModal />
+      <DownloadDesktopModal />
       <IncomingCallModal />
       <ImagePreview />
       <PictureInPicture />
