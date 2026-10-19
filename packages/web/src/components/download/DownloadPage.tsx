@@ -147,31 +147,48 @@ export function DownloadPage() {
           </div>
 
           {/* Centered Download CTA Button or Coming Soon Banner */}
-          <div className="mt-10 lg:mt-14 flex flex-col items-center justify-center w-full">
+          <div className="mt-10 lg:mt-14 flex flex-col items-center justify-center w-full gap-4">
             {isAvailable ? (
-              <a
-                href={downloadUrl}
-                download="Nuvio-Setup.exe"
-                data-testid="download-windows-btn"
-                className="inline-flex items-center gap-3 px-8 py-3.5 bg-white text-black font-bold text-[15px] rounded-lg shadow-lg hover:bg-white/90 active:scale-[0.98] transition-all duration-150 group cursor-pointer"
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-black group-hover:translate-y-0.5 transition-transform"
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-lg">
+                <a
+                  href={downloadUrl}
+                  download="Nuvio-Setup.exe"
+                  data-testid="download-windows-btn"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 bg-white text-black font-bold text-[15px] rounded-lg shadow-lg hover:bg-white/90 active:scale-[0.98] transition-all duration-150 group cursor-pointer"
                 >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                <span>{t('spaces:downloadPage.downloadForWindows')}</span>
-              </a>
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-black group-hover:translate-y-0.5 transition-transform"
+                  >
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>{t('spaces:downloadPage.downloadForWindows')}</span>
+                </a>
+
+                {import.meta.env.VITE_MICROSOFT_STORE_URL && (
+                  <a
+                    href={import.meta.env.VITE_MICROSOFT_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="download-msstore-btn"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 bg-surface-base border border-border-hard text-txt-primary hover:text-white font-semibold text-[14px] rounded-lg shadow hover:bg-interactive-hover active:scale-[0.98] transition-all duration-150"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M0 0h11.377v11.372H0zM12.623 0H24v11.372H12.623zM0 12.623h11.377V24H0zM12.623 12.623H24V24H12.623z" />
+                    </svg>
+                    <span>{t('spaces:downloadPage.installFromStore')}</span>
+                  </a>
+                )}
+              </div>
             ) : (
               <div
                 data-testid="download-unavailable-msg"

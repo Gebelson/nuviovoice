@@ -18,6 +18,7 @@ asarUnpack:
   - "web-dist/animations/**"
 npmRebuild: false
 afterPack: ./scripts/afterPack.js
+copyright: "Copyright © 2026 Nuvio"
 publish:
   - provider: github
     owner: Gebelson
@@ -37,8 +38,24 @@ mac:
     - dmg
 win:
   icon: ./build/icon.ico
+  publisherName: "Nuvio"
+  rfc3161TimeStampServer: "http://timestamp.digicert.com"
+  signingHashAlgorithms:
+    - sha256
   target:
     - nsis
+appx:
+  identityName: ${env.APPX_IDENTITY_NAME:-app.nuvio.desktop}
+  applicationId: ${env.APPX_APPLICATION_ID:-Nuvio}
+  publisher: ${env.APPX_PUBLISHER:-CN=Nuvio}
+  publisherDisplayName: "Nuvio"
+  displayName: "Nuvio"
+  backgroundColor: "#0F1117"
+  showNameOnTiles: true
+  languages:
+    - pt-BR
+    - en-US
+    - es-ES
 linux:
   executableName: Nuvio
   icon: build/icons/

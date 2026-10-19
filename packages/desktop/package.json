@@ -12,6 +12,7 @@
     "build:ts": "tsc",
     "dev": "tsc && electron .",
     "build": "node scripts/copy-web.js && tsc && electron-builder",
+    "build:store": "node scripts/copy-web.js && tsc && electron-builder --win appx --x64",
     "build:all": "node scripts/copy-web.js && tsc && electron-builder --mac --win --linux --arm64 --x64",
     "clean": "rm -rf dist dist-electron",
     "test": "vitest run",

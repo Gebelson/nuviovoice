@@ -57,12 +57,46 @@ jobs:
           pnpm exec tsc
           pnpm exec electron-builder --win --x64
 
-      - name: Verify build artifacts
+      - name: Verify build artifacts and signatures
         shell: powershell
         run: |
           if (-not (Test-Path "packages/desktop/dist-electron/Nuvio-Setup.exe")) { throw "Nuvio-Setup.exe was not generated" }
           if (-not (Test-Path "packages/desktop/dist-electron/latest.yml")) { throw "latest.yml was not generated" }
-          Write-Output "All Windows build artifacts verified."
+          
+          # Inspect Authenticode signature status
+          $sig = Get-AuthenticodeSignature "packages/desktop/dist-electron/Nuvio-Setup.exe"
+          Write-Output "=== Authenticode Signature Status ==="
+          Write-Output "Status: $($sig.Status)"
+          Write-Output "StatusMessage: $($sig.StatusMessage)"
+          if ($sig.SignerCertificate) {
+            Write-Output "Subject: $($sig.SignerCertificate.Subject)"
+            Write-Output "Issuer: $($sig.SignerCertificate.Issuer)"
+          } else {
+            Write-Output "Note: Binary is unsigned. SmartScreen reputation will be established per-hash or through Microsoft Store / SignPath code signing."
+          }
+          
+          # Generate official SHA-256 checksums file
+          Get-ChildItem packages/desktop/dist-electron/Nuvio-Setup.exe, packages/desktop/dist-electron/latest.yml |
+            Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $($_.Path | Split-Path -Leaf)" } |
+            Set-Content -Encoding ascii packages/desktop/dist-electron/SHA256SUMS.txt
+
+          Write-Output "=== SHA256 Checksums ==="
+          Get-Content packages/desktop/dist-electron/SHA256SUMS.txt
+
+      - name: Sign with SignPath (Optional / Automated when configured)
+        if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+        uses: SignPath/github-action-submit-signing-request@v1
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ secrets.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-for-completion: true
+          output-artifact-directory: "packages/desktop/dist-electron"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -75,6 +109,8 @@ jobs:
             packages/desktop/dist-electron/Nuvio-Setup.exe
             packages/desktop/dist-electron/Nuvio-Setup.exe.blockmap
             packages/desktop/dist-electron/latest.yml
+            packages/desktop/dist-electron/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
