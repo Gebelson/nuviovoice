@@ -33,7 +33,7 @@ describe('DownloadPage', () => {
     // Download CTA button for Windows
     const downloadBtn = screen.getByTestId('download-windows-btn');
     expect(downloadBtn).toBeInTheDocument();
-    expect(downloadBtn).toHaveAttribute('href', expect.stringContaining('Nuvio-Setup.exe'));
+    expect(downloadBtn).toHaveAttribute('href', expect.stringMatching(/\/api\/download\/windows|Nuvio-Setup\.exe/));
     expect(downloadBtn).toHaveTextContent(/Baixar para Windows|Download for Windows/i);
   });
 
@@ -50,6 +50,34 @@ describe('DownloadPage', () => {
     );
 
     expect(screen.getByTestId('fallback-me')).toBeInTheDocument();
+    expect(screen.queryByTestId('download-windows-btn')).not.toBeInTheDocument();
+  });
+
+  it('displays "em breve" message when no release is available', async () => {
+    vi.spyOn(platformModule, 'isElectron').mockReturnValue(false);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes('/api/download/info')) {
+        return {
+          ok: true,
+          json: async () => ({ available: false }),
+        } as any;
+      }
+      return {
+        ok: false,
+        status: 404,
+      } as any;
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/download']}>
+        <DownloadPage />
+      </MemoryRouter>,
+    );
+
+    const msg = await screen.findByTestId('download-unavailable-msg');
+    expect(msg).toBeInTheDocument();
+    expect(msg).toHaveTextContent(/disponível em breve|available soon/i);
     expect(screen.queryByTestId('download-windows-btn')).not.toBeInTheDocument();
   });
 });

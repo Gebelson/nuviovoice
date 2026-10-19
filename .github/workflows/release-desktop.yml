@@ -51,9 +51,30 @@ jobs:
       - name: Build & Package Nuvio Desktop (Windows NSIS + Updater Metadata)
         working-directory: packages/desktop
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
           node scripts/copy-web.js
           pnpm exec tsc
-          pnpm exec electron-builder --win --x64 --publish always
+          pnpm exec electron-builder --win --x64
+
+      - name: Verify build artifacts
+        shell: powershell
+        run: |
+          if (-not (Test-Path "packages/desktop/dist-electron/Nuvio-Setup.exe")) { throw "Nuvio-Setup.exe was not generated" }
+          if (-not (Test-Path "packages/desktop/dist-electron/latest.yml")) { throw "latest.yml was not generated" }
+          Write-Output "All Windows build artifacts verified."
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name || inputs.tag }}
+          name: Nuvio Desktop ${{ github.ref_name || inputs.tag }}
+          draft: false
+          prerelease: false
+          files: |
+            packages/desktop/dist-electron/Nuvio-Setup.exe
+            packages/desktop/dist-electron/Nuvio-Setup.exe.blockmap
+            packages/desktop/dist-electron/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

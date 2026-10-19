@@ -818,6 +818,8 @@
     "heroTitle": "Gruppen-Chat voller Spaß und Spiele",
     "heroSubtitle": "Nuvio ist ideal, um mit Freunden zu chatten und zu entspannen oder eine tolle Community aufzubauen. Passe deinen Bereich an, um zu chatten, zu spielen und Spaß zu haben.",
     "downloadForWindows": "Für Windows herunterladen",
-    "mockupAlt": "Nuvio auf Laptop und Monitor"
+    "mockupAlt": "Nuvio auf Laptop und Monitor",
+    "comingSoon": "Nuvio für Windows wird in Kürze verfügbar sein.",
+    "versionLabel": "Version {{version}} · Windows 10 / 11 (64-Bit)"
   }
 }
