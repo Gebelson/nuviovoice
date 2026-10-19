@@ -89,6 +89,10 @@ export function App() {
             element={<JoinPage />}
           />
           <Route
+            path="/invite/:inviteCode"
+            element={<JoinPage />}
+          />
+          <Route
             path="/explore"
             element={
               <ProtectedRoute>

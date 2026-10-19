@@ -71,6 +71,8 @@ export class NotConnectedError extends Error {
 export async function connectedJoinOrigin(origin?: string): Promise<string> {
   if (!origin) return '';
   if (typeof window !== 'undefined' && origin === window.location.origin) return '';
+  const { isOfficialOrigin } = await import('../utils/inviteParser');
+  if (isOfficialOrigin(origin)) return '';
   // Dynamic import: instanceStore imports this module.
   const { useInstanceStore } = await import('./instanceStore');
   const connected = useInstanceStore.getState().instances.some(

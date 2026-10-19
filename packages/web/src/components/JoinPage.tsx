@@ -357,6 +357,22 @@ export function JoinPage() {
           </div>
         </div>
 
+        {!window.backspace && parsed && !parsed.origin && (
+          <div className="mb-4 text-center">
+            <a
+              href={`nuvio://invite/${encodeURIComponent(parsed.code)}`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium text-accent-primary bg-accent-primary/10 hover:bg-accent-primary/20 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              {t('auth:join.openInApp')}
+            </a>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-3 bg-accent-rose/10 border border-accent-rose/30 rounded text-txt-danger text-sm">
             {error}

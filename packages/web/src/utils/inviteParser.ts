@@ -6,6 +6,28 @@
  *   - Full URL:       "https://remote.com/join/a3f1b2c4"
  *   - Qualified code: "a3f1b2c4@remote.com"
  */
+/** Public web address that every shareable invite link points at. */
+export const PUBLIC_WEB_ORIGIN = 'https://nuviovoice.vercel.app';
+
+/**
+ * Origins that are the official Nuvio itself (web, desktop shell, backend).
+ * An invite from any of them is a home invite, not a federated one, so it
+ * never asks for a connection to another instance.
+ */
+export function isOfficialOrigin(origin: string): boolean {
+  if (!origin) return true;
+  if (typeof window !== 'undefined' && origin === window.location.origin) return true;
+  try {
+    const host = new URL(origin).hostname;
+    return host === 'nuviovoice.vercel.app'
+      || host.endsWith('.sslip.io')
+      || host === 'app'
+      || origin.startsWith('nuvio-app:');
+  } catch {
+    return false;
+  }
+}
+
 export function parseInviteInput(input: string): { code: string; origin?: string } {
   const trimmed = input.trim();
   if (!trimmed) throw new Error('Invite code is required');
@@ -19,16 +41,15 @@ export function parseInviteInput(input: string): { code: string; origin?: string
       throw new Error('Invalid invite link');
     }
 
-    // Extract code from /join/{code} path
-    const match = parsed.pathname.match(/^\/join\/([^/]+)$/);
+    // Extract code from /invite/{code} or legacy /join/{code}
+    const match = parsed.pathname.match(/^\/(?:invite|join)\/([^/]+)\/?$/);
     if (!match) {
-      throw new Error('Invalid invite link — expected format: https://instance/join/CODE');
+      throw new Error('Invalid invite link');
     }
 
-    const code = match[1]!;
+    const code = decodeURIComponent(match[1]!);
 
-    // If the URL points at our own instance, treat as a bare code
-    if (parsed.origin === window.location.origin) {
+    if (isOfficialOrigin(parsed.origin)) {
       return { code };
     }
 
@@ -116,6 +137,7 @@ export function buildInstanceJoinUrl(domain: string, qualifiedCode: string): str
  * cannot drift between them.
  */
 export function spaceInviteUrl(instanceOrigin: string, inviteCode: string): string {
-  const base = instanceOrigin || window.location.origin;
-  return new URL(`/join/${encodeURIComponent(inviteCode)}`, base).toString();
+  const path = `/invite/${encodeURIComponent(inviteCode)}`;
+  if (isOfficialOrigin(instanceOrigin)) return `${PUBLIC_WEB_ORIGIN}${path}`;
+  return new URL(`/join/${encodeURIComponent(inviteCode)}`, instanceOrigin).toString();
 }

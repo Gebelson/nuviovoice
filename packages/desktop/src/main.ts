@@ -115,6 +115,7 @@ const knownInstanceOrigins = new Set<string>();
 try {
   knownInstanceOrigins.add(new URL(getEffectiveBackendUrl()).origin);
   knownInstanceOrigins.add('nuvio-app://app');
+  knownInstanceOrigins.add('https://nuviovoice.vercel.app');
 } catch {}
 
 function getWebDistPath(): string {
@@ -632,7 +633,7 @@ function createWindow(): void {
       if (
         (u.protocol === 'http:' || u.protocol === 'https:') &&
         knownInstanceOrigins.has(u.origin) &&
-        u.pathname.startsWith('/join/')
+        (u.pathname.startsWith('/join/') || u.pathname.startsWith('/invite/'))
       ) {
         mainWindow?.webContents.send('open-internal-route', u.pathname + u.search);
         return { action: 'deny' };
@@ -1457,10 +1458,18 @@ function initAutoUpdater(): void {
 // ─── Deep Linking ───────────────────────────────────────────────────────────
 
 function handleDeepLink(url: string): void {
-  if (!url.startsWith('nuvio://') && !url.startsWith('backspace://')) return;
+  if (!url.startsWith('nuvio://') && !url.startsWith('nuvio-app://') && !url.startsWith('backspace://')) return;
+
+  // nuvio://invite/CODE or nuvio-app://app/invite/CODE or nuvio-app://invite/CODE
+  const invite = url.match(/^(?:nuvio|backspace|nuvio-app):\/\/(?:app\/)?(?:invite|join)\/([A-Za-z0-9_-]{4,64})\/?$/);
 
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('deep-link', url);
+    if (invite) {
+      void mainWindow.loadURL(`nuvio-app://app/invite/${invite[1]}`);
+    } else {
+      mainWindow.webContents.send('deep-link', url);
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
   } else {
@@ -1500,6 +1509,7 @@ export function requestQuit(): void {
 
 // Set as default protocol handler
 app.setAsDefaultProtocolClient('nuvio');
+app.setAsDefaultProtocolClient('nuvio-app');
 app.setAsDefaultProtocolClient('backspace');
 
 // macOS: open-url event
@@ -1516,7 +1526,7 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', (_event, commandLine) => {
     // Find the deep link URL in the command line args
-    const deepLinkArg = commandLine.find((arg) => arg.startsWith('nuvio://') || arg.startsWith('backspace://'));
+    const deepLinkArg = commandLine.find((arg) => arg.startsWith('nuvio://') || arg.startsWith('nuvio-app://') || arg.startsWith('backspace://'));
     if (deepLinkArg) {
       handleDeepLink(deepLinkArg);
     }
@@ -1897,7 +1907,7 @@ if (!gotTheLock) {
     }
 
     // Check if the app was launched with a deep link (Windows/Linux)
-    const launchArg = process.argv.find((arg) => arg.startsWith('nuvio://') || arg.startsWith('backspace://'));
+    const launchArg = process.argv.find((arg) => arg.startsWith('nuvio://') || arg.startsWith('nuvio-app://') || arg.startsWith('backspace://'));
     if (launchArg) {
       pendingDeepLink = launchArg;
     }

@@ -115,7 +115,8 @@ function rowToChannel(row: typeof schema.channels.$inferSelect): Channel {
 }
 
 function generateInviteCode(): string {
-  return crypto.randomBytes(4).toString('hex');
+  // 128 bits of entropy, URL-safe. Older 8-char codes stay valid.
+  return crypto.randomBytes(16).toString('base64url');
 }
 
 /**

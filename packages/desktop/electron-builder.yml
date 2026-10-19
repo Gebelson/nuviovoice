@@ -28,6 +28,7 @@ protocols:
   - name: Nuvio
     schemes:
       - nuvio
+      - nuvio-app
       - backspace
 mac:
   category: public.app-category.social-networking
