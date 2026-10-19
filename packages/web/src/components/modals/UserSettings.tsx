@@ -2,7 +2,6 @@ import { Fragment, useState, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { Avatar } from '../ui/Avatar';
-import { SourceCodeLink } from '../ui/SourceCodeLink';
 import { api } from '../../api/client';
 import type { InstanceInfoResponse } from '@concord/shared';
 import { useUIStore } from '../../stores/uiStore';
@@ -243,11 +242,6 @@ export function UserSettingsModal() {
               {t('settings:nav.logOut')}
             </button>
 
-            {instanceInfo && (
-              <div className="px-3 pt-2">
-                <SourceCodeLink sourceCodeUrl={instanceInfo.sourceCodeUrl} version={instanceInfo.version} commit={instanceInfo.commit} />
-              </div>
-            )}
           </div>
         </div>
 
@@ -280,11 +274,6 @@ export function UserSettingsModal() {
                 {t('settings:nav.logOut')}
               </button>
 
-              {instanceInfo && (
-                <div className="px-3 pt-2">
-                  <SourceCodeLink sourceCodeUrl={instanceInfo.sourceCodeUrl} version={instanceInfo.version} commit={instanceInfo.commit} />
-                </div>
-              )}
             </div>
           </div>
         )}
