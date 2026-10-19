@@ -13,13 +13,19 @@ vi.mock('../audio/AudioManager', () => ({
   },
 }));
 
-vi.mock('../api/client', () => ({
-  api: {
-    social: {
-      discover: vi.fn().mockResolvedValue({ users: [], total: 0 }),
+vi.mock('../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/client')>();
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      social: {
+        ...actual.api?.social,
+        discover: vi.fn().mockResolvedValue({ users: [], total: 0 }),
+      },
     },
-  },
-}));
+  };
+});
 
 vi.mock('./instanceStore', () => ({
   useInstanceStore: Object.assign(
