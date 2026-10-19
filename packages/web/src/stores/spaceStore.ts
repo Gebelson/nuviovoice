@@ -1217,8 +1217,16 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
 
   updateSpaceLayout: async (items, folders) => {
     const now = Date.now();
-    // Optimistic: apply the layout immediately with new timestamp
-    set({ spaceLayout: items, _layoutUpdatedAt: now });
+    // Optimistic: apply the layout and folders immediately with new timestamp
+    const optimisticFolders: SpaceFolder[] = Object.entries(folders).map(([id, f], idx) => ({
+      id,
+      userId: '',
+      name: f.name,
+      color: f.color,
+      position: idx,
+      spaceIds: f.spaceIds,
+    }));
+    set({ spaceLayout: items, folders: optimisticFolders, _layoutUpdatedAt: now });
 
     // Push to ALL connected instances in parallel (browsing + remotes)
     const targets: { origin: string; apiClient: BackspaceApiClient }[] = [
