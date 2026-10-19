@@ -431,6 +431,11 @@ export function ChannelSidebar() {
     navigate('/channels/@me');
   };
 
+  const handleStoreClick = () => {
+    setCurrentChannel(null);
+    navigate('/store');
+  };
+
   const handleDownloadClick = () => {
     setCurrentChannel(null);
     navigate('/download');
@@ -496,6 +501,35 @@ export function ChannelSidebar() {
               <path d="M3.5 13.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" opacity=".5" />
             </svg>
             <span className="font-medium text-[16px]">{t('common:labels.friends')}</span>
+          </div>
+
+          <div
+            onClick={handleStoreClick}
+            data-testid="dm-sidebar-store"
+            className={`flex items-center gap-3 px-2 h-[42px] rounded-[6px] cursor-pointer mb-[2px] transition-colors group ${
+              activeHomeItem === 'store'
+                ? 'bg-interactive-selected text-white'
+                : 'text-txt-tertiary hover:bg-interactive-hover hover:text-txt-secondary'
+            }`}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`flex-shrink-0 ${
+                activeHomeItem === 'store' ? 'text-white' : 'opacity-70 group-hover:opacity-100'
+              }`}
+            >
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+              <path d="M3 6h18" />
+              <path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+            <span className="font-medium text-[16px]">{t('spaces:sidebar.dmList.store', { defaultValue: 'Loja' })}</span>
           </div>
 
           {!isElectron() && (

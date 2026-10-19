@@ -579,6 +579,7 @@
     },
     "dmList": {
       "explore": "Entdecken",
+      "store": "Shop",
       "downloadNuvio": "Nuvio herunterladen",
       "newDm": "Neue Direktnachricht",
       "empty": "Noch keine Unterhaltungen.",

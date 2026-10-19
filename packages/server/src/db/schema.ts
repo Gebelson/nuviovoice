@@ -957,4 +957,120 @@ export const voiceInvites = sqliteTable('voice_invites', {
   channelIdx: index('idx_voice_invites_channel_id').on(table.channelId),
 }));
 
+// Marketplace: Sellers
+export const sellers = sqliteTable('sellers', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  storeName: text('store_name').notNull(),
+  slug: text('slug').notNull().unique(),
+  bio: text('bio').default(''),
+  avatar: text('avatar'),
+  banner: text('banner'),
+  status: text('status').notNull().default('pending'), // 'pending' | 'approved' | 'suspended' | 'rejected'
+  contactEmail: text('contact_email'),
+  reviewNotes: text('review_notes'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  userIdx: uniqueIndex('idx_sellers_user_id').on(table.userId),
+  slugIdx: uniqueIndex('idx_sellers_slug').on(table.slug),
+  statusIdx: index('idx_sellers_status').on(table.status),
+}));
+
+// Marketplace: Categories
+export const productCategories = sqliteTable('product_categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description').default(''),
+  icon: text('icon').default('Package'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  slugIdx: uniqueIndex('idx_product_categories_slug').on(table.slug),
+  sortIdx: index('idx_product_categories_sort').on(table.sortOrder),
+}));
+
+// Marketplace: Products
+export const products = sqliteTable('products', {
+  id: text('id').primaryKey(),
+  sellerId: text('seller_id').notNull().references(() => sellers.id, { onDelete: 'cascade' }),
+  categoryId: text('category_id').references(() => productCategories.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  shortDescription: text('short_description').default(''),
+  productType: text('product_type').notNull().default('digital'), // 'digital' | 'physical' | 'service'
+  price: real('price').notNull().default(0),
+  currency: text('currency').notNull().default('BRL'),
+  thumbnail: text('thumbnail'),
+  images: text('images').default('[]'),
+  status: text('status').notNull().default('draft'), // 'draft' | 'pending_review' | 'changes_requested' | 'approved' | 'published' | 'rejected' | 'suspended' | 'archived'
+  publishedRevisionId: text('published_revision_id'),
+  salesCount: integer('sales_count').notNull().default(0),
+  rating: real('rating').notNull().default(5.0),
+  ratingCount: integer('rating_count').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  sellerIdx: index('idx_products_seller_id').on(table.sellerId),
+  categoryIdx: index('idx_products_category_id').on(table.categoryId),
+  slugIdx: uniqueIndex('idx_products_slug').on(table.slug),
+  statusIdx: index('idx_products_status').on(table.status),
+}));
+
+// Marketplace: Product Revisions (Puck visual editor layouts & moderation history)
+export const productRevisions = sqliteTable('product_revisions', {
+  id: text('id').primaryKey(),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  version: integer('version').notNull().default(1),
+  title: text('title').notNull(),
+  shortDescription: text('short_description').default(''),
+  price: real('price').notNull().default(0),
+  currency: text('currency').notNull().default('BRL'),
+  thumbnail: text('thumbnail'),
+  images: text('images').default('[]'),
+  layoutData: text('layout_data').notNull().default('[]'), // Serialized JSON array of Puck blocks
+  customCss: text('custom_css').default(''),
+  status: text('status').notNull().default('draft'), // 'draft' | 'pending_review' | 'changes_requested' | 'approved' | 'rejected'
+  reviewNotes: text('review_notes'),
+  submittedAt: integer('submitted_at'),
+  reviewedAt: integer('reviewed_at'),
+  reviewedBy: text('reviewed_by').references(() => users.id),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  productIdx: index('idx_product_revisions_product_id').on(table.productId),
+  statusIdx: index('idx_product_revisions_status').on(table.status),
+}));
+
+// Marketplace: Favorites
+export const productFavorites = sqliteTable('product_favorites', {
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.productId] }),
+  userIdx: index('idx_product_favorites_user_id').on(table.userId),
+  productIdx: index('idx_product_favorites_product_id').on(table.productId),
+}));
+
+// Marketplace: Reports
+export const productReports = sqliteTable('product_reports', {
+  id: text('id').primaryKey(),
+  productId: text('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  reporterId: text('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  reason: text('reason').notNull(),
+  details: text('details').default(''),
+  status: text('status').notNull().default('pending'), // 'pending' | 'resolved' | 'dismissed'
+  actionTaken: text('action_taken'),
+  resolvedBy: text('resolved_by').references(() => users.id),
+  resolvedAt: integer('resolved_at'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  productIdx: index('idx_product_reports_product_id').on(table.productId),
+  reporterIdx: index('idx_product_reports_reporter_id').on(table.reporterId),
+  statusIdx: index('idx_product_reports_status').on(table.status),
+}));
+
+
 

@@ -595,6 +595,7 @@
     },
     "dmList": {
       "explore": "Обзор",
+      "store": "Магазин",
       "downloadNuvio": "Скачать Nuvio",
       "newDm": "Новое личное сообщение",
       "empty": "Пока нет бесед.",

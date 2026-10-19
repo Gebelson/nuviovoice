@@ -11,12 +11,13 @@
  * channel is open, and with a channel open none of the three is selected.
  */
 
-export type HomeNavItem = 'friends' | 'explore' | 'backspace' | 'download';
+export type HomeNavItem = 'friends' | 'explore' | 'backspace' | 'download' | 'store';
 
 export function activeHomeNavItem(pathname: string, currentChannelId: string | null): HomeNavItem | null {
   if (pathname === '/explore') return 'explore';
   if (pathname === '/backspace') return 'backspace';
   if (pathname === '/download') return 'download';
+  if (pathname.startsWith('/store')) return 'store';
   if (currentChannelId === null) return 'friends';
   return null;
 }

@@ -83,6 +83,134 @@ export function ensureDefaults(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_voice_invites_space_id ON voice_invites(space_id);
     CREATE INDEX IF NOT EXISTS idx_voice_invites_channel_id ON voice_invites(channel_id);
   `);
+
+  // 5. Ensure Marketplace / Store tables exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sellers (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      store_name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      bio TEXT DEFAULT '',
+      avatar TEXT,
+      banner TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      contact_email TEXT,
+      review_notes TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_sellers_user_id ON sellers(user_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_sellers_slug ON sellers(slug);
+    CREATE INDEX IF NOT EXISTS idx_sellers_status ON sellers(status);
+
+    CREATE TABLE IF NOT EXISTS product_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      description TEXT DEFAULT '',
+      icon TEXT DEFAULT 'Package',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_product_categories_slug ON product_categories(slug);
+    CREATE INDEX IF NOT EXISTS idx_product_categories_sort ON product_categories(sort_order);
+
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY,
+      seller_id TEXT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+      category_id TEXT REFERENCES product_categories(id) ON DELETE SET NULL,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      short_description TEXT DEFAULT '',
+      product_type TEXT NOT NULL DEFAULT 'digital',
+      price REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'BRL',
+      thumbnail TEXT,
+      images TEXT DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'draft',
+      published_revision_id TEXT,
+      sales_count INTEGER NOT NULL DEFAULT 0,
+      rating REAL NOT NULL DEFAULT 5.0,
+      rating_count INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_products_seller_id ON products(seller_id);
+    CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
+    CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+
+    CREATE TABLE IF NOT EXISTS product_revisions (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      version INTEGER NOT NULL DEFAULT 1,
+      title TEXT NOT NULL,
+      short_description TEXT DEFAULT '',
+      price REAL NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'BRL',
+      thumbnail TEXT,
+      images TEXT DEFAULT '[]',
+      layout_data TEXT NOT NULL DEFAULT '[]',
+      custom_css TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'draft',
+      review_notes TEXT,
+      submitted_at INTEGER,
+      reviewed_at INTEGER,
+      reviewed_by TEXT REFERENCES users(id),
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_product_revisions_product_id ON product_revisions(product_id);
+    CREATE INDEX IF NOT EXISTS idx_product_revisions_status ON product_revisions(status);
+
+    CREATE TABLE IF NOT EXISTS product_favorites (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, product_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_product_favorites_user_id ON product_favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_product_favorites_product_id ON product_favorites(product_id);
+
+    CREATE TABLE IF NOT EXISTS product_reports (
+      id TEXT PRIMARY KEY,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reason TEXT NOT NULL,
+      details TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      action_taken TEXT,
+      resolved_by TEXT REFERENCES users(id),
+      resolved_at INTEGER,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_product_reports_product_id ON product_reports(product_id);
+    CREATE INDEX IF NOT EXISTS idx_product_reports_reporter_id ON product_reports(reporter_id);
+    CREATE INDEX IF NOT EXISTS idx_product_reports_status ON product_reports(status);
+  `);
+
+  // Seed default product categories if none exist
+  const catCount = db.prepare('SELECT COUNT(*) as count FROM product_categories').get() as { count: number };
+  if (!catCount || catCount.count === 0) {
+    const insertCat = db.prepare(`
+      INSERT INTO product_categories (id, name, slug, description, icon, sort_order, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const defaultCats = [
+      { id: 'cat-bots', name: 'Bots & Integrações', slug: 'bots', description: 'Bots para espaços, webhooks e automações', icon: 'Bot', sort: 1 },
+      { id: 'cat-servicos', name: 'Serviços & Design', slug: 'servicos', description: 'Configuração de espaços, moderação e identidade visual', icon: 'Sparkles', sort: 2 },
+      { id: 'cat-arte', name: 'Arte & Emojis', slug: 'arte', description: 'Pacotes de emojis, ícones, banners e ilustrações', icon: 'Palette', sort: 3 },
+      { id: 'cat-templates', name: 'Comunidades & Modelos', slug: 'templates', description: 'Modelos prontos de canais, cargos e permissões', icon: 'LayoutTemplate', sort: 4 },
+      { id: 'cat-conteudo', name: 'Cursos & Conteúdo', slug: 'conteudo', description: 'Guias, mentorias e e-books exclusivos', icon: 'GraduationCap', sort: 5 },
+      { id: 'cat-outros', name: 'Outros', slug: 'outros', description: 'Outros produtos e utilitários', icon: 'Package', sort: 6 },
+    ];
+    const now = Date.now();
+    for (const cat of defaultCats) {
+      insertCat.run(cat.id, cat.name, cat.slug, cat.description, cat.icon, cat.sort, now);
+    }
+    console.log('[defaults] Seeded default marketplace categories');
+  }
 }
 
 /**

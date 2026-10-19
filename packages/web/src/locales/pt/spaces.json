@@ -587,6 +587,7 @@
     },
     "dmList": {
       "explore": "Explorar",
+      "store": "Loja",
       "downloadNuvio": "Baixar Nuvio",
       "newDm": "Nova mensagem direta",
       "empty": "Nenhuma conversa ainda.",

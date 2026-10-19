@@ -4,5 +4,14 @@
 # list reaching zero is the definition of done for the first localized
 # release. Regenerate with: node scripts/check-i18n.mjs --write-pending
 packages/web/src/components/chat/VoiceInviteCard.tsx
+packages/web/src/components/modals/ReportProductModal.tsx
+packages/web/src/components/modals/SellerApplyModal.tsx
+packages/web/src/components/store/ProductDetailPage.tsx
+packages/web/src/components/store/ProductEditorPage.tsx
+packages/web/src/components/store/SellerDashboard.tsx
+packages/web/src/components/store/SellerProfilePage.tsx
+packages/web/src/components/store/StoreAdminQueue.tsx
+packages/web/src/components/store/StoreFrontPage.tsx
+packages/web/src/components/store/VisualBlockRenderer.tsx
 packages/web/src/components/voice/VoiceInvitePage.tsx
 packages/web/src/components/voice/VoiceInvitePopover.tsx

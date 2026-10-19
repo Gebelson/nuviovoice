@@ -88,6 +88,13 @@ import type {
   TelemetryPayload,
   TelemetryStatus,
 } from '@concord/shared';
+import type {
+  Product,
+  ProductCategory,
+  Seller,
+  ProductRevision,
+  ProductReport,
+} from '../types/store';
 import { MESSAGE_PAGING_AFTER, MESSAGE_PAGING_HEADER } from '@concord/shared';
 
 export type { FederationPeer, FederationOrphanedAccount, FederationResetEvent, FederationResetEventsResponse, ApprovalRequest, PeeringSubscription, PeeringNotification };
@@ -462,6 +469,29 @@ export class BackspaceApiClient {
     }>>;
     revoke: (id: string) => Promise<{ success: boolean }>;
     sendDm: (targetUserId: string, token: string) => Promise<{ success: boolean; messageId: string }>;
+  };
+
+  readonly store: {
+    getCategories: () => Promise<{ categories: ProductCategory[] }>;
+    getProducts: (params?: { search?: string; category?: string; productType?: string; sort?: string; limit?: number; offset?: number }) => Promise<{ products: Product[]; limit: number; offset: number }>;
+    getProduct: (slug: string) => Promise<{ product: Product }>;
+    getSeller: (slug: string) => Promise<{ seller: Seller; products: Product[] }>;
+    getMySeller: () => Promise<{ seller: Seller | null }>;
+    applySeller: (data: { storeName: string; slug?: string; bio?: string; contactEmail?: string }) => Promise<{ seller: Seller }>;
+    updateSeller: (data: { storeName?: string; bio?: string; avatar?: string | null; banner?: string | null; contactEmail?: string | null }) => Promise<{ seller: Seller }>;
+    getMyProducts: () => Promise<{ products: Product[] }>;
+    createProduct: (data: any) => Promise<{ product: Product }>;
+    getProductForEdit: (id: string) => Promise<{ product: Product; latestRevision: ProductRevision | null; revisions: any[] }>;
+    updateProduct: (id: string, data: any) => Promise<{ product: Product; latestRevision: ProductRevision }>;
+    submitProduct: (id: string) => Promise<{ success: boolean; revisionId: string; status: string }>;
+    getFavorites: () => Promise<{ products: Product[] }>;
+    addFavorite: (id: string) => Promise<{ favorited: boolean }>;
+    removeFavorite: (id: string) => Promise<{ favorited: boolean }>;
+    reportProduct: (id: string, data: { reason: string; details?: string }) => Promise<{ success: boolean; reportId: string }>;
+    adminGetQueue: () => Promise<{ revisions: ProductRevision[]; reports: ProductReport[] }>;
+    adminReviewRevision: (id: string, data: { action: 'approve' | 'reject' | 'changes_requested'; notes?: string }) => Promise<{ success: boolean; action: string; revisionId: string }>;
+    adminSetProductStatus: (id: string, data: { status: 'published' | 'suspended' | 'archived'; reason?: string }) => Promise<{ success: boolean; status: string }>;
+    adminResolveReport: (id: string, data: { action: 'dismiss' | 'suspend_product'; details?: string }) => Promise<{ success: boolean }>;
   };
 
   readonly admin: {
@@ -1027,6 +1057,62 @@ export class BackspaceApiClient {
         request<{ success: boolean }>('DELETE', `/voice-invites/${id}`),
       sendDm: (targetUserId: string, token: string) =>
         request<{ success: boolean; messageId: string }>('POST', '/dm/voice-invite', { targetUserId, token }),
+    };
+
+    this.store = {
+      getCategories: () => request<{ categories: ProductCategory[] }>('GET', '/store/categories', undefined, false),
+      getProducts: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.search) qs.set('search', params.search);
+        if (params?.category) qs.set('category', params.category);
+        if (params?.productType) qs.set('productType', params.productType);
+        if (params?.sort) qs.set('sort', params.sort);
+        if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+        if (params?.offset !== undefined) qs.set('offset', String(params.offset));
+        const query = qs.toString();
+        return request<{ products: Product[]; limit: number; offset: number }>(
+          'GET',
+          `/store/products${query ? `?${query}` : ''}`,
+          undefined,
+          false
+        );
+      },
+      getProduct: (slug: string) =>
+        request<{ product: Product }>('GET', `/store/products/${encodeURIComponent(slug)}`, undefined, false),
+      getSeller: (slug: string) =>
+        request<{ seller: Seller; products: Product[] }>('GET', `/store/sellers/${encodeURIComponent(slug)}`, undefined, false),
+      getMySeller: () =>
+        request<{ seller: Seller | null }>('GET', '/store/sellers/me'),
+      applySeller: (data) =>
+        request<{ seller: Seller }>('POST', '/store/sellers/apply', data),
+      updateSeller: (data) =>
+        request<{ seller: Seller }>('PUT', '/store/sellers/me', data),
+      getMyProducts: () =>
+        request<{ products: Product[] }>('GET', '/store/seller/products'),
+      createProduct: (data) =>
+        request<{ product: Product }>('POST', '/store/seller/products', data),
+      getProductForEdit: (id: string) =>
+        request<{ product: Product; latestRevision: ProductRevision | null; revisions: any[] }>('GET', `/store/seller/products/${id}`),
+      updateProduct: (id: string, data) =>
+        request<{ product: Product; latestRevision: ProductRevision }>('PUT', `/store/seller/products/${id}`, data),
+      submitProduct: (id: string) =>
+        request<{ success: boolean; revisionId: string; status: string }>('POST', `/store/seller/products/${id}/submit`),
+      getFavorites: () =>
+        request<{ products: Product[] }>('GET', '/store/favorites'),
+      addFavorite: (id: string) =>
+        request<{ favorited: boolean }>('POST', `/store/favorites/${id}`),
+      removeFavorite: (id: string) =>
+        request<{ favorited: boolean }>('DELETE', `/store/favorites/${id}`),
+      reportProduct: (id: string, data) =>
+        request<{ success: boolean; reportId: string }>('POST', `/store/products/${id}/report`, data),
+      adminGetQueue: () =>
+        request<{ revisions: ProductRevision[]; reports: ProductReport[] }>('GET', '/store/admin/queue'),
+      adminReviewRevision: (id: string, data) =>
+        request<{ success: boolean; action: string; revisionId: string }>('POST', `/store/admin/revisions/${id}/review`, data),
+      adminSetProductStatus: (id: string, data) =>
+        request<{ success: boolean; status: string }>('POST', `/store/admin/products/${id}/status`, data),
+      adminResolveReport: (id: string, data) =>
+        request<{ success: boolean }>('POST', `/store/admin/reports/${id}/resolve`, data),
     };
 
     this.admin = {
