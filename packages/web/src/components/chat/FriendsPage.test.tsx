@@ -341,13 +341,22 @@ describe('FriendsPage', () => {
         return user;
       }
 
-      it("shows a friend listed only by another instance's row as a friend", async () => {
+      it("excludes a friend from search results on the Add Friend / Discover tab even when listed by another instance's row", async () => {
+        const strangerOnOrbit = {
+          ...bobOnOrbit,
+          id: 'c-1',
+          username: 'carol',
+          displayName: 'Carol',
+          homeUserId: 'c-1',
+        };
         useSocialStore.setState({
           friends: [makeFriend({ ...bobOnPage, addedAt: 0 })],
-          searchUsers: vi.fn().mockResolvedValue([bobOnOrbit]),
+          searchUsers: vi.fn().mockResolvedValue([bobOnOrbit, strangerOnOrbit]),
         });
         await searchForBob();
-        expect(await screen.findByText('Message')).toBeInTheDocument();
+        expect(await screen.findByText('Carol')).toBeInTheDocument();
+        expect(screen.queryByText('Bob')).not.toBeInTheDocument();
+        expect(screen.queryByText('Message')).not.toBeInTheDocument();
       });
 
       it('accepts a request held on another instance with that instance\'s request id and row', async () => {

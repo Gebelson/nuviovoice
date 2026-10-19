@@ -416,6 +416,10 @@ export const useSocialStore = create<SocialState>((set, get) => ({
   updateFriendRequest: async (id: string, origin: string, status: 'accepted' | 'declined', other?: IdentityFields) => {
     set({ isLoading: true, error: null });
     try {
+      const matched = get().requests.find(isRequestWith(id, origin, other));
+      const targetPerson = other ?? matched?.user ?? undefined;
+      const targetOrigin = other ? origin : (matched?._instanceOrigin ?? origin);
+
       await apiAt(origin).social.updateRequest(id, status);
 
       // Drop the person's entry with every instance's row of the request:
@@ -425,6 +429,18 @@ export const useSocialStore = create<SocialState>((set, get) => ({
         requests: withoutPeople(state.requests, isRequestWith(id, origin, other)),
         isLoading: false,
       }));
+
+      if (targetPerson) {
+        import('./discoverStore').then(({ useDiscoverStore }) => {
+          const ds = useDiscoverStore.getState();
+          if (status === 'accepted') {
+            ds.removeFriendUser?.(targetPerson, targetOrigin);
+            ds.updateRelationship(targetPerson.id, targetOrigin, 'friends');
+          } else {
+            ds.updateRelationship(targetPerson.id, targetOrigin, 'none');
+          }
+        }).catch(() => {});
+      }
 
       if (status === 'accepted') {
         await get().loadFriends();
@@ -438,11 +454,21 @@ export const useSocialStore = create<SocialState>((set, get) => ({
   cancelFriendRequest: async (id: string, origin: string, other?: IdentityFields) => {
     set({ isLoading: true, error: null });
     try {
+      const matched = get().requests.find(isRequestWith(id, origin, other));
+      const targetPerson = other ?? matched?.user ?? undefined;
+      const targetOrigin = other ? origin : (matched?._instanceOrigin ?? origin);
+
       await apiAt(origin).social.cancelRequest(id);
       set((state) => ({
         requests: withoutPeople(state.requests, isRequestWith(id, origin, other)),
         isLoading: false,
       }));
+
+      if (targetPerson) {
+        import('./discoverStore').then(({ useDiscoverStore }) => {
+          useDiscoverStore.getState().updateRelationship(targetPerson.id, targetOrigin, 'none');
+        }).catch(() => {});
+      }
     } catch (err) {
       set({ error: (err as Error).message, isLoading: false });
       throw err;

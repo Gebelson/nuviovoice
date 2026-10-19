@@ -491,19 +491,28 @@ function AddFriendTab({
 
   const isSearchMode = query.trim().length > 0;
 
-  // Enrich search results with friend/request status at render time. A
-  // result and a list entry are the same person when their `userKey`s match,
-  // whichever instance's row each is shown by. A pending request's id is good
-  // only on the instance that holds it, so a card with a request is shown by
-  // that request's row of the person.
+  // Filter out the authenticated user and any users who are already friends from
+  // the Discover recommendations list so they never occupy space in the grid.
+  const visibleDiscoverUsers: TaggedDiscoverUser[] = useMemo(() => {
+    return discoverUsers.filter(
+      (u) =>
+        u.relationship !== 'friends' &&
+        !selfIds.has(`${u.id}:${u._instanceOrigin}`) &&
+        !friendEntryOf(friends, u, u._instanceOrigin),
+    );
+  }, [discoverUsers, selfIds, friends]);
+
+  // Enrich search results with request status at render time while excluding
+  // existing friends and the signed-in user. A result and a list entry are the
+  // same person when their `userKey`s match, whichever instance's row each is
+  // shown by. A pending request's id is good only on the instance that holds it,
+  // so a card with a request is shown by that request's row of the person.
   const enrichedSearchResults: TaggedDiscoverUser[] = useMemo(() => {
     if (!isSearchMode) return [];
     return rawSearchResults
       .filter(u => !selfIds.has(`${u.id}:${u._instanceOrigin}`))
+      .filter(u => !friendEntryOf(friends, u, u._instanceOrigin))
       .map(user => {
-        if (friendEntryOf(friends, user, user._instanceOrigin)) {
-          return { ...user, relationship: 'friends' as const, mutualFriendCount: 0, mutualSpaceCount: 0 };
-        }
         const pending = pendingRequestWith(requests, user, user._instanceOrigin);
         if (pending?.user && (isOutgoingRequest(pending) || isIncomingRequest(pending))) {
           const shownBy = pending._instanceOrigin === user._instanceOrigin
@@ -550,7 +559,7 @@ function AddFriendTab({
   const noopRelationshipChange = useCallback(() => {}, []);
 
   // Determine which list to display
-  const displayUsers = isSearchMode ? enrichedSearchResults : discoverUsers;
+  const displayUsers = isSearchMode ? enrichedSearchResults : visibleDiscoverUsers;
   const displayLoading = isSearchMode ? searchLoading : discoverLoading;
   const emptyLabel = isSearchMode
     ? t('social:add.noSearchResults')
@@ -653,7 +662,7 @@ function AddFriendTab({
                     onRelationshipChange={noopRelationshipChange}
                   />
                 ))
-              : discoverUsers.map((user) => (
+              : visibleDiscoverUsers.map((user) => (
                   <UserDiscoverCard
                     key={`${user.id}:${user._instanceOrigin}`}
                     user={user}

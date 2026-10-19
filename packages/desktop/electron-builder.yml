@@ -6,6 +6,8 @@ directories:
 files:
   - dist/**/*
   - resources/**/*
+  - build/icon.ico
+  - build/icon.png
   - web-dist/**/*
   # Exclude host-compiled native module artifacts from the asar.
   - "!**/node_modules/uiohook-napi/build/**"
@@ -13,6 +15,7 @@ files:
   - "!**/node_modules/uiohook-napi/bin/**"
 asarUnpack:
   - "**/*.node"
+  - "web-dist/animations/**"
 npmRebuild: false
 afterPack: ./scripts/afterPack.js
 publish:
@@ -49,4 +52,10 @@ nsis:
   artifactName: "Nuvio-Setup.${ext}"
   shortcutName: "Nuvio"
   uninstallDisplayName: "Nuvio"
+  installerIcon: ./build/icon.ico
+  uninstallerIcon: ./build/icon.ico
+  installerHeaderIcon: ./build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
 

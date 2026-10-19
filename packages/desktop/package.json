@@ -6,7 +6,7 @@
   "description": "Nuvio Desktop",
   "productName": "Nuvio",
   "main": "dist/main.js",
-  "desktopName": "chat.nuvio.desktop",
+  "desktopName": "app.nuvio.desktop",
   "scripts": {
     "prebuild": "node scripts/copy-web.js",
     "build:ts": "tsc",

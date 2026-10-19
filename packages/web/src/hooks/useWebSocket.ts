@@ -1070,6 +1070,9 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       addIncomingRequest(event.request, origin);
       const { pushNotification } = useFriendRequestNotificationStore.getState();
       pushNotification(event.request, origin);
+      import('../stores/discoverStore').then(({ useDiscoverStore }) => {
+        useDiscoverStore.getState().updateRelationship(event.request.fromId, origin, 'inbound_pending', event.request.id);
+      });
       break;
     }
 
@@ -1079,6 +1082,9 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       if (event.request.user) upsertUserView(event.request.user, origin);
       const { addOutboundRequest } = useSocialStore.getState();
       addOutboundRequest(event.request, origin);
+      import('../stores/discoverStore').then(({ useDiscoverStore }) => {
+        useDiscoverStore.getState().updateRelationship(event.request.toId, origin, 'outbound_pending', event.request.id);
+      });
       break;
     }
 
@@ -1104,7 +1110,9 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       const { resolveToast } = useFriendRequestNotificationStore.getState();
       resolveToast(event.requestId, 'accepted');
       import('../stores/discoverStore').then(({ useDiscoverStore }) => {
-        useDiscoverStore.getState().updateRelationship(event.friend.id, origin, 'friends');
+        const ds = useDiscoverStore.getState();
+        ds.removeFriendUser?.(event.friend, origin);
+        ds.updateRelationship(event.friend.id, origin, 'friends');
       });
       break;
     }

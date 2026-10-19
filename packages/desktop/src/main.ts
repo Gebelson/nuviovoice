@@ -117,13 +117,28 @@ try {
 } catch {}
 
 function getWebDistPath(): string {
-  const candidate1 = path.join(__dirname, '..', 'web-dist');
-  if (fs.existsSync(candidate1)) return candidate1;
+  const candidateAsar = path.join(__dirname, '..', 'web-dist');
+  const candidateUnpackedApp = path.join(process.resourcesPath, 'app', 'web-dist');
+  if (
+    fs.existsSync(candidateUnpackedApp) &&
+    fs.existsSync(path.join(candidateUnpackedApp, 'index.html'))
+  ) {
+    try {
+      const mtimeUnpacked = fs.statSync(path.join(candidateUnpackedApp, 'index.html')).mtimeMs;
+      const mtimeAsar = fs.existsSync(path.join(candidateAsar, 'index.html'))
+        ? fs.statSync(path.join(candidateAsar, 'index.html')).mtimeMs
+        : 0;
+      if (mtimeUnpacked >= mtimeAsar) return candidateUnpackedApp;
+    } catch {
+      return candidateUnpackedApp;
+    }
+  }
+  if (fs.existsSync(candidateAsar)) return candidateAsar;
   const candidate2 = path.join(app.getAppPath(), 'web-dist');
   if (fs.existsSync(candidate2)) return candidate2;
   const candidate3 = path.join(process.resourcesPath, 'web-dist');
   if (fs.existsSync(candidate3)) return candidate3;
-  return candidate1;
+  return candidateAsar;
 }
 
 let checkConnectivityInProgress = false;
@@ -437,8 +452,22 @@ function loadTrayIcon(): Electron.NativeImage {
 
 // ─── Window & Tray Creation ─────────────────────────────────────────────────
 
+function resolveWindowIcon(): string {
+  const fileName = process.platform === 'win32' ? 'icon.ico' : 'icon.png';
+  const candidates = [
+    path.join(__dirname, '..', 'resources', fileName),
+    path.join(__dirname, '..', 'build', fileName),
+    path.join(process.resourcesPath, 'app', 'resources', fileName),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return path.join(__dirname, '..', 'resources', 'icon.png');
+}
+
 function createWindow(): void {
   const savedState = validateWindowBounds(loadWindowState());
+  const windowIconPath = resolveWindowIcon();
 
   mainWindow = new BrowserWindow({
     width: savedState.width,
@@ -449,7 +478,7 @@ function createWindow(): void {
     minWidth: 940,
     minHeight: 500,
     title: 'Nuvio',
-    icon: path.join(__dirname, '..', 'build', 'icon.png'),
+    icon: windowIconPath,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     ...(process.platform !== 'darwin' ? {
       titleBarOverlay: {
@@ -1381,10 +1410,10 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('enable-features', 'PulseaudioLoopbackForScreenShare');
 }
 
-// Windows: AppUserModelId so toast notifications attribute correctly to Nuvio
-// (without this, recovery / update notifications appear under "electron.exe").
+// Windows: AppUserModelId so toast notifications and taskbar grouping match
+// the NSIS shortcut appId ('app.nuvio.desktop').
 if (process.platform === 'win32') {
-  app.setAppUserModelId('chat.nuvio.desktop');
+  app.setAppUserModelId('app.nuvio.desktop');
 }
 
 /**
@@ -1520,7 +1549,59 @@ if (!gotTheLock) {
       const filePath = path.join(webDist, rawPath);
       // Ensure the resolved file path stays inside webDist
       if (filePath.startsWith(webDist) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-        return net.fetch(pathToFileURL(filePath).toString());
+        const unpackedCandidate = filePath.replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
+        const resolvedFilePath =
+          unpackedCandidate !== filePath && fs.existsSync(unpackedCandidate)
+            ? unpackedCandidate
+            : filePath;
+
+        const ext = path.extname(resolvedFilePath).toLowerCase();
+        const mediaMimeMap: Record<string, string> = {
+          '.webm': 'video/webm',
+          '.mp4': 'video/mp4',
+          '.mov': 'video/quicktime',
+          '.ogg': 'video/ogg',
+          '.mp3': 'audio/mpeg',
+          '.wav': 'audio/wav',
+        };
+
+        if (mediaMimeMap[ext]) {
+          const mimeType = mediaMimeMap[ext];
+          const buf = fs.readFileSync(resolvedFilePath);
+          const total = buf.byteLength;
+          const rangeHeader = request.headers.get('range');
+          if (rangeHeader) {
+            const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
+            if (match) {
+              const start = match[1] ? parseInt(match[1], 10) : 0;
+              const end = match[2] ? Math.min(parseInt(match[2], 10), total - 1) : total - 1;
+              if (start >= 0 && start <= end && start < total) {
+                const chunk = buf.subarray(start, end + 1);
+                return new Response(chunk, {
+                  status: 206,
+                  headers: {
+                    'Content-Type': mimeType,
+                    'Content-Length': String(chunk.byteLength),
+                    'Content-Range': `bytes ${start}-${end}/${total}`,
+                    'Accept-Ranges': 'bytes',
+                    'Cache-Control': 'no-cache',
+                  },
+                }) as any;
+              }
+            }
+          }
+          return new Response(buf, {
+            status: 200,
+            headers: {
+              'Content-Type': mimeType,
+              'Content-Length': String(total),
+              'Accept-Ranges': 'bytes',
+              'Cache-Control': 'no-cache',
+            },
+          }) as any;
+        }
+
+        return net.fetch(pathToFileURL(resolvedFilePath).toString());
       }
 
       // 3. Fallback for SPA client-side routing (e.g. /channels/@me, /login, /register, etc.)

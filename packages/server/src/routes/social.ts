@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, or, ne, like, sql, inArray, isNull } from 'drizzle-orm';
+import { eq, and, or, ne, like, sql, inArray, notInArray, isNull } from 'drizzle-orm';
 import { getDb, getRawDb, schema } from '../db/index.js';
 import { authenticate } from '../utils/auth.js';
 import { generateSnowflake } from '../utils/snowflake.js';
@@ -923,6 +923,13 @@ export async function socialRoutes(app: FastifyInstance): Promise<void> {
     const offset = Math.max(parseInt(request.query.offset || '0', 10) || 0, 0);
     const myId = request.userId;
 
+    // Pre-load my accepted friendships so friends are excluded at the SQL level
+    // before counting total or slicing pagination.
+    const myFriendRows = db.select().from(schema.friends).where(
+      or(eq(schema.friends.userId, myId), eq(schema.friends.friendId, myId))
+    ).all();
+    const myFriendIds = new Set(myFriendRows.map(f => f.userId === myId ? f.friendId : f.userId));
+
     // Build WHERE clause
     const conditions = [
       eq(schema.users.discoverable, 1),
@@ -932,6 +939,10 @@ export async function socialRoutes(app: FastifyInstance): Promise<void> {
       // Federated users are discovered through the parallel fetch across connected instances.
       sql`(${schema.users.homeInstance} IS NULL OR ${schema.users.homeInstance} = '')`,
     ];
+
+    if (myFriendIds.size > 0) {
+      conditions.push(notInArray(schema.users.id, [...myFriendIds]));
+    }
 
     if (q) {
       const pattern = `%${q}%`;
@@ -951,12 +962,6 @@ export async function socialRoutes(app: FastifyInstance): Promise<void> {
     if (total === 0) {
       return reply.code(200).send({ users: [], total: 0 });
     }
-
-    // Pre-load my social graph
-    const myFriendRows = db.select().from(schema.friends).where(
-      or(eq(schema.friends.userId, myId), eq(schema.friends.friendId, myId))
-    ).all();
-    const myFriendIds = new Set(myFriendRows.map(f => f.userId === myId ? f.friendId : f.userId));
 
     const mySpaceRows = db.select({ spaceId: schema.spaceMembers.spaceId })
       .from(schema.spaceMembers)

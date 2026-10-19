@@ -328,3 +328,107 @@ describe('social routes — error codes', () => {
     expect(JSON.parse(res.body).code).toBe('not_friends');
   });
 });
+
+describe('GET /api/social/discover — friend exclusion and relationship status', () => {
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    sqlite = new Database(':memory:');
+    testDb = drizzle(sqlite, { schema });
+    applyMigrations(sqlite);
+    seedUser({ id: CALLER_ID, username: 'caller', displayName: 'Caller' });
+    app = await buildApp();
+  });
+
+  async function discover(params = '') {
+    const url = params ? `/api/social/discover?${params}` : '/api/social/discover';
+    const res = await app.inject({ method: 'GET', url });
+    expect(res.statusCode).toBe(200);
+    return JSON.parse(res.body) as {
+      users: Array<{ id: string; username: string; relationship: string; requestId?: string }>;
+      total: number;
+    };
+  }
+
+  it('excludes users who are already friends (regardless of friendship direction) from list, search, and pagination count', async () => {
+    seedUser({ id: 'u-friend-a', username: 'alice', displayName: 'Alice Friend' });
+    seedUser({ id: 'u-friend-b', username: 'bob', displayName: 'Bob Friend' });
+    seedUser({ id: 'u-stranger', username: 'charlie', displayName: 'Charlie New' });
+
+    // Caller initiated friendship with Alice; Bob initiated friendship with Caller
+    testDb.insert(schema.friends).values([
+      { userId: CALLER_ID, friendId: 'u-friend-a', createdAt: Date.now() },
+      { userId: 'u-friend-b', friendId: CALLER_ID, createdAt: Date.now() },
+    ]).run();
+
+    const listRes = await discover();
+    expect(listRes.total).toBe(1);
+    expect(listRes.users.map(u => u.id)).toEqual(['u-stranger']);
+    expect(listRes.users[0]!.relationship).toBe('none');
+
+    // Searching by friend's name must also return 0 results
+    const searchAlice = await discover('q=alice');
+    expect(searchAlice.total).toBe(0);
+    expect(searchAlice.users).toEqual([]);
+
+    const searchBob = await discover('q=bob');
+    expect(searchBob.total).toBe(0);
+    expect(searchBob.users).toEqual([]);
+  });
+
+  it('includes users with outbound_pending and inbound_pending requests with their requestId', async () => {
+    seedUser({ id: 'u-outbound', username: 'outuser', displayName: 'Outbound User' });
+    seedUser({ id: 'u-inbound', username: 'inuser', displayName: 'Inbound User' });
+
+    testDb.insert(schema.friendRequests).values([
+      { id: 'req-out', fromId: CALLER_ID, toId: 'u-outbound', status: 'pending', createdAt: Date.now() },
+      { id: 'req-in', fromId: 'u-inbound', toId: CALLER_ID, status: 'pending', createdAt: Date.now() },
+    ]).run();
+
+    const res = await discover();
+    expect(res.total).toBe(2);
+    const outCard = res.users.find(u => u.id === 'u-outbound');
+    const inCard = res.users.find(u => u.id === 'u-inbound');
+    expect(outCard).toMatchObject({ id: 'u-outbound', relationship: 'outbound_pending', requestId: 'req-out' });
+    expect(inCard).toMatchObject({ id: 'u-inbound', relationship: 'inbound_pending', requestId: 'req-in' });
+  });
+
+  it('removes a user from discover once their request is accepted, and restores them if unfriended later', async () => {
+    seedUser({ id: 'u-dave', username: 'dave', displayName: 'Dave' });
+    testDb.insert(schema.friendRequests).values({
+      id: 'req-dave', fromId: 'u-dave', toId: CALLER_ID, status: 'pending', createdAt: Date.now(),
+    }).run();
+
+    // Before accepting: Dave appears as inbound_pending
+    const before = await discover();
+    expect(before.users.map(u => u.id)).toEqual(['u-dave']);
+    expect(before.users[0]!.relationship).toBe('inbound_pending');
+
+    // Accept request via PATCH
+    const acceptRes = await app.inject({
+      method: 'PATCH',
+      url: '/api/social/requests/req-dave',
+      payload: { status: 'accepted' },
+    });
+    expect(acceptRes.statusCode).toBe(200);
+
+    // After accepting: Dave no longer appears in discover
+    const afterAccept = await discover();
+    expect(afterAccept.total).toBe(0);
+    expect(afterAccept.users).toEqual([]);
+
+    // Remove friendship via DELETE
+    const unfriendRes = await app.inject({
+      method: 'DELETE',
+      url: '/api/social/friends/u-dave',
+    });
+    expect(unfriendRes.statusCode).toBe(200);
+
+    // After unfriending: Dave can appear again in discover with relationship 'none'
+    const afterUnfriend = await discover();
+    expect(afterUnfriend.total).toBe(1);
+    expect(afterUnfriend.users.map(u => u.id)).toEqual(['u-dave']);
+    expect(afterUnfriend.users[0]!.relationship).toBe('none');
+  });
+});
+

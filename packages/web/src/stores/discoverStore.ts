@@ -3,7 +3,7 @@ import type { DiscoverUser, User } from '@concord/shared';
 import { api } from '../api/client';
 import { useInstanceStore, waitForAutoConnect } from './instanceStore';
 import { normalizeUserAssets } from '../utils/assetUrls';
-import { updateIsAbout, type IdentityFields } from '../utils/identity';
+import { updateIsAbout, userKey, type IdentityFields } from '../utils/identity';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,8 @@ interface DiscoverState {
   fetchUsers: (query?: string) => Promise<void>;
   setSearchQuery: (q: string) => void;
   updateRelationship: (userId: string, origin: string, relationship: DiscoverUser['relationship'], requestId?: string) => void;
+  /** Drop any discover card representing a user who just became a friend. */
+  removeFriendUser: (user: IdentityFields, origin: string) => void;
   /** Drop the cards the deleted user's `user_updated` row (issued by `origin`) is about (`updateIsAbout`). */
   removeDeletedUser: (user: IdentityFields, origin: string) => void;
   reset: () => void;
@@ -40,9 +42,13 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
 
     await waitForAutoConnect();
 
-    // Lazy import — avoids pulling spaceStore's transitive dependency chain
+    // Lazy imports — avoids pulling spaceStore's transitive dependency chain
     // (voiceStore → AudioManager) into test environments.
-    const { useSpaceStore } = await import('./spaceStore');
+    const [{ useSpaceStore }, { useSocialStore, friendEntryOf }, { isMe }] = await Promise.all([
+      import('./spaceStore'),
+      import('./socialStore'),
+      import('./authStore'),
+    ]);
 
     try {
       const instances = useInstanceStore.getState().instances;
@@ -62,15 +68,25 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
         return;
       }
 
+      const currentFriends = useSocialStore.getState().friends;
       const allUsers: TaggedDiscoverUser[] = [];
       const seen = new Set<string>();
       let totalSum = 0;
 
       for (const result of fulfilled) {
         const { users, total, origin } = result.value;
-        totalSum += total;
+        let excludedInPage = 0;
 
         for (const user of users) {
+          // Never display the authenticated user or users who are already friends
+          if (
+            user.relationship === 'friends' ||
+            isMe(user, origin) ||
+            Boolean(friendEntryOf(currentFriends, user, origin))
+          ) {
+            excludedInPage++;
+            continue;
+          }
           const key = `${user.id}:${origin}`;
           if (seen.has(key)) continue;
           seen.add(key);
@@ -79,6 +95,8 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
           // DiscoverUser carries the identity/avatar fields the cache needs; cast to User.
           useSpaceStore.getState().upsertUserView(user as unknown as User, origin);
         }
+
+        totalSum += Math.max(0, total - excludedInPage);
       }
 
       set({
@@ -97,13 +115,49 @@ export const useDiscoverStore = create<DiscoverState>((set) => ({
   setSearchQuery: (q: string) => set({ searchQuery: q }),
 
   updateRelationship: (userId: string, origin: string, relationship: DiscoverUser['relationship'], requestId?: string) => {
+    if (relationship === 'friends') {
+      set((state) => {
+        const target = state.users.find(u => u.id === userId && u._instanceOrigin === origin);
+        const targetKey = target ? userKey(target, target._instanceOrigin) : null;
+        const filtered = state.users.filter(u => {
+          if (u.id === userId && u._instanceOrigin === origin) return false;
+          if (targetKey && userKey(u, u._instanceOrigin) === targetKey) return false;
+          return true;
+        });
+        if (filtered.length === state.users.length) return state;
+        return {
+          users: filtered,
+          total: Math.max(0, state.total - (state.users.length - filtered.length)),
+        };
+      });
+      return;
+    }
+
     set((state) => ({
       users: state.users.map(u =>
         u.id === userId && u._instanceOrigin === origin
-          ? { ...u, relationship, ...(requestId !== undefined ? { requestId } : {}) }
+          ? {
+              ...u,
+              relationship,
+              ...(requestId !== undefined ? { requestId } : relationship === 'none' ? { requestId: undefined } : {}),
+            }
           : u
       ),
     }));
+  },
+
+  removeFriendUser: (user: IdentityFields, origin: string) => {
+    const targetKey = userKey(user, origin);
+    set((state) => {
+      const filtered = state.users.filter(
+        u => userKey(u, u._instanceOrigin) !== targetKey && !updateIsAbout(u, u._instanceOrigin, user, origin),
+      );
+      if (filtered.length === state.users.length) return state;
+      return {
+        users: filtered,
+        total: Math.max(0, state.total - (state.users.length - filtered.length)),
+      };
+    });
   },
 
   removeDeletedUser: (user: IdentityFields, origin: string) => {
