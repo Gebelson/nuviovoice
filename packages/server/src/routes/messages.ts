@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { getDb, schema } from '../db/index.js';
 import { authenticate } from '../utils/auth.js';
 import { generateSnowflake } from '../utils/snowflake.js';
@@ -299,14 +299,17 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const db = getDb();
-    const messageRows = selectHistoryPage(page, schema.messages, (cursor, orderBy, limit) =>
-      db.select()
+    const messageRows = selectHistoryPage(page, schema.messages, (cursor, orderBy, limit) => {
+      const conditions = [eq(schema.messages.channelId, id)];
+      if (cursor) conditions.push(cursor);
+      conditions.push(sql`${schema.messages.id} NOT IN (SELECT message_id FROM user_hidden_messages WHERE user_id = ${request.userId})`);
+      return db.select()
         .from(schema.messages)
-        .where(and(eq(schema.messages.channelId, id), cursor))
+        .where(and(...conditions))
         .orderBy(...orderBy)
         .limit(limit)
-        .all(),
-    );
+        .all();
+    });
 
     markHistoryPageHonoured(reply, page);
     return reply.code(200).send(hydrateChannelMessages(id, messageRows));
@@ -568,7 +571,26 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     // Delete attachments and message atomically
     db.transaction((tx) => {
       tx.delete(schema.attachments).where(eq(schema.attachments.messageId, id)).run();
+      tx.delete(schema.userHiddenMessages).where(eq(schema.userHiddenMessages.messageId, id)).run();
       tx.delete(schema.messages).where(eq(schema.messages.id, id)).run();
+
+      if (!isAuthor) {
+        tx.insert(schema.auditLogs).values({
+          id: generateSnowflake(),
+          spaceId,
+          channelId: message.channelId,
+          actorId: request.userId,
+          targetUserId: message.userId,
+          targetId: id,
+          action: 'message_delete',
+          reason: (request.query as { reason?: string })?.reason || null,
+          details: JSON.stringify({
+            contentSnippet: message.content ? (message.content.length > 200 ? message.content.slice(0, 200) + '...' : message.content) : null,
+            attachmentCount: attachmentRows.length,
+          }),
+          createdAt: Date.now(),
+        }).run();
+      }
     });
 
     // Clean up files from disk after transaction commits
@@ -584,5 +606,118 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     });
 
     return reply.code(200).send({ success: true });
+  });
+
+  // POST /api/messages/:id/hide - Hide message for current user ("Apagar para mim")
+  app.post<{ Params: { id: string } }>('/api/messages/:id/hide', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const message = db.select().from(schema.messages).where(eq(schema.messages.id, id)).get();
+    if (!message) {
+      return sendError(reply, 404, 'message_not_found');
+    }
+
+    const spaceId = getChannelSpaceId(message.channelId);
+    if (!spaceId) {
+      return sendError(reply, 404, 'channel_not_found');
+    }
+
+    if (!hasPermission(request.userId, spaceId, PermissionBits.VIEW_CHANNEL, message.channelId)) {
+      return sendError(reply, 403, 'missing_permission', { permission: 'VIEW_CHANNEL' });
+    }
+
+    const now = Date.now();
+    db.insert(schema.userHiddenMessages).values({
+      userId: request.userId,
+      messageId: id,
+      channelType: 'space',
+      createdAt: now,
+    }).onConflictDoNothing().run();
+
+    connectionManager.sendToUser(request.userId, {
+      type: 'message_hidden',
+      messageId: id,
+      channelId: message.channelId,
+    });
+
+    return reply.code(200).send({ success: true });
+  });
+
+  // POST /api/channels/:id/messages/bulk-delete - Delete multiple messages (moderator)
+  app.post<{ Params: { id: string }; Body: { messageIds: string[]; reason?: string } }>('/api/channels/:id/messages/bulk-delete', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { messageIds, reason } = request.body || {};
+
+    if (!Array.isArray(messageIds) || messageIds.length === 0) {
+      return sendError(reply, 400, 'validation_failed');
+    }
+
+    if (messageIds.length > 100) {
+      return sendError(reply, 400, 'validation_failed', { max: 100 });
+    }
+
+    const spaceId = getChannelSpaceId(id);
+    if (!spaceId) {
+      return sendError(reply, 404, 'channel_not_found');
+    }
+
+    if (!hasPermission(request.userId, spaceId, PermissionBits.MANAGE_MESSAGES, id)) {
+      return sendError(reply, 403, 'missing_permission', { permission: 'MANAGE_MESSAGES' });
+    }
+
+    const db = getDb();
+    const targetMessages = db.select()
+      .from(schema.messages)
+      .where(and(eq(schema.messages.channelId, id), inArray(schema.messages.id, messageIds)))
+      .all();
+
+    if (targetMessages.length === 0) {
+      return reply.code(200).send({ success: true, count: 0 });
+    }
+
+    const targetIds = targetMessages.map(m => m.id);
+
+    // Collect attachment filenames before deleting
+    const attachmentRows = db.select({ filename: schema.attachments.filename })
+      .from(schema.attachments)
+      .where(inArray(schema.attachments.messageId, targetIds))
+      .all();
+
+    db.transaction((tx) => {
+      tx.delete(schema.attachments).where(inArray(schema.attachments.messageId, targetIds)).run();
+      tx.delete(schema.userHiddenMessages).where(inArray(schema.userHiddenMessages.messageId, targetIds)).run();
+      tx.delete(schema.messages).where(inArray(schema.messages.id, targetIds)).run();
+
+      tx.insert(schema.auditLogs).values({
+        id: generateSnowflake(),
+        spaceId,
+        channelId: id,
+        actorId: request.userId,
+        targetUserId: null,
+        targetId: targetIds.slice(0, 10).join(','),
+        action: 'message_bulk_delete',
+        reason: reason?.trim() || null,
+        details: JSON.stringify({
+          count: targetIds.length,
+          messageIds: targetIds,
+        }),
+        createdAt: Date.now(),
+      }).run();
+    });
+
+    deleteAttachmentFiles(attachmentRows);
+
+    connectionManager.sendToChannel(spaceId, id, {
+      type: 'messages_bulk_deleted',
+      channelId: id,
+      messageIds: targetIds,
+    });
+
+    return reply.code(200).send({ success: true, count: targetIds.length });
   });
 }

@@ -220,6 +220,8 @@ export const dmMembers = sqliteTable('dm_members', {
   // start (local clock), or the relayed event's timestamp. Written only through
   // utils/dmMemberClosed.ts.
   closedChangedAt: integer('closed_changed_at').notNull().default(0),
+  // Cutoff timestamp for "Limpar histórico para mim". Messages with createdAt <= clearedHistoryAt are excluded.
+  clearedHistoryAt: integer('cleared_history_at').notNull().default(0),
 }, (table) => ({
   pk: primaryKey({ columns: [table.dmChannelId, table.userId] }),
   userIdx: index('idx_dm_members_user_id').on(table.userId),
@@ -1070,6 +1072,36 @@ export const productReports = sqliteTable('product_reports', {
   productIdx: index('idx_product_reports_product_id').on(table.productId),
   reporterIdx: index('idx_product_reports_reporter_id').on(table.reporterId),
   statusIdx: index('idx_product_reports_status').on(table.status),
+}));
+
+// User Hidden Messages ("Apagar para mim")
+export const userHiddenMessages = sqliteTable('user_hidden_messages', {
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  messageId: text('message_id').notNull(),
+  channelType: text('channel_type').notNull().default('dm'), // 'dm' | 'space'
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.messageId] }),
+  userIdx: index('idx_user_hidden_messages_user_id').on(table.userId),
+  messageIdx: index('idx_user_hidden_messages_message_id').on(table.messageId),
+}));
+
+// Space Moderation Audit Logs
+export const auditLogs = sqliteTable('audit_logs', {
+  id: text('id').primaryKey(),
+  spaceId: text('space_id').notNull().references(() => spaces.id, { onDelete: 'cascade' }),
+  channelId: text('channel_id').references(() => channels.id, { onDelete: 'set null' }),
+  actorId: text('actor_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetUserId: text('target_user_id').references(() => users.id, { onDelete: 'set null' }),
+  targetId: text('target_id'),
+  action: text('action').notNull(), // 'message_delete' | 'message_bulk_delete'
+  reason: text('reason'),
+  details: text('details'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  spaceIdx: index('idx_audit_logs_space_id').on(table.spaceId),
+  actorIdx: index('idx_audit_logs_actor_id').on(table.actorId),
+  createdAtIdx: index('idx_audit_logs_created_at').on(table.createdAt),
 }));
 
 

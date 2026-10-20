@@ -2,7 +2,7 @@ import { MAX_OWNER_TITLE_LENGTH, normalizeOwnerTitle } from '@concord/shared/src
 import { updateSpaceMemberRoutes, roleGrantRefusal } from './spaceMemberUpdate.js';
 import path from 'path';
 import type { FastifyInstance } from 'fastify';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, desc } from 'drizzle-orm';
 import { getDb, getRawDb, schema } from '../db/index.js';
 import { authenticate } from '../utils/auth.js';
 import { markDirectoryDirty } from '../directory/state.js';
@@ -1965,5 +1965,71 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return reply.code(200).send({ success: true });
+  });
+
+  // GET /api/spaces/:id/audit-logs - View moderation audit logs
+  app.get<{ Params: { id: string } }>('/api/spaces/:id/audit-logs', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const canView = isSpaceOwner(request.userId, id) ||
+      hasPermission(request.userId, id, PermissionBits.MANAGE_SPACE) ||
+      hasPermission(request.userId, id, PermissionBits.MANAGE_MESSAGES) ||
+      hasPermission(request.userId, id, PermissionBits.ADMINISTRATOR);
+
+    if (!canView) {
+      return sendError(reply, 403, 'missing_permission', { permission: 'MANAGE_SPACE or MANAGE_MESSAGES' });
+    }
+
+    const logs = db.select()
+      .from(schema.auditLogs)
+      .where(eq(schema.auditLogs.spaceId, id))
+      .orderBy(desc(schema.auditLogs.createdAt))
+      .limit(100)
+      .all();
+
+    if (logs.length === 0) {
+      return reply.code(200).send({ auditLogs: [] });
+    }
+
+    // Hydrate actors and target users
+    const userIds = [...new Set([
+      ...logs.map(l => l.actorId),
+      ...logs.map(l => l.targetUserId).filter((uid): uid is string => !!uid),
+    ])];
+
+    const users = userIds.length > 0
+      ? db.select().from(schema.users).where(inArray(schema.users.id, userIds)).all()
+      : [];
+    const userMap = new Map(users.map(u => [u.id, sanitizeUser(u)]));
+
+    // Hydrate channel names
+    const channelIds = [...new Set(logs.map(l => l.channelId).filter((cid): cid is string => !!cid))];
+    const channels = channelIds.length > 0
+      ? db.select({ id: schema.channels.id, name: schema.channels.name }).from(schema.channels).where(inArray(schema.channels.id, channelIds)).all()
+      : [];
+    const channelMap = new Map(channels.map(c => [c.id, c.name]));
+
+    const hydratedLogs = logs.map(l => ({
+      id: l.id,
+      spaceId: l.spaceId,
+      channelId: l.channelId,
+      channelName: l.channelId ? channelMap.get(l.channelId) ?? null : null,
+      actorId: l.actorId,
+      actor: userMap.get(l.actorId) ?? null,
+      targetUserId: l.targetUserId,
+      targetUser: l.targetUserId ? userMap.get(l.targetUserId) ?? null : null,
+      targetId: l.targetId,
+      action: l.action,
+      reason: l.reason,
+      details: l.details ? (() => {
+        try { return JSON.parse(l.details); } catch { return l.details; }
+      })() : null,
+      createdAt: l.createdAt,
+    }));
+
+    return reply.code(200).send({ auditLogs: hydratedLogs });
   });
 }

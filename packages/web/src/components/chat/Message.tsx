@@ -165,6 +165,8 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
   const editingMessageId = useChatStore((s) => s.editingMessageId);
   const setEditingMessage = useChatStore((s) => s.setEditingMessage);
   const deleteMessage = useChatStore((s) => s.deleteMessage);
+  const hideMessage = useChatStore((s) => s.hideMessage);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const members = useSpaceStore((s) => s.members);
   const openUserProfile = useUIStore((s) => s.openUserProfile);
   const isMobile = useUIStore((s) => s.isMobile);
@@ -381,7 +383,8 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
       canManageMessages,
       onReply: startReply,
       onEdit: startEditing,
-      onDelete: () => deleteMessage(message.id, channelKey),
+      onDelete: () => setShowDeleteModal(true),
+      onHideForMe: () => hideMessage(message.id, channelKey),
       onReaction: (emoji: string) => toggleReaction(emoji),
       onOpenEmojiPicker: () => {
         // Close the context menu, then show the reaction picker at the row
@@ -493,7 +496,7 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
       id={`msg-${message.id}`}
       role="article"
       aria-label={t('chat:message.rowLabel', { author: displayName, time: formatMessageTimestamp(t, fmt, message.createdAt) })}
-      className={`group relative flex gap-4 px-5 py-[3px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary/60 ${isFirstInGroup || message.replyTo ? 'mt-[1.0625rem]' : ''} ${
+      className={`group relative flex gap-4 px-5 py-[3px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-primary/60 ${isFirstInGroup || message.replyTo || message.replyToId ? 'mt-[1.0625rem]' : ''} ${
         isMentioned
           ? 'bg-accent-amber/10 border-l-2 border-l-accent-amber hover:bg-accent-amber/15'
           : 'hover:bg-[rgba(255,255,255,0.025)]'
@@ -508,13 +511,13 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
       }}
     >
       {/* Reply Line */}
-      {message.replyTo && (
+      {(message.replyTo || message.replyToId) && (
         <div className="absolute left-[40px] top-[-14px] w-[30px] h-[22px] border-l-2 border-t-2 border-interactive-muted rounded-tl-[6px] opacity-60" />
       )}
 
       {/* Avatar or timestamp column */}
       <div className="w-10 flex-shrink-0 flex items-start justify-start">
-        {isFirstInGroup || message.replyTo ? (
+        {isFirstInGroup || message.replyTo || message.replyToId ? (
           <div className="mt-0.5 relative" data-poke-user={message.userId} onContextMenu={handleAuthorMenu}>
             <ProfileAvatar
               src={displayIdentity.avatar}
@@ -571,7 +574,16 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
           );
         })()}
 
-        {(isFirstInGroup || message.replyTo) && (
+        {message.replyToId && !message.replyTo && (
+          <div className="flex items-center gap-1.5 mb-1.5 ml-[-4px] text-[13px] text-txt-muted/70 italic select-none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+              <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+            <span>Mensagem original excluída</span>
+          </div>
+        )}
+
+        {(isFirstInGroup || message.replyTo || message.replyToId) && (
           <div className="flex items-baseline gap-2 mb-0.5">
             <span
               role="button"
@@ -827,38 +839,12 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
           )}
           {canDelete && (
             <button
-              onClick={() => {
-                if (confirmingDelete) {
-                  cancelDeleteConfirm();
-                  deleteMessage(message.id, channelKey);
-                } else {
-                  startDeleteConfirm();
-                }
-              }}
-              className={`px-2 h-full transition-all duration-150 flex items-center justify-center relative w-9 ${
-                confirmingDelete
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'text-txt-tertiary hover:text-txt-danger hover:bg-interactive-hover'
-              }`}
-              title={confirmingDelete ? t('chat:message.actions.confirmDelete') : t('common:actions.delete')}
+              onClick={() => setShowDeleteModal(true)}
+              className="px-2 h-full transition-all duration-150 flex items-center justify-center relative w-9 text-txt-tertiary hover:text-txt-danger hover:bg-interactive-hover cursor-pointer"
+              title={isDmMessage ? 'Apagar para todos' : t('common:actions.delete')}
             >
-              {/* Trash icon */}
-              <svg
-                width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
-                className={`absolute transition-all duration-150 ${
-                  confirmingDelete ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-                }`}
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-              </svg>
-              {/* Checkmark icon */}
-              <svg
-                width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
-                className={`absolute transition-all duration-150 ${
-                  confirmingDelete ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
-                }`}
-              >
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
               </svg>
             </button>
           )}
@@ -870,6 +856,50 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
   return (
     <div data-context-menu onContextMenu={handleContextMenu}>
       {content}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowDeleteModal(false)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl bg-[#121316]/95 backdrop-blur-xl border border-white/10 shadow-2xl p-6 text-txt-primary animate-scale-in">
+            <h3 className="text-lg font-semibold text-txt-primary mb-2">
+              {isDmMessage ? 'Apagar mensagem para todos?' : 'Excluir mensagem?'}
+            </h3>
+            <p className="text-sm text-txt-secondary mb-5 leading-relaxed">
+              {isDmMessage
+                ? 'Esta mensagem será apagada para todos os participantes desta conversa. Esta ação não pode ser desfeita.'
+                : 'Esta mensagem será removida da conversa para todos os participantes. Esta ação não pode ser desfeita.'}
+            </p>
+
+            {message.content && (
+              <div className="mb-6 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-txt-muted line-clamp-3 italic">
+                "{message.content}"
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-txt-secondary hover:text-txt-primary hover:bg-white/[0.06] transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  deleteMessage(message.id, channelKey);
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-accent-rose hover:bg-accent-rose/90 text-white shadow-lg shadow-accent-rose/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              >
+                {isDmMessage ? 'Apagar para todos' : 'Excluir mensagem'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

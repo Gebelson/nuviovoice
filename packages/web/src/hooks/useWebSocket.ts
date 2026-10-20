@@ -693,6 +693,16 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       removeMessage(event.messageId, event.channelId);
       break;
 
+    case 'message_hidden':
+      removeMessage(event.messageId, event.channelId);
+      break;
+
+    case 'messages_bulk_deleted':
+      for (const msgId of event.messageIds) {
+        removeMessage(msgId, event.channelId);
+      }
+      break;
+
     case 'typing': {
       let typingUsername = event.username as string;
       if (!isHome && typingUsername && !typingUsername.includes('@')) {
@@ -992,6 +1002,14 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
     case 'dm_message_deleted':
       if (!isHome && !activePeerOrigins.has(origin)) break;
       removeMessage(event.messageId, event.dmChannelId);
+      break;
+
+    case 'dm_message_hidden':
+      removeMessage(event.messageId, event.dmChannelId);
+      break;
+
+    case 'dm_history_cleared':
+      useChatStore.getState().clearChannelMessages(event.dmChannelId);
       break;
 
     case 'embeds_resolved': {

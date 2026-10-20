@@ -211,6 +211,45 @@ export function ensureDefaults(db: Database.Database): void {
     }
     console.log('[defaults] Seeded default marketplace categories');
   }
+
+  // 6. Ensure dm_members.cleared_history_at exists
+  const dmMemberCols = db.prepare('PRAGMA table_info(dm_members)').all() as { name: string }[];
+  if (!dmMemberCols.some(c => c.name === 'cleared_history_at')) {
+    db.exec('ALTER TABLE dm_members ADD COLUMN cleared_history_at INTEGER DEFAULT 0 NOT NULL;');
+    console.log('[defaults] Added cleared_history_at column to dm_members');
+  }
+
+  // 7. Ensure user_hidden_messages table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_hidden_messages (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      message_id TEXT NOT NULL,
+      channel_type TEXT NOT NULL DEFAULT 'dm',
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, message_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_hidden_messages_user_id ON user_hidden_messages(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_hidden_messages_message_id ON user_hidden_messages(message_id);
+  `);
+
+  // 8. Ensure audit_logs table exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id TEXT PRIMARY KEY,
+      space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+      channel_id TEXT REFERENCES channels(id) ON DELETE SET NULL,
+      actor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      target_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      target_id TEXT,
+      action TEXT NOT NULL,
+      reason TEXT,
+      details TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_space_id ON audit_logs(space_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+  `);
 }
 
 /**

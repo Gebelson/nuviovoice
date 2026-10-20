@@ -4,6 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { useSpaceStore } from '../../stores/spaceStore';
 import { useChatStore } from '../../stores/chatStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useAuthStore } from '../../stores/authStore';
+import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
 import { VoiceGrid } from '../voice/VoiceGrid';
@@ -114,10 +116,72 @@ export function MainContent() {
   const _FALLBACK_USER = { id: '', username: '', createdAt: 0, isAdmin: false, replicatedInstances: [] } as unknown as User;
   const _canonicalFirstOther = useCanonicalUserView(_rawFirstOther ?? _FALLBACK_USER, dmViewer.origin);
 
-  // Reset search and voice invite when channel changes
+  const user = useAuthStore((s) => s.user);
+  const spacePermissions = useSpaceStore((s) => s.spacePermissions);
+  const mySpacePerms = currentSpaceId ? spacePermissions.get(currentSpaceId) : undefined;
+  const isSpaceOwner = !!(user && currentSpace && currentSpace.ownerId === user.id);
+  const canManageMessages = isSpaceOwner || hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_MESSAGES) || hasPermissionBit(mySpacePerms, PermissionBits.ADMINISTRATOR);
+
+  const [isBulkManaging, setIsBulkManaging] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState<Set<string>>(new Set());
+  const [bulkReason, setBulkReason] = useState('');
+  const [showBulkConfirmModal, setShowBulkConfirmModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  const handleToggleSelectMessage = useCallback((messageId: string) => {
+    setSelectedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) {
+        next.delete(messageId);
+      } else {
+        if (next.size >= 100) {
+          useUIStore.getState().addToast('Limite máximo de 100 mensagens por exclusão', 'warning');
+          return prev;
+        }
+        next.add(messageId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleQuickSelect = useCallback((count: number) => {
+    if (!currentChannelId) return;
+    const msgs = (useChatStore.getState().messages.get(currentChannelId) ?? []).filter(
+      (m) => m.type !== 'system' && !m.id.startsWith('temp_') && !m.id.startsWith('pending-')
+    );
+    const slice = msgs.slice(-count);
+    setSelectedMessageIds(new Set(slice.map((m) => m.id)));
+  }, [currentChannelId]);
+
+  const handleConfirmBulkDelete = async () => {
+    if (!currentChannelId || selectedMessageIds.size === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      await useChatStore.getState().bulkDeleteMessages(
+        currentChannelId,
+        Array.from(selectedMessageIds),
+        bulkReason.trim() || undefined
+      );
+      setShowBulkConfirmModal(false);
+      setIsBulkManaging(false);
+      setSelectedMessageIds(new Set());
+      setBulkReason('');
+      useUIStore.getState().addToast('Mensagens excluídas com sucesso', 'info');
+    } catch {
+      // Handled in chatStore
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  // Reset search, voice invite, and bulk management when channel changes
   useEffect(() => {
     setSearchOpen(false);
     setVoiceInviteOpen(false);
+    setIsBulkManaging(false);
+    setSelectedMessageIds(new Set());
+    setBulkReason('');
+    setShowBulkConfirmModal(false);
   }, [currentChannelId]);
 
   // Handle actual browser fullscreen API.
@@ -672,6 +736,25 @@ export function MainContent() {
           )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {canManageMessages && (
+            <button
+              onClick={() => {
+                setIsBulkManaging((prev) => !prev);
+                setSelectedMessageIds(new Set());
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[6px] transition-all cursor-pointer mr-1 ${
+                isBulkManaging
+                  ? 'bg-accent-rose text-white shadow-[0_2px_10px_rgba(239,68,68,0.3)]'
+                  : 'text-txt-secondary hover:text-txt-primary hover:bg-interactive-hover'
+              }`}
+              title={isBulkManaging ? 'Sair da moderação de mensagens' : 'Moderar mensagens em massa'}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+              </svg>
+              <span className="hidden sm:inline">{isBulkManaging ? 'Concluir' : 'Moderar'}</span>
+            </button>
+          )}
           <ChannelNotificationButton channelId={currentChannelId} channelName={channel.name} />
           <button
             ref={searchButtonRef}
@@ -689,8 +772,145 @@ export function MainContent() {
           <MemberListToggleButton />
         </div>
       </div>
-      <MessageList channelId={currentChannelId} jumpToMessageId={jumpToMessageId} onJumpHandled={clearJumpRequest} />
-      <MessageInput channelId={currentChannelId} channelName={channel.name} />
+      <MessageList
+        channelId={currentChannelId}
+        jumpToMessageId={jumpToMessageId}
+        onJumpHandled={clearJumpRequest}
+        bulkManaging={isBulkManaging}
+        selectedMessageIds={selectedMessageIds}
+        onToggleSelectMessage={handleToggleSelectMessage}
+      />
+      {isBulkManaging ? (
+        <div className="flex-shrink-0 p-3 bg-[#121316]/95 backdrop-blur-xl border-t border-white/10 flex flex-wrap items-center justify-between gap-3 z-20">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-white">
+              {selectedMessageIds.size} {selectedMessageIds.size === 1 ? 'mensagem selecionada' : 'mensagens selecionadas'}
+            </span>
+            <div className="flex items-center gap-1.5 ml-2">
+              <button
+                type="button"
+                onClick={() => handleQuickSelect(10)}
+                className="px-2 py-1 text-xs rounded bg-white/[0.06] hover:bg-white/[0.12] text-txt-secondary hover:text-white transition-colors cursor-pointer"
+              >
+                Últimas 10
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickSelect(25)}
+                className="px-2 py-1 text-xs rounded bg-white/[0.06] hover:bg-white/[0.12] text-txt-secondary hover:text-white transition-colors cursor-pointer"
+              >
+                25
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickSelect(50)}
+                className="px-2 py-1 text-xs rounded bg-white/[0.06] hover:bg-white/[0.12] text-txt-secondary hover:text-white transition-colors cursor-pointer"
+              >
+                50
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickSelect(100)}
+                className="px-2 py-1 text-xs rounded bg-white/[0.06] hover:bg-white/[0.12] text-txt-secondary hover:text-white transition-colors cursor-pointer"
+              >
+                100
+              </button>
+              {selectedMessageIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMessageIds(new Set())}
+                  className="px-2 py-1 text-xs rounded text-txt-muted hover:text-txt-secondary transition-colors cursor-pointer"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsBulkManaging(false);
+                setSelectedMessageIds(new Set());
+              }}
+              className="px-3 py-1.5 text-sm font-medium text-txt-secondary hover:text-white transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={selectedMessageIds.size === 0}
+              onClick={() => setShowBulkConfirmModal(true)}
+              className="px-4 py-1.5 text-sm font-medium bg-accent-rose hover:bg-accent-rose/80 disabled:opacity-50 disabled:pointer-events-none text-white rounded-lg shadow-lg shadow-accent-rose/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+              Excluir selecionadas ({selectedMessageIds.size})
+            </button>
+          </div>
+        </div>
+      ) : (
+        <MessageInput channelId={currentChannelId} channelName={channel.name} />
+      )}
+      {showBulkConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#121316]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent-rose/10 border border-accent-rose/20 flex items-center justify-center text-accent-rose shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Excluir mensagens em massa</h3>
+                <p className="text-xs text-txt-tertiary">Ação de moderação registrada na auditoria</p>
+              </div>
+            </div>
+            <p className="text-sm text-txt-secondary">
+              Tem certeza que deseja excluir permanentemente as <strong className="text-white">{selectedMessageIds.size}</strong> mensagens selecionadas? Esta ação não pode ser desfeita.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-txt-tertiary mb-1.5">
+                Motivo da exclusão (opcional)
+              </label>
+              <input
+                type="text"
+                value={bulkReason}
+                onChange={(e) => setBulkReason(e.target.value)}
+                placeholder="Ex: Spam, violação das diretrizes..."
+                maxLength={200}
+                className="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder-txt-muted focus:outline-none focus:border-accent-rose/50 transition-colors"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={() => setShowBulkConfirmModal(false)}
+                className="px-4 py-2 text-sm font-medium text-txt-secondary hover:text-white rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isBulkDeleting}
+                onClick={handleConfirmBulkDelete}
+                className="px-4 py-2 text-sm font-semibold bg-accent-rose hover:bg-accent-rose/80 text-white rounded-xl shadow-lg shadow-accent-rose/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                {isBulkDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Excluindo...</span>
+                  </>
+                ) : (
+                  <span>Confirmar exclusão</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <SearchPopover
         open={searchOpen}
         onClose={() => setSearchOpen(false)}

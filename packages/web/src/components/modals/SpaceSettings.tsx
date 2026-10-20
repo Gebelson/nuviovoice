@@ -5,13 +5,14 @@ import { describeError } from '../../i18n/errors';
 import { Modal } from '../ui/Modal';
 import { useUIStore } from '../../stores/uiStore';
 import { useSpaceStore } from '../../stores/spaceStore';
+import { useAuthStore } from '../../stores/authStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { Avatar } from '../ui/Avatar';
 import { Toggle } from '../ui/Toggle';
 import { api } from '../../api/client';
 import { getApiForOrigin } from '../../utils/crossStoreResolvers';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
-import { OverviewPanel, MembersPanel, RolesPanel, BansPanel, SettingsPanelSuspense } from './lazySettingsPanels';
+import { OverviewPanel, MembersPanel, RolesPanel, BansPanel, AuditLogsPanel, SettingsPanelSuspense } from './lazySettingsPanels';
 import { useVisibilityOptions } from './spaceSettingsPanels/spaceOptions';
 import { ListInDirectoryConfirm } from './DirectoryConfirmations';
 import { isPublicSpace, type SpaceVisibility, type JoinRequest, type InstanceStreamingLimits } from '@concord/shared';
@@ -597,9 +598,9 @@ function JoinRequestsSection({ spaceId }: { spaceId: string }) {
   );
 }
 
-type SpaceSettingsTab = 'overview' | 'appearance' | 'discovery' | 'members' | 'roles' | 'bans';
+type SpaceSettingsTab = 'overview' | 'appearance' | 'discovery' | 'members' | 'roles' | 'bans' | 'auditLogs';
 
-const SPACE_SETTINGS_TABS: readonly SpaceSettingsTab[] = ['overview', 'appearance', 'discovery', 'members', 'roles', 'bans'];
+const SPACE_SETTINGS_TABS: readonly SpaceSettingsTab[] = ['overview', 'appearance', 'discovery', 'members', 'roles', 'bans', 'auditLogs'];
 
 function isSpaceSettingsTab(value: unknown): value is SpaceSettingsTab {
   return typeof value === 'string' && (SPACE_SETTINGS_TABS as readonly string[]).includes(value);
@@ -614,6 +615,7 @@ export function SpaceSettingsModal() {
   const currentSpaceId = useSpaceStore((s) => s.currentSpaceId);
   const spaces = useSpaceStore((s) => s.spaces);
   const spacePermissions = useSpaceStore((s) => s.spacePermissions);
+  const user = useAuthStore((s) => s.user);
 
   const [tab, setTab] = useState<SpaceSettingsTab>('overview');
   const [mobileView, setMobileView] = useState<'tabs' | 'content'>('tabs');
@@ -621,9 +623,11 @@ export function SpaceSettingsModal() {
   const isOpen = activeModal === 'spaceSettings';
   const space = spaces.find(s => s.id === currentSpaceId);
   const mySpacePerms = currentSpaceId ? spacePermissions.get(currentSpaceId) : undefined;
+  const isOwner = !!(user && space && space.ownerId === user.id);
   const canManageSpace = hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_SPACE);
   const canManageRoles = hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_ROLES);
   const canBanMembers = hasPermissionBit(mySpacePerms, PermissionBits.BAN_MEMBERS);
+  const canSeeAuditLogs = isOwner || canManageSpace || hasPermissionBit(mySpacePerms, PermissionBits.MANAGE_MESSAGES) || hasPermissionBit(mySpacePerms, PermissionBits.ADMINISTRATOR);
   const spaceIsPublic = space ? isPublicSpace(space) : false;
   const canSeeDiscovery = canManageSpace && spaceIsPublic;
 
@@ -641,6 +645,7 @@ export function SpaceSettingsModal() {
       members: true,
       roles: canManageRoles,
       bans: canBanMembers,
+      auditLogs: canSeeAuditLogs,
     };
     const deepLinked = isSpaceSettingsTab(requestedTab) && allowed[requestedTab];
     setTab(deepLinked ? requestedTab : 'overview');
@@ -702,6 +707,9 @@ export function SpaceSettingsModal() {
             {canBanMembers && (
               <button onClick={() => handleTabClick('bans')} className={tabClass('bans')}>{t('spaces:settings.nav.tabs.bans')}</button>
             )}
+            {canSeeAuditLogs && (
+              <button onClick={() => handleTabClick('auditLogs')} className={tabClass('auditLogs')}>{t('spaces:settings.nav.tabs.auditLogs', { defaultValue: 'Registro de auditoria' })}</button>
+            )}
           </div>
         </div>
 
@@ -742,6 +750,9 @@ export function SpaceSettingsModal() {
               {canBanMembers && (
                 <button onClick={() => handleTabClick('bans')} className={tabClass('bans')}>{t('spaces:settings.nav.tabs.bans')}</button>
               )}
+              {canSeeAuditLogs && (
+                <button onClick={() => handleTabClick('auditLogs')} className={tabClass('auditLogs')}>{t('spaces:settings.nav.tabs.auditLogs', { defaultValue: 'Registro de auditoria' })}</button>
+              )}
             </div>
           </div>
         )}
@@ -770,6 +781,7 @@ export function SpaceSettingsModal() {
                 {tab === 'members' && <MembersPanel spaceId={currentSpaceId} />}
                 {tab === 'roles' && canManageRoles && <RolesPanel spaceId={currentSpaceId} />}
                 {tab === 'bans' && canBanMembers && <BansPanel spaceId={currentSpaceId} />}
+                {tab === 'auditLogs' && canSeeAuditLogs && <AuditLogsPanel spaceId={currentSpaceId} />}
               </SettingsPanelSuspense>
             </div>
           </div>

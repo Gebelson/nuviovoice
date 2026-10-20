@@ -422,7 +422,26 @@ function handleMessageDelete(event: Record<string, unknown>, userId: string): vo
   // Delete attachments + message atomically, file cleanup outside transaction
   db.transaction((tx) => {
     tx.delete(schema.attachments).where(eq(schema.attachments.messageId, messageId)).run();
+    tx.delete(schema.userHiddenMessages).where(eq(schema.userHiddenMessages.messageId, messageId)).run();
     tx.delete(schema.messages).where(eq(schema.messages.id, messageId)).run();
+
+    if (!isAuthor) {
+      tx.insert(schema.auditLogs).values({
+        id: generateSnowflake(),
+        spaceId,
+        channelId: message.channelId,
+        actorId: userId,
+        targetUserId: message.userId,
+        targetId: messageId,
+        action: 'message_delete',
+        reason: null,
+        details: JSON.stringify({
+          contentSnippet: message.content ? (message.content.length > 200 ? message.content.slice(0, 200) + '...' : message.content) : null,
+          attachmentCount: attachmentRows.length,
+        }),
+        createdAt: Date.now(),
+      }).run();
+    }
   });
 
   // Clean up files from disk (outside transaction — file I/O)
@@ -1029,6 +1048,9 @@ function handleDmMessageDelete(event: Record<string, unknown>, userId: string, w
       .run();
     tx.delete(schema.dmReactions)
       .where(eq(schema.dmReactions.dmMessageId, messageId))
+      .run();
+    tx.delete(schema.userHiddenMessages)
+      .where(eq(schema.userHiddenMessages.messageId, messageId))
       .run();
     tx.delete(schema.dmMessages)
       .where(eq(schema.dmMessages.id, messageId))

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { eq, and, or, inArray, isNull } from 'drizzle-orm';
+import { eq, and, or, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb, schema } from '../db/index.js';
 import { insertDmMember, reopenClosedDmMembers, setDmMemberClosed } from '../utils/dmMemberClosed.js';
 import { authenticate } from '../utils/auth.js';
@@ -1923,19 +1923,33 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
     }
     const { page } = parsed;
 
-    if (!isDmMember(id, request.userId)) {
+    const db = getDb();
+    const membership = db.select()
+      .from(schema.dmMembers)
+      .where(and(
+        eq(schema.dmMembers.dmChannelId, id),
+        eq(schema.dmMembers.userId, request.userId),
+      ))
+      .get();
+
+    if (!membership) {
       return sendError(reply, 403, 'not_dm_member');
     }
 
-    const db = getDb();
-    const messageRows = selectHistoryPage(page, schema.dmMessages, (cursor, orderBy, limit) =>
-      db.select()
+    const messageRows = selectHistoryPage(page, schema.dmMessages, (cursor, orderBy, limit) => {
+      const conditions = [eq(schema.dmMessages.dmChannelId, id)];
+      if (cursor) conditions.push(cursor);
+      if (membership.clearedHistoryAt && membership.clearedHistoryAt > 0) {
+        conditions.push(sql`${schema.dmMessages.createdAt} > ${membership.clearedHistoryAt}`);
+      }
+      conditions.push(sql`${schema.dmMessages.id} NOT IN (SELECT message_id FROM user_hidden_messages WHERE user_id = ${request.userId})`);
+      return db.select()
         .from(schema.dmMessages)
-        .where(and(eq(schema.dmMessages.dmChannelId, id), cursor))
+        .where(and(...conditions))
         .orderBy(...orderBy)
         .limit(limit)
-        .all(),
-    );
+        .all();
+    });
 
     markHistoryPageHonoured(reply, page);
     return reply.code(200).send(hydrateDmMessages(id, messageRows));
@@ -2213,6 +2227,10 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
         .where(eq(schema.dmReactions.dmMessageId, id))
         .run();
 
+      tx.delete(schema.userHiddenMessages)
+        .where(eq(schema.userHiddenMessages.messageId, id))
+        .run();
+
       tx.delete(schema.dmMessages)
         .where(eq(schema.dmMessages.id, id))
         .run();
@@ -2237,6 +2255,78 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
 
     // Federation: log mutation and queue for relay
     queueDmMessageDeleteRelay(id, msg.dmChannelId, relayTarget);
+
+    return reply.code(200).send({ success: true });
+  });
+
+  // POST /api/dm/:id/clear - Clear personal conversation history ("Limpar histórico para mim")
+  app.post<{ Params: { id: string } }>('/api/dm/:id/clear', async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const membership = db.select()
+      .from(schema.dmMembers)
+      .where(and(
+        eq(schema.dmMembers.dmChannelId, id),
+        eq(schema.dmMembers.userId, request.userId),
+      ))
+      .get();
+
+    if (!membership) {
+      return sendError(reply, 403, 'not_dm_member');
+    }
+
+    const now = Date.now();
+    db.update(schema.dmMembers)
+      .set({ clearedHistoryAt: now })
+      .where(and(
+        eq(schema.dmMembers.dmChannelId, id),
+        eq(schema.dmMembers.userId, request.userId),
+      ))
+      .run();
+
+    // Broadcast dm_history_cleared to current user across tabs/devices
+    connectionManager.sendToUser(request.userId, {
+      type: 'dm_history_cleared',
+      dmChannelId: id,
+      clearedHistoryAt: now,
+    });
+
+    return reply.code(200).send({ success: true, clearedHistoryAt: now });
+  });
+
+  // POST /api/dm/messages/:id/hide - Hide message for current user ("Apagar para mim")
+  app.post<{ Params: { id: string } }>('/api/dm/messages/:id/hide', async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const msg = db.select()
+      .from(schema.dmMessages)
+      .where(eq(schema.dmMessages.id, id))
+      .get();
+
+    if (!msg) {
+      return sendError(reply, 404, 'message_not_found');
+    }
+
+    if (!isDmMember(msg.dmChannelId, request.userId)) {
+      return sendError(reply, 403, 'not_dm_member');
+    }
+
+    const now = Date.now();
+    db.insert(schema.userHiddenMessages).values({
+      userId: request.userId,
+      messageId: id,
+      channelType: 'dm',
+      createdAt: now,
+    }).onConflictDoNothing().run();
+
+    // Broadcast dm_message_hidden to current user across devices/tabs
+    connectionManager.sendToUser(request.userId, {
+      type: 'dm_message_hidden',
+      messageId: id,
+      dmChannelId: msg.dmChannelId,
+    });
 
     return reply.code(200).send({ success: true });
   });

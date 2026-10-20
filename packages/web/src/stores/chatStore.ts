@@ -286,6 +286,10 @@ interface ChatState {
   sendMessage: (channelId: string, content: string, attachmentIds?: string[]) => Promise<void>;
   editMessage: (messageId: string, content: string, channelId: string) => Promise<void>;
   deleteMessage: (messageId: string, channelId: string) => Promise<void>;
+  hideMessage: (messageId: string, channelId: string) => Promise<void>;
+  bulkDeleteMessages: (channelId: string, messageIds: string[], reason?: string) => Promise<void>;
+  clearChannelMessages: (channelId: string) => void;
+  clearHistory: (channelId: string) => Promise<void>;
   addMessage: (channelId: string, message: MessageWithUser) => void;
   addRealtimeMessage: (channelId: string, message: MessageWithUser) => void;
   updateMessage: (message: MessageWithUser) => void;
@@ -865,6 +869,82 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  hideMessage: async (messageId: string, channelId: string) => {
+    const isDm = isDmChannel(channelId);
+    const origin = getChannelOrigin(channelId);
+    const client = getApiForOrigin(origin);
+
+    const messages = get().messages.get(channelId);
+    const savedMessage = messages?.find(m => m.id === messageId);
+    get().removeMessage(messageId, channelId);
+    try {
+      if (isDm) {
+        await client.dm.hideMessage(messageId);
+      } else {
+        await client.messages.hide(messageId);
+      }
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 404) return;
+      if (savedMessage) {
+        get().addMessage(channelId, savedMessage);
+      }
+      useUIStore.getState().addToast(describeError(error), 'warning');
+    }
+  },
+
+  bulkDeleteMessages: async (channelId: string, messageIds: string[], reason?: string) => {
+    const origin = getChannelOrigin(channelId);
+    const client = getApiForOrigin(origin);
+    const idSet = new Set(messageIds);
+
+    set((state) => {
+      const current = state.messages.get(channelId);
+      if (!current) return state;
+      const newMessages = new Map(state.messages);
+      const filtered = current
+        .filter(m => !idSet.has(m.id))
+        .map(m => (m.replyTo?.id && idSet.has(m.replyTo.id) ? { ...m, replyTo: null } : m));
+      newMessages.set(channelId, filtered);
+      return { messages: newMessages };
+    });
+
+    try {
+      await client.messages.bulkDelete(channelId, messageIds, reason);
+    } catch (error) {
+      useUIStore.getState().addToast(describeError(error), 'warning');
+      get().loadMessages(channelId, true);
+    }
+  },
+
+  clearChannelMessages: (channelId: string) => {
+    set((state) => {
+      const newMessages = new Map(state.messages);
+      newMessages.set(channelId, []);
+      const detachedChannels = new Map(state.detachedChannels);
+      detachedChannels.delete(channelId);
+      const replyTargets = state.replyTargets.has(channelId)
+        ? withReplyTarget(state.replyTargets, channelId, null)
+        : state.replyTargets;
+      return {
+        messages: newMessages,
+        detachedChannels,
+        replyTargets,
+      };
+    });
+  },
+
+  clearHistory: async (channelId: string) => {
+    const origin = getChannelOrigin(channelId);
+    const client = getApiForOrigin(origin);
+    get().clearChannelMessages(channelId);
+    try {
+      await client.dm.clearHistory(channelId);
+    } catch (error) {
+      useUIStore.getState().addToast(describeError(error), 'warning');
+      get().loadMessages(channelId, true);
+    }
+  },
+
   addMessage: (channelId: string, message: MessageWithUser) => {
     const normalizedMessage = { ...message, embeds: message.embeds ?? [] };
     set((state) => {
@@ -986,7 +1066,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           : { detachedChannels, replyTargets };
       }
       const newMessages = new Map(state.messages);
-      newMessages.set(channelId, current.filter(m => m.id !== messageId));
+      const filtered = current
+        .filter(m => m.id !== messageId)
+        .map(m => (m.replyTo?.id === messageId ? { ...m, replyTo: null } : m));
+      newMessages.set(channelId, filtered);
       return {
         messages: newMessages,
         detachedChannels,

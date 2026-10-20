@@ -87,6 +87,7 @@ import type {
   ReattachResponse,
   TelemetryPayload,
   TelemetryStatus,
+  AuditLogItem,
 } from '@concord/shared';
 import type {
   Product,
@@ -282,6 +283,7 @@ export class BackspaceApiClient {
     unban: (spaceId: string, userId: string) => Promise<{ success: boolean }>;
     transferOwnership: (spaceId: string, newOwnerId: string) => Promise<Space>;
     invitePreview: (code: string) => Promise<InvitePreview>;
+    getAuditLogs: (spaceId: string) => Promise<{ auditLogs: AuditLogItem[] }>;
   };
 
   readonly channels: {
@@ -311,6 +313,8 @@ export class BackspaceApiClient {
   readonly messages: {
     update: (id: string, data: UpdateMessageRequest) => Promise<MessageWithUser>;
     delete: (id: string) => Promise<{ success: boolean }>;
+    hide: (id: string) => Promise<{ success: boolean }>;
+    bulkDelete: (channelId: string, messageIds: string[], reason?: string) => Promise<{ success: boolean; count: number }>;
   };
 
   readonly uploads: {
@@ -322,12 +326,14 @@ export class BackspaceApiClient {
     create: (data: CreateDmRequest) => Promise<DmChannel>;
     createGroup: (data: CreateGroupDmRequest) => Promise<DmChannel>;
     close: (id: string) => Promise<{ success: boolean }>;
+    clearHistory: (id: string) => Promise<{ success: boolean; clearedHistoryAt: number }>;
     messages: (id: string, before?: string, limit?: number) => Promise<DmMessageWithUser[]>;
     messagesAround: (id: string, messageId: string, limit?: number) => Promise<DmMessageWithUser[]>;
     messagesAfter: (id: string, after: string, limit?: number) => Promise<HistoryPageAfter<DmMessageWithUser>>;
     sendMessage: (id: string, data: CreateDmMessageRequest) => Promise<DmMessageWithUser>;
     updateMessage: (id: string, data: UpdateMessageRequest) => Promise<DmMessageWithUser>;
     deleteMessage: (id: string) => Promise<{ success: boolean }>;
+    hideMessage: (id: string) => Promise<{ success: boolean }>;
     addMember: (dmChannelId: string, data: AddDmMemberRequest) => Promise<DmChannel>;
     leave: (dmChannelId: string) => Promise<{ success: boolean }>;
     /**
@@ -708,6 +714,8 @@ export class BackspaceApiClient {
         request<Space>('PATCH', `/spaces/${spaceId}/transfer-ownership`, { newOwnerId }),
       invitePreview: (code: string) =>
         request<InvitePreview>('GET', `/spaces/invite/${encodeURIComponent(code)}/preview`, undefined, false),
+      getAuditLogs: (spaceId: string) =>
+        request<{ auditLogs: AuditLogItem[] }>('GET', `/spaces/${spaceId}/audit-logs`),
     };
 
     this.channels = {
@@ -764,6 +772,9 @@ export class BackspaceApiClient {
     this.messages = {
       update: (id: string, data: UpdateMessageRequest) => request<MessageWithUser>('PATCH', `/messages/${id}`, data),
       delete: (id: string) => request<{ success: boolean }>('DELETE', `/messages/${id}`),
+      hide: (id: string) => request<{ success: boolean }>('POST', `/messages/${id}/hide`),
+      bulkDelete: (channelId: string, messageIds: string[], reason?: string) =>
+        request<{ success: boolean; count: number }>('POST', `/channels/${channelId}/messages/bulk-delete`, { messageIds, reason }),
     };
 
     this.uploads = {
@@ -775,6 +786,7 @@ export class BackspaceApiClient {
       create: (data: CreateDmRequest) => request<DmChannel>('POST', '/dm', data),
       createGroup: (data: CreateGroupDmRequest) => request<DmChannel>('POST', '/dm/group', data),
       close: (id: string) => request<{ success: boolean }>('DELETE', `/dm/${id}`),
+      clearHistory: (id: string) => request<{ success: boolean; clearedHistoryAt: number }>('POST', `/dm/${id}/clear`),
       messages: (id: string, before?: string, limit = 50) => {
         const params = new URLSearchParams();
         if (before) params.set('before', before);
@@ -795,6 +807,8 @@ export class BackspaceApiClient {
         request<DmMessageWithUser>('PATCH', `/dm/messages/${id}`, data),
       deleteMessage: (id: string) =>
         request<{ success: boolean }>('DELETE', `/dm/messages/${id}`),
+      hideMessage: (id: string) =>
+        request<{ success: boolean }>('POST', `/dm/messages/${id}/hide`),
       addMember: (dmChannelId: string, data: AddDmMemberRequest) =>
         request<DmChannel>('POST', `/dm/${dmChannelId}/members`, data),
       leave: (dmChannelId: string) =>

@@ -137,6 +137,8 @@ export function ChannelSidebar() {
   const [deleteCategoryLoading, setDeleteCategoryLoading] = useState(false);
   const [leaveGroupDmId, setLeaveGroupDmId] = useState<string | null>(null);
   const [leaveGroupDmLoading, setLeaveGroupDmLoading] = useState(false);
+  const [clearHistoryDmId, setClearHistoryDmId] = useState<string | null>(null);
+  const [clearHistoryDmLoading, setClearHistoryDmLoading] = useState(false);
 
   // Centralized context menu
   const openContextMenu = useContextMenuStore((s) => s.open);
@@ -403,8 +405,45 @@ export function ChannelSidebar() {
   const handleDmContextMenu = useCallback((e: React.MouseEvent, dmId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    openContextMenu({ x: e.clientX, y: e.clientY }, [
+
+    const dm = dmChannels.find(d => d.id === dmId);
+    const isGroup = dm && dm.members.length > 2;
+
+    const items: ContextMenuItem[] = [
       {
+        key: 'close-dm',
+        type: 'action',
+        label: 'Fechar conversa',
+        icon: (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg>
+        ),
+        onClick: () => {
+          if (currentChannelId === dmId) {
+            navigate('/channels/@me');
+            setCurrentChannel(null);
+          }
+          useSpaceStore.getState().closeDm(dmId);
+        },
+      },
+      {
+        key: 'clear-history',
+        type: 'action',
+        label: 'Limpar histórico para mim',
+        icon: (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z" />
+          </svg>
+        ),
+        onClick: () => {
+          setClearHistoryDmId(dmId);
+        },
+      },
+    ];
+
+    if (isGroup) {
+      items.push({
         key: 'leave-group',
         type: 'action',
         label: t('spaces:sidebar.dmList.leaveGroup'),
@@ -417,9 +456,11 @@ export function ChannelSidebar() {
         onClick: () => {
           setLeaveGroupDmId(dmId);
         },
-      },
-    ]);
-  }, [openContextMenu, t]);
+      });
+    }
+
+    openContextMenu({ x: e.clientX, y: e.clientY }, items);
+  }, [openContextMenu, dmChannels, currentChannelId, navigate, setCurrentChannel, t]);
 
   const handleChannelClick = (channelId: string) => {
     setCurrentChannel(channelId);
@@ -634,6 +675,26 @@ export function ChannelSidebar() {
         confirmLabel={t('common:actions.leave')}
         variant="danger"
         loading={leaveGroupDmLoading}
+      />
+      <ConfirmDialog
+        isOpen={clearHistoryDmId !== null}
+        onClose={() => setClearHistoryDmId(null)}
+        onConfirm={async () => {
+          if (!clearHistoryDmId) return;
+          setClearHistoryDmLoading(true);
+          try {
+            await useChatStore.getState().clearHistory(clearHistoryDmId);
+            setClearHistoryDmId(null);
+          } finally {
+            setClearHistoryDmLoading(false);
+          }
+        }}
+        title="Limpar histórico da conversa?"
+        description="Todas as mensagens anteriores desta conversa serão removidas da sua visualização. Isso não apagará as mensagens para os outros participantes e nem removerá ninguém da sua lista de amigos."
+        confirmLabel="Limpar histórico"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={clearHistoryDmLoading}
       />
       </>
     );

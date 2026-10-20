@@ -130,11 +130,14 @@ function sharesAnyId(previous: readonly string[], next: readonly string[]): bool
   return next.some((id) => seen.has(id));
 }
 
-interface MessageListProps {
+export interface MessageListProps {
   channelId: string;
   /** A jump requested from outside the list (search). Taken once, then `onJumpHandled` fires. */
   jumpToMessageId?: string | null;
   onJumpHandled?: () => void;
+  bulkManaging?: boolean;
+  selectedMessageIds?: Set<string>;
+  onToggleSelectMessage?: (messageId: string) => void;
 }
 
 function nextFrame(): Promise<void> {
@@ -189,7 +192,14 @@ function shouldShowDateDivider(prev: MessageWithUser | undefined, curr: MessageW
   return prevDate !== currDate;
 }
 
-export function MessageList({ channelId, jumpToMessageId, onJumpHandled }: MessageListProps) {
+export function MessageList({
+  channelId,
+  jumpToMessageId,
+  onJumpHandled,
+  bulkManaging,
+  selectedMessageIds,
+  onToggleSelectMessage,
+}: MessageListProps) {
   const { t } = useTranslation(['chat', 'common']);
   const messages = useChatStore((s) => s.messages.get(channelId)) ?? EMPTY_MESSAGES;
   const loadMessages = useChatStore((s) => s.loadMessages);
@@ -1178,12 +1188,30 @@ export function MessageList({ channelId, jumpToMessageId, onJumpHandled }: Messa
                     ? <ChannelSystemMessage message={msg} />
                     : <SystemMessage message={msg} dm={currentDm ?? null} />
                 ) : (
-                  <Message
-                    message={msg}
-                    isCompact={!isFirstInGroup}
-                    isFirstInGroup={isFirstInGroup}
-                    previousMessageId={realPrevId}
-                  />
+                  <div className={`relative flex items-center transition-colors ${
+                    bulkManaging && selectedMessageIds?.has(msg.id)
+                      ? 'bg-accent-rose/10 rounded-lg'
+                      : ''
+                  }`}>
+                    {bulkManaging && !isPendingMessage(msg) && (
+                      <div className="pl-4 pr-1 py-2 flex items-center justify-center shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedMessageIds?.has(msg.id) ?? false}
+                          onChange={() => onToggleSelectMessage?.(msg.id)}
+                          className="w-4 h-4 rounded border-white/20 bg-black/40 text-accent-rose focus:ring-accent-rose/50 cursor-pointer accent-accent-rose"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <Message
+                        message={msg}
+                        isCompact={!isFirstInGroup}
+                        isFirstInGroup={isFirstInGroup}
+                        previousMessageId={realPrevId}
+                      />
+                    </div>
+                  </div>
                 )}
               </React.Fragment>
             );

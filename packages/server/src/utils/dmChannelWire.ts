@@ -64,30 +64,77 @@ type DmMemberRow = typeof schema.dmMembers.$inferSelect;
  * bound-variable limit. On a tie on `created_at` the first row per channel
  * wins.
  */
-function newestMessagePreviews(db: Db, channelIds: string[]): Map<string, DmLastMessagePreview> {
+function newestMessagePreviews(db: Db, channelIds: string[], userId?: string): Map<string, DmLastMessagePreview> {
   const previews = new Map<string, DmLastMessagePreview>();
   if (channelIds.length === 0) return previews;
 
-  // One grouped pass per chunk finds each channel's newest timestamp, and the
-  // rows at it are joined back. (A correlated MAX per candidate row re-reads
-  // the conversation for every message in it: quadratic in its length.)
-  const newest = batchInArray(channelIds, ids => {
-    const latest = db.select({
-      dmChannelId: schema.dmMessages.dmChannelId,
-      maxCreatedAt: sql<number>`MAX(${schema.dmMessages.createdAt})`.as('max_created_at'),
-    })
-      .from(schema.dmMessages)
-      .where(inArray(schema.dmMessages.dmChannelId, ids))
-      .groupBy(schema.dmMessages.dmChannelId)
-      .as('latest');
-    return db.select()
-      .from(schema.dmMessages)
-      .innerJoin(latest, and(
-        eq(schema.dmMessages.dmChannelId, latest.dmChannelId),
-        eq(schema.dmMessages.createdAt, latest.maxCreatedAt),
-      ))
+  const clearedCutoffs = new Map<string, number>();
+  let hasUserFiltering = false;
+
+  if (userId) {
+    const memRows = batchInArray(channelIds, ids =>
+      db.select({
+        dmChannelId: schema.dmMembers.dmChannelId,
+        clearedHistoryAt: schema.dmMembers.clearedHistoryAt,
+      })
+      .from(schema.dmMembers)
+      .where(and(eq(schema.dmMembers.userId, userId), inArray(schema.dmMembers.dmChannelId, ids)))
       .all()
-      .map(row => row.dm_messages);
+    );
+    for (const r of memRows) {
+      if (r.clearedHistoryAt && r.clearedHistoryAt > 0) {
+        clearedCutoffs.set(r.dmChannelId, r.clearedHistoryAt);
+        hasUserFiltering = true;
+      }
+    }
+    const hiddenCount = db.select({ count: sql<number>`count(*)` })
+      .from(schema.userHiddenMessages)
+      .where(eq(schema.userHiddenMessages.userId, userId))
+      .get()?.count ?? 0;
+    if (hiddenCount > 0) hasUserFiltering = true;
+  }
+
+  // One grouped pass per chunk finds each channel's newest timestamp, and the
+  // rows at it are joined back.
+  const newest = batchInArray(channelIds, ids => {
+    if (!hasUserFiltering) {
+      const latest = db.select({
+        dmChannelId: schema.dmMessages.dmChannelId,
+        maxCreatedAt: sql<number>`MAX(${schema.dmMessages.createdAt})`.as('max_created_at'),
+      })
+        .from(schema.dmMessages)
+        .where(inArray(schema.dmMessages.dmChannelId, ids))
+        .groupBy(schema.dmMessages.dmChannelId)
+        .as('latest');
+      return db.select()
+        .from(schema.dmMessages)
+        .innerJoin(latest, and(
+          eq(schema.dmMessages.dmChannelId, latest.dmChannelId),
+          eq(schema.dmMessages.createdAt, latest.maxCreatedAt),
+        ))
+        .all()
+        .map(row => row.dm_messages);
+    }
+
+    const rows: DmMessageRow[] = [];
+    for (const cid of ids) {
+      const cutoff = clearedCutoffs.get(cid) ?? 0;
+      const conditions = [eq(schema.dmMessages.dmChannelId, cid)];
+      if (cutoff > 0) {
+        conditions.push(sql`${schema.dmMessages.createdAt} > ${cutoff}`);
+      }
+      if (userId) {
+        conditions.push(sql`${schema.dmMessages.id} NOT IN (SELECT message_id FROM user_hidden_messages WHERE user_id = ${userId})`);
+      }
+      const topMsg = db.select()
+        .from(schema.dmMessages)
+        .where(and(...conditions))
+        .orderBy(sql`${schema.dmMessages.createdAt} DESC`)
+        .limit(1)
+        .get();
+      if (topMsg) rows.push(topMsg);
+    }
+    return rows;
   });
   const lastMessageMap = new Map<string, DmMessageRow>();
   for (const m of newest) {
@@ -172,7 +219,7 @@ export function loadOpenDmChannels(db: Db, userId: string, openMemberships?: DmM
   );
   const channelMap = new Map(channelRows.map(c => [c.id, c]));
   const members = membersByChannel(db, dmChannelIds);
-  const previews = newestMessagePreviews(db, dmChannelIds);
+  const previews = newestMessagePreviews(db, dmChannelIds, userId);
 
   const dmChannels: DmChannel[] = [];
   for (const membership of memberships) {
@@ -197,6 +244,7 @@ export function loadDmChannelWire(
   db: Db,
   channelId: string,
   lastMessage?: DmLastMessagePreview | DmMessageWithUser,
+  userId?: string,
 ): DmChannel | null {
   const channel = db.select()
     .from(schema.dmChannels)
@@ -204,6 +252,6 @@ export function loadDmChannelWire(
     .get();
   if (!channel) return null;
   const members = membersByChannel(db, [channelId]).get(channelId) ?? [];
-  const last = lastMessage ?? newestMessagePreviews(db, [channelId]).get(channelId) ?? null;
+  const last = lastMessage ?? newestMessagePreviews(db, [channelId], userId).get(channelId) ?? null;
   return toDmChannelWire(channel, members, last);
 }

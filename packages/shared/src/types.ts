@@ -287,6 +287,22 @@ export interface SpaceWithChannelsAndMembers extends Space {
   myPermissions?: string; // Computed per-user BigInt decimal string (space-level)
 }
 
+export interface AuditLogItem {
+  id: string;
+  spaceId: string;
+  channelId: string | null;
+  channelName: string | null;
+  actorId: string;
+  actor: User | null;
+  targetUserId: string | null;
+  targetUser: User | null;
+  targetId: string | null;
+  action: string;
+  reason: string | null;
+  details: any;
+  createdAt: number;
+}
+
 // ─── Member Types ───────────────────────────────────────────────────────────
 
 export interface Member {
@@ -795,6 +811,8 @@ export type ServerEvent =
   | { type: 'message_created'; message: MessageWithUser }
   | { type: 'message_updated'; message: MessageWithUser }
   | { type: 'message_deleted'; messageId: string; channelId: string }
+  | { type: 'message_hidden'; messageId: string; channelId: string }
+  | { type: 'messages_bulk_deleted'; channelId: string; messageIds: string[] }
   | { type: 'typing'; channelId: string; userId: string; username: string }
   | ({ type: 'presence_update'; userId: string; status: string; activities?: Activity[] } & Partial<PresenceIdentity>)
   | { type: 'voice_state_update'; channelId: string; userId: string; action: 'join' | 'leave'; channelElapsedSeconds?: number }
@@ -804,6 +822,8 @@ export type ServerEvent =
   | { type: 'dm_message_created'; message: DmMessageWithUser }
   | { type: 'dm_message_updated'; message: DmMessageWithUser }
   | { type: 'dm_message_deleted'; messageId: string; dmChannelId: string }
+  | { type: 'dm_message_hidden'; messageId: string; dmChannelId: string }
+  | { type: 'dm_history_cleared'; dmChannelId: string; clearedHistoryAt: number }
   | { type: 'dm_typing'; dmChannelId: string; userId: string; username: string }
   | { type: 'dm_typing_stop'; dmChannelId: string; userId: string }
   | { type: 'reaction_added'; messageId: string; reaction: Reaction }

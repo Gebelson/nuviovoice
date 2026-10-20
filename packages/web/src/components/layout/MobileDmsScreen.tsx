@@ -1,14 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormatters } from '../../i18n/formatters';
 import { useUIStore } from '../../stores/uiStore';
 import { useSpaceStore } from '../../stores/spaceStore';
 import { useChatStore } from '../../stores/chatStore';
 import { useSocialStore } from '../../stores/socialStore';
-import { useContextMenuStore } from '../../stores/contextMenuStore';
+import { useContextMenuStore, type ContextMenuItem } from '../../stores/contextMenuStore';
 import { Avatar } from '../ui/Avatar';
 import { AvatarStack } from '../ui/AvatarStack';
 import { Mascot } from '../ui/Mascot';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { resolveAssetUrl } from '../../utils/assetUrls';
 import { useNavigate } from 'react-router-dom';
 import { parseFederatedUsername, isFederationGlobeApplicable, isMine, userDisplayName } from '../../utils/identity';
@@ -196,6 +197,11 @@ export function MobileDmsScreen() {
   const openContextMenu = useContextMenuStore((s) => s.open);
   const setCurrentChannel = useChatStore((s) => s.setCurrentChannel);
 
+  const [clearHistoryDmId, setClearHistoryDmId] = useState<string | null>(null);
+  const [clearHistoryLoading, setClearHistoryLoading] = useState(false);
+  const [leaveGroupDmId, setLeaveGroupDmId] = useState<string | null>(null);
+  const [leaveGroupLoading, setLeaveGroupLoading] = useState(false);
+
   // Online friends for the activity row
   const onlineFriends = useMemo(() =>
     friends.filter(f => f.status === 'online' || f.status === 'idle' || f.status === 'dnd'),
@@ -218,27 +224,49 @@ export function MobileDmsScreen() {
   };
 
   const handleDmContextMenu = (e: React.MouseEvent, dmId: string, isGroup: boolean) => {
-    if (!isGroup) return;
     e.preventDefault();
     e.stopPropagation();
 
-    openContextMenu({ x: e.clientX, y: e.clientY }, [
+    const items: ContextMenuItem[] = [
       {
-        key: 'leave-group',
-        type: 'action',
-        label: t('dm:list.leaveGroup'),
-        danger: true,
-        icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>,
+        key: 'close-dm',
+        type: 'action' as const,
+        label: 'Fechar conversa',
+        icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>,
         onClick: () => {
           const currentChId = useChatStore.getState().currentChannelId;
           if (currentChId === dmId) {
             navigate('/channels/@me');
             setCurrentChannel(null);
           }
-          useSpaceStore.getState().leaveDm(dmId);
+          useSpaceStore.getState().closeDm(dmId);
         },
       },
-    ]);
+      {
+        key: 'clear-history',
+        type: 'action' as const,
+        label: 'Limpar histórico para mim',
+        icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>,
+        onClick: () => {
+          setClearHistoryDmId(dmId);
+        },
+      },
+    ];
+
+    if (isGroup) {
+      items.push({
+        key: 'leave-group',
+        type: 'action' as const,
+        label: t('dm:list.leaveGroup'),
+        danger: true,
+        icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>,
+        onClick: () => {
+          setLeaveGroupDmId(dmId);
+        },
+      });
+    }
+
+    openContextMenu({ x: e.clientX, y: e.clientY }, items);
   };
 
   const formatTimestamp = (ts: number): string => {
@@ -312,6 +340,53 @@ export function MobileDmsScreen() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
         </svg>
       </button>
+
+      {/* Confirmation Dialogs */}
+      <ConfirmDialog
+        isOpen={leaveGroupDmId !== null}
+        onClose={() => setLeaveGroupDmId(null)}
+        onConfirm={async () => {
+          if (!leaveGroupDmId) return;
+          setLeaveGroupLoading(true);
+          try {
+            const currentChId = useChatStore.getState().currentChannelId;
+            if (currentChId === leaveGroupDmId) {
+              navigate('/channels/@me');
+              setCurrentChannel(null);
+            }
+            await useSpaceStore.getState().leaveDm(leaveGroupDmId);
+            setLeaveGroupDmId(null);
+          } finally {
+            setLeaveGroupLoading(false);
+          }
+        }}
+        title={t('dm:list.leaveGroup')}
+        description="Tem certeza de que deseja sair deste grupo?"
+        confirmLabel={t('common:actions.leave')}
+        variant="danger"
+        loading={leaveGroupLoading}
+      />
+
+      <ConfirmDialog
+        isOpen={clearHistoryDmId !== null}
+        onClose={() => setClearHistoryDmId(null)}
+        onConfirm={async () => {
+          if (!clearHistoryDmId) return;
+          setClearHistoryLoading(true);
+          try {
+            await useChatStore.getState().clearHistory(clearHistoryDmId);
+            setClearHistoryDmId(null);
+          } finally {
+            setClearHistoryLoading(false);
+          }
+        }}
+        title="Limpar histórico da conversa?"
+        description="Todas as mensagens anteriores desta conversa serão removidas da sua visualização. Isso não apagará as mensagens para os outros participantes e nem removerá ninguém da sua lista de amigos."
+        confirmLabel="Limpar histórico"
+        cancelLabel="Cancelar"
+        variant="danger"
+        loading={clearHistoryLoading}
+      />
     </div>
   );
 }

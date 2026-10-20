@@ -76,6 +76,8 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
+    conditions.push(sql`${schema.messages.id} NOT IN (SELECT message_id FROM user_hidden_messages WHERE user_id = ${request.userId})` as any);
+
     const whereClause = and(...conditions)!;
 
     // Handle has: filter with subqueries
@@ -171,6 +173,16 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
         conditions.push(gt(schema.dmMessages.createdAt, ts));
       }
     }
+
+    const membership = db.select()
+      .from(schema.dmMembers)
+      .where(and(eq(schema.dmMembers.dmChannelId, id), eq(schema.dmMembers.userId, request.userId)))
+      .get();
+    if (membership?.clearedHistoryAt && membership.clearedHistoryAt > 0) {
+      conditions.push(gt(schema.dmMessages.createdAt, membership.clearedHistoryAt));
+    }
+
+    conditions.push(sql`${schema.dmMessages.id} NOT IN (SELECT message_id FROM user_hidden_messages WHERE user_id = ${request.userId})` as any);
 
     const whereClause = and(...conditions)!;
 
