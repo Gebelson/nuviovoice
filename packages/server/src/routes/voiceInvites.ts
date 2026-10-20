@@ -168,22 +168,23 @@ export async function voiceInviteRoutes(app: FastifyInstance): Promise<void> {
       and(eq(schema.spaceMembers.spaceId, space.id), eq(schema.spaceMembers.userId, request.userId))
     ).get();
 
-    if (!existingMember) {
-      const now = Date.now();
-      // Add member to space and increment usedCount
-      db.transaction((tx) => {
+    const now = Date.now();
+    db.transaction((tx) => {
+      if (!existingMember) {
         tx.insert(schema.spaceMembers).values({
           spaceId: space.id,
           userId: request.userId,
           joinedAt: now,
         }).run();
+      }
 
-        tx.update(schema.voiceInvites)
-          .set({ usedCount: invite.usedCount + 1 })
-          .where(eq(schema.voiceInvites.id, invite.id))
-          .run();
-      });
+      tx.update(schema.voiceInvites)
+        .set({ usedCount: invite.usedCount + 1 })
+        .where(eq(schema.voiceInvites.id, invite.id))
+        .run();
+    });
 
+    if (!existingMember) {
       connectionManager.addUserSpace(request.userId, space.id);
 
       // Broadcast member join event to space sockets

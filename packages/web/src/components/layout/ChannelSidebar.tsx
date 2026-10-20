@@ -961,7 +961,7 @@ export function ChannelSidebar() {
         spaceName={space?.name}
         isOpen={true}
         onClose={() => setVoiceInviteTarget(null)}
-        className="fixed top-20 left-64 z-50 w-[360px] bg-surface-elevated/95 backdrop-blur-md border border-border-soft rounded-xl shadow-elevation-high p-4 text-txt-primary flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-150"
+        className="fixed top-20 left-64"
       />
     )}
     </>

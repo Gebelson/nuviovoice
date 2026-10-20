@@ -293,7 +293,7 @@ export function VoiceControlBar({ revealed = false }: { revealed?: boolean }) {
           spaceName={space?.name}
           isOpen={inviteOpen}
           onClose={() => setInviteOpen(false)}
-          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[360px] bg-surface-elevated/95 backdrop-blur-md border border-border-soft rounded-xl shadow-elevation-high p-4 text-txt-primary flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 pointer-events-auto"
         />
       )}
     </div>
