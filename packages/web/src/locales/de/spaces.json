@@ -350,19 +350,15 @@
       "disabledNotice": "Das Entdecken von Spaces wurde von der Instanzverwaltung ausgeschaltet. Eine geänderte Sichtbarkeit wirkt sich erst aus, wenn es wieder eingeschaltet ist.",
       "visibility": {
         "label": "Sichtbarkeit",
-        "hint": "Lege fest, wer diesen Space finden und ihm beitreten kann.",
+        "hint": "Legen Sie fest, wie Personen diesem öffentlichen Bereich beitreten.",
         "options": {
-          "private": {
-            "label": "Privat",
-            "description": "Nur wer einen Einladungslink hat, kann beitreten"
-          },
-          "request": {
-            "label": "Beitritt auf Anfrage",
-            "description": "Unter „Entdecken“ sichtbar; Beitritt kann angefragt werden"
-          },
           "public": {
             "label": "Öffentlich",
-            "description": "Unter „Entdecken“ sichtbar; alle können sofort beitreten"
+            "description": "In Entdecken sichtbar. Jeder kann sofort beitreten."
+          },
+          "request": {
+            "label": "Beitritt anfragen",
+            "description": "In Entdecken sichtbar. Beitritt erfordert Genehmigung."
           }
         }
       },

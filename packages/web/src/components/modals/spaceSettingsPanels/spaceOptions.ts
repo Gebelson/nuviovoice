@@ -9,27 +9,21 @@ export interface VisibilityOption {
 }
 
 /**
- * The three visibility choices with their wording in the current language.
- * Shared by the create-space modal and the discovery panel so both describe
- * the same setting in the same words.
+ * The visibility choices for public spaces with their wording in the current language.
+ * Public spaces only support 'public' (instant join) or 'request' (requires approval).
  */
 export function useVisibilityOptions(): VisibilityOption[] {
   const { t } = useTranslation(['spaces', 'common']);
   return useMemo(() => [
     {
-      value: 'private',
-      label: t('spaces:settings.discovery.visibility.options.private.label'),
-      desc: t('spaces:settings.discovery.visibility.options.private.description'),
+      value: 'public',
+      label: t('spaces:settings.discovery.visibility.options.public.label'),
+      desc: t('spaces:settings.discovery.visibility.options.public.description'),
     },
     {
       value: 'request',
       label: t('spaces:settings.discovery.visibility.options.request.label'),
       desc: t('spaces:settings.discovery.visibility.options.request.description'),
-    },
-    {
-      value: 'public',
-      label: t('spaces:settings.discovery.visibility.options.public.label'),
-      desc: t('spaces:settings.discovery.visibility.options.public.description'),
     },
   ], [t]);
 }

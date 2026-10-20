@@ -296,7 +296,26 @@ export function migrateExistingSpacesSeparation(
       AND (type != 'private' OR directory_listed != 0 OR visibility IS NULL OR visibility != 'private')
   `).all() as Array<{ id: string }>;
 
-  if (needsPublicMigration.length === 0 && needsPrivateSanitization.length === 0) {
+  // Find public spaces that have visibility = 'private' or NULL
+  const needsPublicVisibilityFix = db.prepare(`
+    SELECT id
+    FROM spaces
+    WHERE type = 'public' AND (visibility = 'private' OR visibility IS NULL)
+  `).all() as Array<{ id: string }>;
+
+  // Find private spaces that have publication_status = 'published'
+  const needsPrivatePublicationFix = db.prepare(`
+    SELECT id
+    FROM spaces
+    WHERE type = 'private' AND publication_status = 'published'
+  `).all() as Array<{ id: string }>;
+
+  if (
+    needsPublicMigration.length === 0 &&
+    needsPrivateSanitization.length === 0 &&
+    needsPublicVisibilityFix.length === 0 &&
+    needsPrivatePublicationFix.length === 0
+  ) {
     return 0;
   }
 
@@ -324,6 +343,19 @@ export function migrateExistingSpacesSeparation(
     WHERE id = ?
   `);
 
+  const fixPublicVisibility = db.prepare(`
+    UPDATE spaces
+    SET visibility = 'public'
+    WHERE id = ?
+  `);
+
+  const fixPrivatePublication = db.prepare(`
+    UPDATE spaces
+    SET publication_status = 'draft',
+        directory_listed = 0
+    WHERE id = ?
+  `);
+
   let changed = 0;
   const run = db.transaction(() => {
     for (const row of needsPublicMigration) {
@@ -336,6 +368,14 @@ export function migrateExistingSpacesSeparation(
     }
     for (const row of needsPrivateSanitization) {
       updatePrivate.run(row.id);
+      changed++;
+    }
+    for (const row of needsPublicVisibilityFix) {
+      fixPublicVisibility.run(row.id);
+      changed++;
+    }
+    for (const row of needsPrivatePublicationFix) {
+      fixPrivatePublication.run(row.id);
       changed++;
     }
   });

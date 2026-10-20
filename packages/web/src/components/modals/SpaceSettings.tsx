@@ -191,9 +191,9 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
   const directoryEnabled = flags?.directoryEnabled ?? false;
   const directoryConfigured = flags?.directoryConfigured ?? false;
 
-  const [visibility, setVisibility] = useState<SpaceVisibility>(
-    (space?.visibility as SpaceVisibility) ?? 'private'
-  );
+  const initialVisibility: SpaceVisibility =
+    (space?.visibility as SpaceVisibility) === 'request' ? 'request' : 'public';
+  const [visibility, setVisibility] = useState<SpaceVisibility>(initialVisibility);
   const [directoryListed, setDirectoryListed] = useState(space?.directoryListed ?? false);
   const [description, setDescription] = useState(space?.description ?? '');
   const addToast = useUIStore((s) => s.addToast);
@@ -209,7 +209,7 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
 
   useEffect(() => {
     if (space) {
-      setVisibility((space.visibility as SpaceVisibility) ?? 'private');
+      setVisibility((space.visibility as SpaceVisibility) === 'request' ? 'request' : 'public');
       setDirectoryListed(space.directoryListed);
       setDescription(space.description ?? '');
     }
@@ -217,17 +217,16 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
 
   if (!space) return null;
 
+  const currentSpaceVisibility = (space.visibility as SpaceVisibility) === 'request' ? 'request' : 'public';
   const hasChanges =
-    visibility !== ((space.visibility as SpaceVisibility) ?? 'private') ||
+    visibility !== currentSpaceVisibility ||
     directoryListed !== space.directoryListed ||
     description !== (space.description ?? '');
 
-  // The server refuses a listed private space and clears the listing when a
-  // space goes private; the draft does the same, so the switch never shows a
-  // state the save would refuse and a save cannot silently lose the listing.
+  // Public spaces can only be 'public' or 'request'
   const chooseVisibility = (next: SpaceVisibility) => {
-    setVisibility(next);
-    if (next === 'private') setDirectoryListed(false);
+    const safeNext = next === 'request' ? 'request' : 'public';
+    setVisibility(safeNext);
   };
 
   /**
@@ -278,9 +277,7 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
         ? canEnableRung
           ? t('spaces:settings.discovery.directory.adminOffSelf')
           : t('spaces:settings.discovery.directory.adminOff')
-        : visibility === 'private'
-          ? t('spaces:settings.discovery.directory.privateSpace')
-          : null;
+        : null;
   const directoryLocked = flagsUnknown || directoryReason !== null;
   // The reason that has a way out of it, which is the opt-in one and only for
   // an admin of the instance the space lives on. Derived, so it cannot be
@@ -323,7 +320,8 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
     setSaving(true);
     setSaveError('');
     try {
-      await updateSpace(spaceId, { visibility, description: description.trim(), directoryListed });
+      const safeVisibility = visibility === 'request' ? 'request' : 'public';
+      await updateSpace(spaceId, { visibility: safeVisibility, description: description.trim(), directoryListed });
       addToast(t('common:states.settingsSaved'), 'success', 2000);
     } catch (err) {
       setSaveError(describeError(err));
@@ -333,7 +331,7 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
   };
 
   const handleReset = () => {
-    setVisibility((space.visibility as SpaceVisibility) ?? 'private');
+    setVisibility((space.visibility as SpaceVisibility) === 'request' ? 'request' : 'public');
     setDirectoryListed(space.directoryListed);
     setDescription(space.description ?? '');
     setSaveError('');
@@ -568,24 +566,26 @@ function JoinRequestsSection({ spaceId }: { spaceId: string }) {
                     {f.formatNumericDate(req.createdAt)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => handleDecide(req.id, 'accept')}
-                    className="p-1.5 rounded text-status-online hover:bg-status-online/20 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded text-status-online hover:bg-status-online/20 transition-colors"
                     title={t('common:actions.accept')}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                     </svg>
+                    <span>{t('common:actions.accept')}</span>
                   </button>
                   <button
                     onClick={() => handleDecide(req.id, 'decline')}
-                    className="p-1.5 rounded text-txt-danger hover:bg-accent-rose/20 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded text-txt-danger hover:bg-accent-rose/20 transition-colors"
                     title={t('common:actions.decline')}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                     </svg>
+                    <span>{t('common:actions.decline')}</span>
                   </button>
                 </div>
               </div>

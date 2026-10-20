@@ -347,19 +347,15 @@
       "disabledNotice": "实例管理员已禁用空间发现功能。在重新启用发现功能之前，更改可见性将不会生效。",
       "visibility": {
         "label": "可见性",
-        "hint": "控制谁可以发现并加入此空间。",
+        "hint": "设置成员如何加入此公开空间。",
         "options": {
-          "private": {
-            "label": "私密",
-            "description": "仅持有邀请链接的人可以加入"
-          },
-          "request": {
-            "label": "需申请加入",
-            "description": "在“探索”中可见；他人可以申请加入"
-          },
           "public": {
             "label": "公开",
-            "description": "在“探索”中可见；任何人均可立即加入"
+            "description": "在“探索”中可见。任何人都可以立即加入。"
+          },
+          "request": {
+            "label": "申请加入",
+            "description": "在“探索”中可见。需要审批才能加入。"
           }
         }
       },

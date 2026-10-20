@@ -353,19 +353,15 @@
       "disabledNotice": "A descoberta de espaços está desativada pelo administrador da instância. Alterar a visibilidade não terá efeito até que a descoberta seja reativada.",
       "visibility": {
         "label": "Visibilidade",
-        "hint": "Controle quem pode descobrir este espaço e entrar nele.",
+        "hint": "Defina como as pessoas entram neste espaço público.",
         "options": {
-          "private": {
-            "label": "Privado",
-            "description": "Somente quem tem um link de convite pode entrar"
+          "public": {
+            "label": "Público",
+            "description": "Visível no Explorar. Qualquer usuário pode entrar imediatamente."
           },
           "request": {
             "label": "Solicitar entrada",
-            "description": "Visível em Explorar; as pessoas podem solicitar entrada"
-          },
-          "public": {
-            "label": "Público",
-            "description": "Visível em Explorar; qualquer pessoa pode entrar na hora"
+            "description": "Visível no Explorar. Usuários precisam de aprovação para participar."
           }
         }
       },

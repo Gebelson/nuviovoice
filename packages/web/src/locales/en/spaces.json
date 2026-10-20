@@ -350,19 +350,15 @@
       "disabledNotice": "Space discovery is disabled by the instance administrator. Changing visibility will have no effect until discovery is re-enabled.",
       "visibility": {
         "label": "Visibility",
-        "hint": "Control who can discover and join this space.",
+        "hint": "Define how people join this public space.",
         "options": {
-          "private": {
-            "label": "Private",
-            "description": "Only people with an invite link can join"
-          },
-          "request": {
-            "label": "Request to Join",
-            "description": "Visible in Explore; people can request to join"
-          },
           "public": {
             "label": "Public",
-            "description": "Visible in Explore; anyone can join instantly"
+            "description": "Visible in Explore. Anyone can join immediately."
+          },
+          "request": {
+            "label": "Request to join",
+            "description": "Visible in Explore. Requires approval to join."
           }
         }
       },

@@ -980,9 +980,16 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
     }
 
     if (visibility !== undefined) {
-      const validVisibilities = ['public', 'request', 'private'];
-      if (!validVisibilities.includes(visibility)) {
-        return sendError(reply, 400, 'space_visibility_invalid');
+      if (effectiveServerType === 'public') {
+        const validVisibilities = ['public', 'request'];
+        if (!validVisibilities.includes(visibility)) {
+          return sendError(reply, 400, 'space_visibility_invalid');
+        }
+      } else {
+        const validVisibilities = ['public', 'request', 'private'];
+        if (!validVisibilities.includes(visibility)) {
+          return sendError(reply, 400, 'space_visibility_invalid');
+        }
       }
       updates.visibility = visibility;
     }
