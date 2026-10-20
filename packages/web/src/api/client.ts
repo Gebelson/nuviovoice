@@ -88,6 +88,11 @@ import type {
   TelemetryPayload,
   TelemetryStatus,
   AuditLogItem,
+  Bot,
+  BotCategory,
+  BotInstallation,
+  BotReview,
+  BotCommand,
 } from '@concord/shared';
 import type {
   Product,
@@ -499,6 +504,28 @@ export class BackspaceApiClient {
     adminReviewRevision: (id: string, data: { action: 'approve' | 'reject' | 'changes_requested'; notes?: string }) => Promise<{ success: boolean; action: string; revisionId: string }>;
     adminSetProductStatus: (id: string, data: { status: 'published' | 'suspended' | 'archived'; reason?: string }) => Promise<{ success: boolean; status: string }>;
     adminResolveReport: (id: string, data: { action: 'dismiss' | 'suspend_product'; details?: string }) => Promise<{ success: boolean }>;
+  };
+
+  readonly bots: {
+    getCategories: () => Promise<{ categories: BotCategory[] }>;
+    getBots: (params?: { search?: string; category?: string; sort?: string; limit?: number; offset?: number }) => Promise<{ bots: Bot[]; total: number; limit: number; offset: number }>;
+    getBot: (slugOrId: string) => Promise<{ bot: Bot }>;
+    getReviews: (id: string) => Promise<{ reviews: BotReview[] }>;
+    postReview: (id: string, data: { rating: number; comment?: string }) => Promise<{ success: boolean; ratingAverage: number; ratingCount: number }>;
+    getSpaceBots: (spaceId: string) => Promise<{ bots: Array<BotInstallation & { bot: Bot }> }>;
+    installBot: (spaceId: string, botId: string, data?: { grantedPermissions?: string[] }) => Promise<{ success: boolean; installationId: string; bot: Bot }>;
+    uninstallBot: (spaceId: string, botId: string) => Promise<{ success: boolean }>;
+    updatePermissions: (spaceId: string, botId: string, data: { grantedPermissions: string[] }) => Promise<{ success: boolean }>;
+    getMyBots: () => Promise<{ bots: Bot[] }>;
+    createBot: (data: any) => Promise<{ bot: Bot }>;
+    updateBot: (id: string, data: any) => Promise<{ bot: Bot }>;
+    regenerateToken: (id: string) => Promise<{ botToken: string }>;
+    submitForReview: (id: string) => Promise<{ success: boolean; status: string }>;
+    getStats: (id: string) => Promise<{ installCount: number; ratingAverage: number; ratingCount: number; activeInstallations: any[] }>;
+    adminGetQueue: (params?: { status?: string }) => Promise<{ bots: Bot[] }>;
+    adminReview: (id: string, data: { status: string }) => Promise<{ success: boolean }>;
+    adminVerify: (id: string, data: { isVerified: boolean }) => Promise<{ success: boolean; isVerified: boolean }>;
+    executeCommand: (channelId: string, data: { command: string; args?: string }) => Promise<{ success: boolean; message: MessageWithUser }>;
   };
 
   readonly admin: {
@@ -1130,6 +1157,91 @@ export class BackspaceApiClient {
         request<{ success: boolean; status: string }>('POST', `/store/admin/products/${id}/status`, data),
       adminResolveReport: (id: string, data) =>
         request<{ success: boolean }>('POST', `/store/admin/reports/${id}/resolve`, data),
+    };
+
+    this.bots = {
+      getCategories: () =>
+        request<{ categories: BotCategory[] }>('GET', '/bots/categories', undefined, false),
+      getBots: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.search) qs.set('search', params.search);
+        if (params?.category) qs.set('category', params.category);
+        if (params?.sort) qs.set('sort', params.sort);
+        if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+        if (params?.offset !== undefined) qs.set('offset', String(params.offset));
+        const query = qs.toString();
+        return request<{ bots: Bot[]; total: number; limit: number; offset: number }>(
+          'GET',
+          `/bots${query ? `?${query}` : ''}`,
+          undefined,
+          false
+        );
+      },
+      getBot: (slugOrId: string) =>
+        request<{ bot: Bot }>('GET', `/bots/${encodeURIComponent(slugOrId)}`, undefined, false),
+      getReviews: (id: string) =>
+        request<{ reviews: BotReview[] }>('GET', `/bots/${encodeURIComponent(id)}/reviews`, undefined, false),
+      postReview: (id: string, data) =>
+        request<{ success: boolean; ratingAverage: number; ratingCount: number }>(
+          'POST',
+          `/bots/${encodeURIComponent(id)}/reviews`,
+          data
+        ),
+      getSpaceBots: (spaceId: string) =>
+        request<{ bots: Array<BotInstallation & { bot: Bot }> }>(
+          'GET',
+          `/spaces/${encodeURIComponent(spaceId)}/bots`
+        ),
+      installBot: (spaceId: string, botId: string, data) =>
+        request<{ success: boolean; installationId: string; bot: Bot }>(
+          'POST',
+          `/spaces/${encodeURIComponent(spaceId)}/bots/${encodeURIComponent(botId)}/install`,
+          data
+        ),
+      uninstallBot: (spaceId: string, botId: string) =>
+        request<{ success: boolean }>(
+          'DELETE',
+          `/spaces/${encodeURIComponent(spaceId)}/bots/${encodeURIComponent(botId)}`
+        ),
+      updatePermissions: (spaceId: string, botId: string, data) =>
+        request<{ success: boolean }>(
+          'PATCH',
+          `/spaces/${encodeURIComponent(spaceId)}/bots/${encodeURIComponent(botId)}/permissions`,
+          data
+        ),
+      getMyBots: () =>
+        request<{ bots: Bot[] }>('GET', '/developers/bots'),
+      createBot: (data) =>
+        request<{ bot: Bot }>('POST', '/developers/bots', data),
+      updateBot: (id: string, data) =>
+        request<{ bot: Bot }>('PATCH', `/developers/bots/${encodeURIComponent(id)}`, data),
+      regenerateToken: (id: string) =>
+        request<{ botToken: string }>('POST', `/developers/bots/${encodeURIComponent(id)}/regenerate-token`),
+      submitForReview: (id: string) =>
+        request<{ success: boolean; status: string }>('POST', `/developers/bots/${encodeURIComponent(id)}/submit`),
+      getStats: (id: string) =>
+        request<{ installCount: number; ratingAverage: number; ratingCount: number; activeInstallations: any[] }>(
+          'GET',
+          `/developers/bots/${encodeURIComponent(id)}/stats`
+        ),
+      adminGetQueue: (params) => {
+        const qs = params?.status ? `?status=${encodeURIComponent(params.status)}` : '';
+        return request<{ bots: Bot[] }>('GET', `/admin/bots${qs}`);
+      },
+      adminReview: (id: string, data) =>
+        request<{ success: boolean }>('POST', `/admin/bots/${encodeURIComponent(id)}/review`, data),
+      adminVerify: (id: string, data) =>
+        request<{ success: boolean; isVerified: boolean }>(
+          'POST',
+          `/admin/bots/${encodeURIComponent(id)}/verify`,
+          data
+        ),
+      executeCommand: (channelId: string, data) =>
+        request<{ success: boolean; message: MessageWithUser }>(
+          'POST',
+          `/channels/${encodeURIComponent(channelId)}/commands/execute`,
+          data
+        ),
     };
 
     this.admin = {

@@ -19,6 +19,7 @@ export const users = sqliteTable('users', {
   chosenStatus: text('chosen_status').notNull().default('online'),
   customStatus: text('custom_status'),
   isAdmin: integer('is_admin').default(0),
+  isBot: integer('is_bot').notNull().default(0),
   homeInstance: text('home_instance'),
   homeUserId: text('home_user_id'),
   replicatedInstances: text('replicated_instances').default('[]'),
@@ -1102,6 +1103,92 @@ export const auditLogs = sqliteTable('audit_logs', {
   spaceIdx: index('idx_audit_logs_space_id').on(table.spaceId),
   actorIdx: index('idx_audit_logs_actor_id').on(table.actorId),
   createdAtIdx: index('idx_audit_logs_created_at').on(table.createdAt),
+}));
+
+// ─── Bot Library & Application Directory ───────────────────────────────────
+
+export const botCategories = sqliteTable('bot_categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description').default(''),
+  icon: text('icon').default('Bot'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  slugIdx: uniqueIndex('idx_bot_categories_slug').on(table.slug),
+  sortIdx: index('idx_bot_categories_sort').on(table.sortOrder),
+}));
+
+export const bots = sqliteTable('bots', {
+  id: text('id').primaryKey(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  tagline: text('tagline').notNull().default(''),
+  description: text('description').default(''),
+  avatar: text('avatar'),
+  banner: text('banner'),
+  developerId: text('developer_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  botUserId: text('bot_user_id').references(() => users.id, { onDelete: 'set null' }),
+  status: text('status').notNull().default('draft'), // 'draft' | 'pending_review' | 'changes_requested' | 'approved' | 'published' | 'rejected' | 'suspended' | 'archived'
+  isVerified: integer('is_verified').notNull().default(0),
+  isOfficial: integer('is_official').notNull().default(0),
+  prefix: text('prefix').notNull().default('/'),
+  websiteUrl: text('website_url'),
+  supportUrl: text('support_url'),
+  privacyPolicyUrl: text('privacy_policy_url'),
+  webhookUrl: text('webhook_url'),
+  webhookSecret: text('webhook_secret'),
+  botToken: text('bot_token'),
+  requiredPermissions: text('required_permissions').notNull().default('[]'),
+  tags: text('tags').notNull().default('[]'),
+  categories: text('categories').notNull().default('[]'),
+  commands: text('commands').notNull().default('[]'),
+  layoutData: text('layout_data').notNull().default('[]'),
+  customCss: text('custom_css').default(''),
+  installCount: integer('install_count').notNull().default(0),
+  ratingAverage: real('rating_average').notNull().default(5.0),
+  ratingCount: integer('rating_count').notNull().default(0),
+  version: text('version').notNull().default('1.0.0'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  slugIdx: uniqueIndex('idx_bots_slug').on(table.slug),
+  developerIdx: index('idx_bots_developer_id').on(table.developerId),
+  botUserIdx: index('idx_bots_bot_user_id').on(table.botUserId),
+  statusIdx: index('idx_bots_status').on(table.status),
+  installCountIdx: index('idx_bots_install_count').on(table.installCount),
+  ratingIdx: index('idx_bots_rating').on(table.ratingAverage),
+}));
+
+export const botInstallations = sqliteTable('bot_installations', {
+  id: text('id').primaryKey(),
+  botId: text('bot_id').notNull().references(() => bots.id, { onDelete: 'cascade' }),
+  spaceId: text('space_id').notNull().references(() => spaces.id, { onDelete: 'cascade' }),
+  installedBy: text('installed_by').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  grantedPermissions: text('granted_permissions').notNull().default('[]'),
+  status: text('status').notNull().default('active'), // 'active' | 'suspended' | 'revoked'
+  installedAt: integer('installed_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  botSpaceIdx: uniqueIndex('idx_bot_installations_bot_space').on(table.botId, table.spaceId),
+  spaceIdx: index('idx_bot_installations_space_id').on(table.spaceId),
+  botIdx: index('idx_bot_installations_bot_id').on(table.botId),
+}));
+
+export const botReviews = sqliteTable('bot_reviews', {
+  id: text('id').primaryKey(),
+  botId: text('bot_id').notNull().references(() => bots.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  rating: integer('rating').notNull(),
+  comment: text('comment').notNull().default(''),
+  developerReply: text('developer_reply'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  botUserIdx: uniqueIndex('idx_bot_reviews_bot_user').on(table.botId, table.userId),
+  botIdx: index('idx_bot_reviews_bot_id').on(table.botId),
+  userIdx: index('idx_bot_reviews_user_id').on(table.userId),
 }));
 
 

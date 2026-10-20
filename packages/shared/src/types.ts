@@ -21,6 +21,7 @@ export interface User {
   status: UserStatus;
   customStatus: string | null;
   isAdmin: boolean;
+  isBot?: boolean;
   isDeleted?: boolean;
   discoverable?: boolean;
   profileUpdatedAt?: number;
@@ -301,6 +302,109 @@ export interface AuditLogItem {
   reason: string | null;
   details: any;
   createdAt: number;
+}
+
+// ─── Bot & Bot Library Types ────────────────────────────────────────────────
+
+export type BotStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'changes_requested'
+  | 'approved'
+  | 'published'
+  | 'rejected'
+  | 'suspended'
+  | 'archived';
+
+export interface BotCommandOption {
+  name: string;
+  description: string;
+  type?: 'string' | 'number' | 'boolean' | 'user' | 'channel' | 'role';
+  required?: boolean;
+}
+
+export interface BotCommand {
+  name: string;
+  description: string;
+  usage?: string;
+  options?: BotCommandOption[];
+}
+
+export interface BotCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  sortOrder: number;
+  createdAt: number;
+}
+
+export interface Bot {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  avatar: string | null;
+  banner: string | null;
+  developerId: string;
+  developer?: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatar: string | null;
+  } | null;
+  botUserId: string | null;
+  status: BotStatus;
+  isVerified: boolean;
+  isOfficial: boolean;
+  prefix: string;
+  websiteUrl: string | null;
+  supportUrl: string | null;
+  privacyPolicyUrl: string | null;
+  webhookUrl: string | null;
+  requiredPermissions: string[];
+  tags: string[];
+  categories: string[];
+  commands: BotCommand[];
+  layoutData: any[];
+  customCss?: string;
+  botToken?: string;
+  webhookSecret?: string;
+  installCount: number;
+  ratingAverage: number;
+  ratingCount: number;
+  version: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface BotInstallation {
+  id: string;
+  botId: string;
+  bot?: Bot | null;
+  spaceId: string;
+  spaceName?: string;
+  spaceIcon?: string | null;
+  installedBy: string;
+  installedByUser?: User | null;
+  grantedPermissions: string[];
+  status: 'active' | 'suspended' | 'revoked';
+  installedAt: number;
+  updatedAt: number;
+}
+
+export interface BotReview {
+  id: string;
+  botId: string;
+  userId: string;
+  user?: User | null;
+  rating: number;
+  comment: string;
+  developerReply?: string | null;
+  createdAt: number;
+  updatedAt: number;
 }
 
 // ─── Member Types ───────────────────────────────────────────────────────────
@@ -819,6 +923,8 @@ export type ServerEvent =
   | { type: 'member_joined'; spaceId: string; member: MemberWithUser }
   | { type: 'member_updated'; spaceId: string; member: MemberWithUser }
   | { type: 'member_left'; spaceId: string; userId: string }
+  | { type: 'bot_installed'; spaceId: string; botId: string; bot: Bot }
+  | { type: 'bot_uninstalled'; spaceId: string; botId: string }
   | { type: 'dm_message_created'; message: DmMessageWithUser }
   | { type: 'dm_message_updated'; message: DmMessageWithUser }
   | { type: 'dm_message_deleted'; messageId: string; dmChannelId: string }

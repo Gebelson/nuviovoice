@@ -8,6 +8,10 @@ import { ProductEditorPage } from './ProductEditorPage';
 import { StoreAdminQueue } from './StoreAdminQueue';
 import { SellerApplyModal } from '../modals/SellerApplyModal';
 import { ReportProductModal } from '../modals/ReportProductModal';
+import { BotCatalogPage } from '../bots/BotCatalogPage';
+import { BotDetailPage } from '../bots/BotDetailPage';
+import { DeveloperPortal } from '../bots/DeveloperPortal';
+import { BotEditorPage } from '../bots/BotEditorPage';
 import type { Product } from '../../types/store';
 
 export function StoreContainer() {
@@ -17,6 +21,26 @@ export function StoreContainer() {
 
   const [sellerModalOpen, setSellerModalOpen] = useState(false);
   const [reportingProduct, setReportingProduct] = useState<Product | null>(null);
+
+  // Route: /developers
+  if (path.startsWith('/developers')) {
+    return <DeveloperPortal />;
+  }
+
+  // Route: /store/bots/editor/:botId
+  if (path.startsWith('/store/bots/editor/')) {
+    return <BotEditorPage />;
+  }
+
+  // Route: /store/bots/:slug
+  if (path.startsWith('/store/bots/') && path !== '/store/bots' && path !== '/store/bots/') {
+    return <BotDetailPage />;
+  }
+
+  // Route: /store/bots
+  if (path === '/store/bots' || path === '/store/bots/') {
+    return <BotCatalogPage />;
+  }
 
   // Route: /store/admin
   if (path === '/store/admin') {

@@ -3,14 +3,23 @@
 # rule still applies. Each sweep PR removes the files it converts, and the
 # list reaching zero is the definition of done for the first localized
 # release. Regenerate with: node scripts/check-i18n.mjs --write-pending
+packages/web/src/components/bots/BotCatalogPage.tsx
+packages/web/src/components/bots/BotDetailPage.tsx
+packages/web/src/components/bots/BotEditorPage.tsx
+packages/web/src/components/bots/BotInstallModal.tsx
+packages/web/src/components/bots/DeveloperPortal.tsx
+packages/web/src/components/chat/CommandPopover.tsx
 packages/web/src/components/chat/Message.tsx
 packages/web/src/components/chat/VoiceInviteCard.tsx
 packages/web/src/components/layout/ChannelSidebar.tsx
 packages/web/src/components/layout/MainContent.tsx
+packages/web/src/components/layout/MemberSidebar.tsx
 packages/web/src/components/layout/MobileDmsScreen.tsx
+packages/web/src/components/layout/MobileMembersScreen.tsx
 packages/web/src/components/modals/ReportProductModal.tsx
 packages/web/src/components/modals/SellerApplyModal.tsx
 packages/web/src/components/modals/spaceSettingsPanels/AuditLogsPanel.tsx
+packages/web/src/components/modals/spaceSettingsPanels/IntegrationsPanel.tsx
 packages/web/src/components/store/ProductDetailPage.tsx
 packages/web/src/components/store/ProductEditorPage.tsx
 packages/web/src/components/store/SellerDashboard.tsx

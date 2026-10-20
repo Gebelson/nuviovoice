@@ -81,12 +81,19 @@ function MemberSidebarRow({
         user={canonical}
       />
       <div className="flex-1 min-w-0">
-        <span
-          className={`text-[13.5px] leading-[1.2] font-medium truncate ${colorStyle ? (isOffline ? 'opacity-60' : '') : (isOffline ? 'text-txt-tertiary' : 'text-txt-primary')}`}
-          style={colorStyle}
-        >
-          {displayName}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span
+            className={`text-[13.5px] leading-[1.2] font-medium truncate ${colorStyle ? (isOffline ? 'opacity-60' : '') : (isOffline ? 'text-txt-tertiary' : 'text-txt-primary')}`}
+            style={colorStyle}
+          >
+            {displayName}
+          </span>
+          {(canonical.isBot || member.user?.isBot) && (
+            <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-accent-primary/20 text-accent-primary text-[10px] font-bold leading-tight uppercase tracking-wider">
+              BOT
+            </span>
+          )}
+        </div>
         {!isOffline && isFederationGlobeApplicable(canonical) && (
           <div className="text-[10px] leading-[1.3] text-txt-tertiary truncate opacity-60">@{parseFederatedUsername(canonical.username).domain}</div>
         )}

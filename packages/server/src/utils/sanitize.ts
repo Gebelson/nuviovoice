@@ -48,6 +48,7 @@ export function sanitizeUser(row: typeof schema.users.$inferSelect, isSelf = fal
     status: (row.status ?? 'offline') as User['status'],
     customStatus: row.customStatus,
     isAdmin: row.isAdmin === 1,
+    isBot: row.isBot === 1,
     discoverable: row.discoverable !== 0,
     profileUpdatedAt: row.profileUpdatedAt ?? 0,
     createdAt: row.createdAt,

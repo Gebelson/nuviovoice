@@ -85,7 +85,7 @@ export function MainContent() {
   const isExplorePage = location.pathname === '/explore';
   const isProjectHubPage = location.pathname === '/backspace';
   const isDownloadPage = location.pathname === '/download';
-  const isStorePage = location.pathname.startsWith('/store');
+  const isStorePage = location.pathname.startsWith('/store') || location.pathname.startsWith('/developers');
   // The DM call's conversation as this client opens it (never the call's key).
   const { dmChannelId: dmCallChannel } = useActiveDmCall();
   const outgoingCall = useVoiceStore((s) => s.outgoingCall);

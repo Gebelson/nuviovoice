@@ -553,6 +553,11 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
                 className="text-[14px] font-bold text-txt-primary"
                 style={replyRoleColor(replyTo)}
               />
+              {(replyIdentity.isBot || replyTo.user?.isBot) && (
+                <span className="px-1 py-0.5 rounded bg-accent-primary/20 text-accent-primary text-[9px] font-bold leading-tight uppercase tracking-wider">
+                  BOT
+                </span>
+              )}
               <span className="text-[14px] text-txt-message truncate max-w-[400px] group-hover/reply:text-txt-primary transition-colors">
                 {replyTo.content ? <InlineMessageText content={replyTo.content} channelId={mentionChannelId} /> : ''}
               </span>
@@ -600,6 +605,11 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
                 style={roleColor}
               />
             </span>
+            {(displayIdentity.isBot || message.user?.isBot) && (
+              <span className="self-center px-1.5 py-0.5 rounded bg-accent-primary/20 text-accent-primary text-[10px] font-bold leading-tight uppercase tracking-wider">
+                BOT
+              </span>
+            )}
             <span className="text-[11px] text-txt-tertiary leading-tight hover:cursor-default">
               {formatMessageTimestamp(t, fmt, message.createdAt)}
             </span>

@@ -27,6 +27,7 @@ import { useDiscoverStore } from '../stores/discoverStore';
 import { useFederationStore } from '../stores/federationStore';
 import { notePendingOriginReady } from '../stores/pendingMessageRehydrate';
 import { useNotificationSettingsStore } from '../stores/notificationSettingsStore';
+import { useBotStore } from '../stores/botStore';
 import { detectClientKind } from '../platform/clientKind';
 import { ConnectionState as LiveKitConnectionState } from 'livekit-client';
 
@@ -879,6 +880,16 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       // The current user has been banned from a space — remove it from the sidebar
       const { removeSpace: rmSpace } = useSpaceStore.getState();
       rmSpace(event.spaceId);
+      break;
+    }
+
+    case 'bot_installed': {
+      useBotStore.getState().handleBotInstalled(event.spaceId, event.bot);
+      break;
+    }
+
+    case 'bot_uninstalled': {
+      useBotStore.getState().handleBotUninstalled(event.spaceId, event.botId);
       break;
     }
 

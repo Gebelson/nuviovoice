@@ -250,6 +250,323 @@ export function ensureDefaults(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_id ON audit_logs(actor_id);
     CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
   `);
+
+  // 9. Ensure users.is_bot exists
+  const userCols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+  if (!userCols.some(c => c.name === 'is_bot')) {
+    db.exec('ALTER TABLE users ADD COLUMN is_bot INTEGER DEFAULT 0 NOT NULL;');
+    console.log('[defaults] Added is_bot column to users');
+  }
+
+  // 10. Ensure Bot Library tables exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bot_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      description TEXT DEFAULT '',
+      icon TEXT DEFAULT 'Bot',
+      sort_order INTEGER DEFAULT 0 NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_bot_categories_slug ON bot_categories(slug);
+    CREATE INDEX IF NOT EXISTS idx_bot_categories_sort ON bot_categories(sort_order);
+
+    CREATE TABLE IF NOT EXISTS bots (
+      id TEXT PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      tagline TEXT DEFAULT '' NOT NULL,
+      description TEXT DEFAULT '',
+      avatar TEXT,
+      banner TEXT,
+      developer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      bot_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      status TEXT DEFAULT 'draft' NOT NULL,
+      is_verified INTEGER DEFAULT 0 NOT NULL,
+      is_official INTEGER DEFAULT 0 NOT NULL,
+      prefix TEXT DEFAULT '/' NOT NULL,
+      website_url TEXT,
+      support_url TEXT,
+      privacy_policy_url TEXT,
+      webhook_url TEXT,
+      webhook_secret TEXT,
+      bot_token TEXT,
+      required_permissions TEXT DEFAULT '[]' NOT NULL,
+      tags TEXT DEFAULT '[]' NOT NULL,
+      categories TEXT DEFAULT '[]' NOT NULL,
+      commands TEXT DEFAULT '[]' NOT NULL,
+      layout_data TEXT DEFAULT '[]' NOT NULL,
+      custom_css TEXT DEFAULT '',
+      install_count INTEGER DEFAULT 0 NOT NULL,
+      rating_average REAL DEFAULT 5 NOT NULL,
+      rating_count INTEGER DEFAULT 0 NOT NULL,
+      version TEXT DEFAULT '1.0.0' NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_bots_slug ON bots(slug);
+    CREATE INDEX IF NOT EXISTS idx_bots_developer_id ON bots(developer_id);
+    CREATE INDEX IF NOT EXISTS idx_bots_bot_user_id ON bots(bot_user_id);
+    CREATE INDEX IF NOT EXISTS idx_bots_status ON bots(status);
+    CREATE INDEX IF NOT EXISTS idx_bots_install_count ON bots(install_count);
+    CREATE INDEX IF NOT EXISTS idx_bots_rating ON bots(rating_average);
+
+    CREATE TABLE IF NOT EXISTS bot_installations (
+      id TEXT PRIMARY KEY,
+      bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+      space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+      installed_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      granted_permissions TEXT DEFAULT '[]' NOT NULL,
+      status TEXT DEFAULT 'active' NOT NULL,
+      installed_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      UNIQUE(bot_id, space_id)
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_bot_installations_bot_space ON bot_installations(bot_id, space_id);
+    CREATE INDEX IF NOT EXISTS idx_bot_installations_space_id ON bot_installations(space_id);
+    CREATE INDEX IF NOT EXISTS idx_bot_installations_bot_id ON bot_installations(bot_id);
+
+    CREATE TABLE IF NOT EXISTS bot_reviews (
+      id TEXT PRIMARY KEY,
+      bot_id TEXT NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rating INTEGER NOT NULL,
+      comment TEXT DEFAULT '' NOT NULL,
+      developer_reply TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      UNIQUE(bot_id, user_id)
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_bot_reviews_bot_user ON bot_reviews(bot_id, user_id);
+    CREATE INDEX IF NOT EXISTS idx_bot_reviews_bot_id ON bot_reviews(bot_id);
+    CREATE INDEX IF NOT EXISTS idx_bot_reviews_user_id ON bot_reviews(user_id);
+  `);
+
+  // 11. Seed default bot categories
+  const now = Date.now();
+  const botCatCount = (db.prepare('SELECT count(*) as count FROM bot_categories').get() as { count: number }).count;
+  if (botCatCount === 0) {
+    const defaultBotCategories = [
+      { id: 'bcat_mod', name: 'Moderação', slug: 'moderacao', description: 'Proteja seus espaços com moderação automática e ferramentas de segurança.', icon: 'Shield', sort: 1 },
+      { id: 'bcat_music', name: 'Música', slug: 'musica', description: 'Ouça músicas em alta fidelidade e gerencie playlists com sua comunidade.', icon: 'Music', sort: 2 },
+      { id: 'bcat_fun', name: 'Entretenimento', slug: 'entretenimento', description: 'Memes, minijogos e diversão garantida para os membros.', icon: 'Sparkles', sort: 3 },
+      { id: 'bcat_games', name: 'Jogos', slug: 'jogos', description: 'Integrações com games populares, estatísticas e partidas multiplayer.', icon: 'Gamepad2', sort: 4 },
+      { id: 'bcat_eco', name: 'Economia', slug: 'economia', description: 'Sistemas de moedas, lojas virtuais, inventários e transações.', icon: 'Coins', sort: 5 },
+      { id: 'bcat_xp', name: 'Níveis e XP', slug: 'niveis-xp', description: 'Gamifique a atividade do seu espaço com ranks e recompensas por mensagens.', icon: 'Trophy', sort: 6 },
+      { id: 'bcat_welcome', name: 'Boas-vindas', slug: 'boas-vindas', description: 'Receba novos membros com mensagens customizadas e atribuição automática de cargos.', icon: 'UserPlus', sort: 7 },
+      { id: 'bcat_tickets', name: 'Tickets e suporte', slug: 'tickets-suporte', description: 'Atendimento privativo, gerenciamento de dúvidas e chamados técnicos.', icon: 'LifeBuoy', sort: 8 },
+      { id: 'bcat_utils', name: 'Utilidades', slug: 'utilidades', description: 'Pesquisas, lembretes, previsão do tempo, calculadoras e ferramentas.', icon: 'Wrench', sort: 9 },
+      { id: 'bcat_auto', name: 'Automação', slug: 'automacao', description: 'Automatize tarefas repetitivas, webhooks e integrações com serviços externos.', icon: 'Cpu', sort: 10 },
+      { id: 'bcat_ai', name: 'Inteligência Artificial', slug: 'inteligencia-artificial', description: 'Assistentes inteligentes, geração de texto e respostas com IA.', icon: 'Bot', sort: 11 },
+      { id: 'bcat_comm', name: 'Comunidade', slug: 'comunidade', description: 'Fortaleça laços comunitários com dinâmica de interação e eventos.', icon: 'Users', sort: 12 },
+      { id: 'bcat_prod', name: 'Produtividade', slug: 'produtividade', description: 'Quadro de tarefas, agendamentos, notas compartilhadas e metas.', icon: 'CheckSquare', sort: 13 },
+      { id: 'bcat_polls', name: 'Enquetes', slug: 'enquetes', description: 'Votações interativas com opções múltiplas e gráficos de resultados.', icon: 'BarChart2', sort: 14 },
+      { id: 'bcat_sec', name: 'Segurança', slug: 'seguranca', description: 'Antiraid, verificação de entrada e auditoria de ações suspeitas.', icon: 'Lock', sort: 15 },
+    ];
+
+    const insertBotCat = db.prepare(`
+      INSERT INTO bot_categories (id, name, slug, description, icon, sort_order, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const c of defaultBotCategories) {
+      insertBotCat.run(c.id, c.name, c.slug, c.description, c.icon, c.sort, now);
+    }
+    console.log('[defaults] Seeded default bot categories');
+  }
+
+  // 12. Seed official starter bots if table is empty
+  const botCount = (db.prepare('SELECT count(*) as count FROM bots').get() as { count: number }).count;
+  if (botCount === 0) {
+    // Find or create a system developer user
+    let dev = db.prepare("SELECT id FROM users WHERE is_admin = 1 LIMIT 1").get() as { id: string } | undefined;
+    if (!dev) {
+      dev = db.prepare("SELECT id FROM users LIMIT 1").get() as { id: string } | undefined;
+      if (!dev) {
+        db.prepare(`
+          INSERT INTO users (id, username, display_name, password_hash, is_bot, is_admin, created_at)
+          VALUES ('system_admin', 'system', 'Nuvio System', 'bot_auth_managed', 0, 1, ?)
+        `).run(now);
+        dev = { id: 'system_admin' };
+      }
+    }
+    const devId = dev.id;
+
+    // Helper to ensure bot user row exists
+    const ensureBotUser = (id: string, username: string, displayName: string, avatar: string) => {
+      const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(id);
+      if (!existing) {
+        db.prepare(`
+          INSERT INTO users (id, username, display_name, avatar, password_hash, is_bot, is_admin, created_at)
+          VALUES (?, ?, ?, ?, 'bot_auth_managed', 1, 0, ?)
+        `).run(id, username, displayName, avatar, now);
+      }
+    };
+
+    ensureBotUser('user_bot_sentinel', 'nuvio_sentinel', 'Nuvio Sentinel', '');
+    ensureBotUser('user_bot_welcome', 'nuvio_welcome', 'Nuvio Welcome', '');
+    ensureBotUser('user_bot_polls', 'nuvio_polls', 'Nuvio Polls', '');
+    ensureBotUser('user_bot_support', 'nuvio_support', 'Nuvio Support', '');
+    ensureBotUser('user_bot_level', 'nuvio_level', 'Nuvio Level', '');
+
+    const starterBots = [
+      {
+        id: 'bot_sentinel',
+        slug: 'nuvio-sentinel',
+        name: 'Nuvio Sentinel',
+        tagline: 'Sistema avançado de moderação automática, antiraid e proteção contra spam.',
+        description: 'O Nuvio Sentinel é o bot definitivo para manter seu espaço seguro e amigável. Conta com filtros de palavras ofensivas, detecção de spam em tempo real, proteção contra ataques raid, punições progressivas e registro detalhado de todas as infrações.',
+        avatar: '',
+        banner: '',
+        developerId: devId,
+        botUserId: 'user_bot_sentinel',
+        status: 'published',
+        isVerified: 1,
+        isOfficial: 1,
+        prefix: '/',
+        requiredPermissions: JSON.stringify(['MANAGE_MESSAGES', 'KICK_MEMBERS', 'BAN_MEMBERS', 'VIEW_AUDIT_LOGS']),
+        tags: JSON.stringify(['moderacao', 'seguranca', 'antiraid', 'antispam', 'limpar chat', 'ban', 'kick', 'mute']),
+        categories: JSON.stringify(['moderacao', 'seguranca', 'automacao']),
+        commands: JSON.stringify([
+          { name: 'ban', description: 'Bane um usuário do espaço permanentemente.', usage: '/ban @usuario [motivo]' },
+          { name: 'kick', description: 'Expulsa um usuário do espaço.', usage: '/kick @usuario [motivo]' },
+          { name: 'clear', description: 'Apaga até 100 mensagens do canal.', usage: '/clear [quantidade]' },
+          { name: 'slowmode', description: 'Configura o modo lento no canal de texto.', usage: '/slowmode [segundos]' },
+          { name: 'lock', description: 'Bloqueia o canal para envio de mensagens.', usage: '/lock' },
+        ]),
+        installCount: 1420,
+        ratingAverage: 4.9,
+        ratingCount: 128,
+      },
+      {
+        id: 'bot_welcome',
+        slug: 'nuvio-welcome',
+        name: 'Nuvio Welcome',
+        tagline: 'Boas-vindas personalizadas, atribuição automática de cargos e mensagens de entrada.',
+        description: 'Receba novos integrantes com muito estilo! O Nuvio Welcome permite enviar mensagens em canais específicos ou no privado, aplicar cargos automáticos assim que o usuário entra no espaço e criar painéis interativos de regras.',
+        avatar: '',
+        banner: '',
+        developerId: devId,
+        botUserId: 'user_bot_welcome',
+        status: 'published',
+        isVerified: 1,
+        isOfficial: 1,
+        prefix: '/',
+        requiredPermissions: JSON.stringify(['MANAGE_ROLES', 'SEND_MESSAGES', 'VIEW_CHANNELS']),
+        tags: JSON.stringify(['boas vindas', 'autorole', 'dar cargo automaticamente', 'cargos', 'regras', 'comunidade']),
+        categories: JSON.stringify(['boas-vindas', 'automacao', 'comunidade']),
+        commands: JSON.stringify([
+          { name: 'autorole', description: 'Define um cargo a ser atribuído automaticamente a novos membros.', usage: '/autorole @cargo' },
+          { name: 'welcome-channel', description: 'Define o canal onde as mensagens de boas-vindas serão enviadas.', usage: '/welcome-channel #canal' },
+          { name: 'welcome-message', description: 'Customiza o texto de boas-vindas com tags como {user} e {space}.', usage: '/welcome-message [texto]' },
+          { name: 'rules-panel', description: 'Cria uma mensagem com as regras do servidor.', usage: '/rules-panel' },
+        ]),
+        installCount: 980,
+        ratingAverage: 4.8,
+        ratingCount: 95,
+      },
+      {
+        id: 'bot_polls',
+        slug: 'nuvio-polls',
+        name: 'Nuvio Polls',
+        tagline: 'Crie enquetes interativas, votações rápidas e colete opiniões da sua comunidade.',
+        description: 'Faça enquetes elegantes e com atualização em tempo real. Suporta votação única ou múltipla, enquetes anônimas, contadores de tempo com encerramento automático e relatórios com porcentagens visuais.',
+        avatar: '',
+        banner: '',
+        developerId: devId,
+        botUserId: 'user_bot_polls',
+        status: 'published',
+        isVerified: 1,
+        isOfficial: 1,
+        prefix: '/',
+        requiredPermissions: JSON.stringify(['SEND_MESSAGES', 'ADD_REACTIONS', 'VIEW_CHANNELS']),
+        tags: JSON.stringify(['enquetes', 'votacoes', 'perguntas', 'opiniao', 'pesquisas', 'quiz']),
+        categories: JSON.stringify(['enquetes', 'comunidade', 'utilidades']),
+        commands: JSON.stringify([
+          { name: 'poll', description: 'Inicia uma nova votação interativa no canal.', usage: '/poll "Qual seu tema favorito?" "Opção A" "Opção B"' },
+          { name: 'poll-end', description: 'Encerra antecipadamente uma enquete ativa.', usage: '/poll-end [id]' },
+          { name: 'survey', description: 'Cria um questionário de múltiplas perguntas.', usage: '/survey [titulo]' },
+        ]),
+        installCount: 650,
+        ratingAverage: 4.7,
+        ratingCount: 62,
+      },
+      {
+        id: 'bot_support',
+        slug: 'nuvio-support',
+        name: 'Nuvio Support & Tickets',
+        tagline: 'Gerenciamento profissional de tickets, atendimento ao cliente e suporte privativo.',
+        description: 'Ideal para espaços que vendem produtos, realizam suporte ou tiram dúvidas. Cria canais de texto privados automaticamente ao clicar em um botão de suporte, com transcrição de conversas e avaliação de atendimento.',
+        avatar: '',
+        banner: '',
+        developerId: devId,
+        botUserId: 'user_bot_support',
+        status: 'published',
+        isVerified: 1,
+        isOfficial: 1,
+        prefix: '/',
+        requiredPermissions: JSON.stringify(['MANAGE_CHANNELS', 'SEND_MESSAGES', 'VIEW_CHANNELS']),
+        tags: JSON.stringify(['tickets', 'suporte', 'atendimento', 'chamados', 'ajuda', 'pedidos']),
+        categories: JSON.stringify(['tickets-suporte', 'produtividade', 'utilidades']),
+        commands: JSON.stringify([
+          { name: 'ticket-panel', description: 'Envia o painel de abertura de tickets no canal.', usage: '/ticket-panel [titulo]' },
+          { name: 'close', description: 'Fecha o ticket atual com salvamento de histórico.', usage: '/close [motivo]' },
+          { name: 'transcript', description: 'Gera uma transcrição em texto da conversa do ticket.', usage: '/transcript' },
+          { name: 'add-user', description: 'Adiciona um membro ao ticket de suporte em andamento.', usage: '/add-user @usuario' },
+        ]),
+        installCount: 520,
+        ratingAverage: 4.9,
+        ratingCount: 54,
+      },
+      {
+        id: 'bot_level',
+        slug: 'nuvio-level',
+        name: 'Nuvio Level & XP',
+        tagline: 'Gamificação completa: suba de nível conversando, desbloqueie cargos e dispute o topo do ranking.',
+        description: 'Transforme a participação no seu espaço em uma competição divertida! Membros ganham pontos de experiência por conversar nos canais de texto e voz. Oferece cartões de perfil, placar de líderes e cargos por nível atingido.',
+        avatar: '',
+        banner: '',
+        developerId: devId,
+        botUserId: 'user_bot_level',
+        status: 'published',
+        isVerified: 1,
+        isOfficial: 1,
+        prefix: '/',
+        requiredPermissions: JSON.stringify(['MANAGE_ROLES', 'SEND_MESSAGES', 'VIEW_CHANNELS']),
+        tags: JSON.stringify(['niveis', 'xp', 'rank', 'gamificacao', 'placar', 'pontos', 'recompensas']),
+        categories: JSON.stringify(['niveis-xp', 'comunidade', 'jogos']),
+        commands: JSON.stringify([
+          { name: 'rank', description: 'Mostra seu nível atual, progresso de XP e posição.', usage: '/rank [@usuario]' },
+          { name: 'leaderboard', description: 'Exibe o ranking dos membros mais ativos do espaço.', usage: '/leaderboard' },
+          { name: 'level-role', description: 'Configura um cargo que será dado automaticamente ao atingir certo nível.', usage: '/level-role [nivel] @cargo' },
+        ]),
+        installCount: 890,
+        ratingAverage: 4.8,
+        ratingCount: 88,
+      },
+    ];
+
+    const insertBot = db.prepare(`
+      INSERT INTO bots (
+        id, slug, name, tagline, description, avatar, banner, developer_id, bot_user_id,
+        status, is_verified, is_official, prefix, required_permissions, tags, categories,
+        commands, install_count, rating_average, rating_count, version, created_at, updated_at
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '1.0.0', ?, ?
+      )
+    `);
+
+    for (const b of starterBots) {
+      insertBot.run(
+        b.id, b.slug, b.name, b.tagline, b.description, b.avatar, b.banner, b.developerId,
+        b.botUserId, b.status, b.isVerified, b.isOfficial, b.prefix, b.requiredPermissions,
+        b.tags, b.categories, b.commands, b.installCount, b.ratingAverage, b.ratingCount,
+        now, now
+      );
+    }
+    console.log('[defaults] Seeded default official starter bots');
+  }
 }
 
 /**

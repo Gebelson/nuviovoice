@@ -12,7 +12,7 @@ import { Toggle } from '../ui/Toggle';
 import { api } from '../../api/client';
 import { getApiForOrigin } from '../../utils/crossStoreResolvers';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
-import { OverviewPanel, MembersPanel, RolesPanel, BansPanel, AuditLogsPanel, SettingsPanelSuspense } from './lazySettingsPanels';
+import { OverviewPanel, MembersPanel, RolesPanel, BansPanel, AuditLogsPanel, IntegrationsPanel, SettingsPanelSuspense } from './lazySettingsPanels';
 import { useVisibilityOptions } from './spaceSettingsPanels/spaceOptions';
 import { ListInDirectoryConfirm } from './DirectoryConfirmations';
 import { isPublicSpace, type SpaceVisibility, type JoinRequest, type InstanceStreamingLimits } from '@concord/shared';
@@ -598,9 +598,9 @@ function JoinRequestsSection({ spaceId }: { spaceId: string }) {
   );
 }
 
-type SpaceSettingsTab = 'overview' | 'appearance' | 'discovery' | 'members' | 'roles' | 'bans' | 'auditLogs';
+type SpaceSettingsTab = 'overview' | 'appearance' | 'discovery' | 'integrations' | 'members' | 'roles' | 'bans' | 'auditLogs';
 
-const SPACE_SETTINGS_TABS: readonly SpaceSettingsTab[] = ['overview', 'appearance', 'discovery', 'members', 'roles', 'bans', 'auditLogs'];
+const SPACE_SETTINGS_TABS: readonly SpaceSettingsTab[] = ['overview', 'appearance', 'discovery', 'integrations', 'members', 'roles', 'bans', 'auditLogs'];
 
 function isSpaceSettingsTab(value: unknown): value is SpaceSettingsTab {
   return typeof value === 'string' && (SPACE_SETTINGS_TABS as readonly string[]).includes(value);
@@ -642,6 +642,7 @@ export function SpaceSettingsModal() {
       overview: true,
       appearance: canManageSpace,
       discovery: canSeeDiscovery,
+      integrations: canManageSpace || isOwner,
       members: true,
       roles: canManageRoles,
       bans: canBanMembers,
@@ -697,6 +698,9 @@ export function SpaceSettingsModal() {
             {canSeeDiscovery && (
               <button onClick={() => handleTabClick('discovery')} className={tabClass('discovery')}>{t('spaces:settings.nav.tabs.discovery')}</button>
             )}
+            {(canManageSpace || isOwner) && (
+              <button onClick={() => handleTabClick('integrations')} className={tabClass('integrations')}>{t('spaces:settings.nav.tabs.integrations', { defaultValue: 'Integrações & Bots' })}</button>
+            )}
 
             <div className="border-t border-white/[0.04] my-2 mx-2" />
             <div className="text-[10px] font-semibold text-txt-tertiary uppercase tracking-wider px-3 py-1">{t('spaces:settings.nav.management')}</div>
@@ -740,6 +744,9 @@ export function SpaceSettingsModal() {
               {canSeeDiscovery && (
                 <button onClick={() => handleTabClick('discovery')} className={tabClass('discovery')}>{t('spaces:settings.nav.tabs.discovery')}</button>
               )}
+              {(canManageSpace || isOwner) && (
+                <button onClick={() => handleTabClick('integrations')} className={tabClass('integrations')}>{t('spaces:settings.nav.tabs.integrations', { defaultValue: 'Integrações & Bots' })}</button>
+              )}
 
               <div className="border-t border-white/[0.04] my-2 mx-2" />
               <div className="text-[10px] font-semibold text-txt-tertiary uppercase tracking-wider px-3 py-1">{t('spaces:settings.nav.management')}</div>
@@ -778,6 +785,7 @@ export function SpaceSettingsModal() {
                 {tab === 'overview' && <OverviewPanel spaceId={currentSpaceId} mode="all" />}
                 {tab === 'appearance' && canManageSpace && <OverviewPanel spaceId={currentSpaceId} mode="appearance" />}
                 {tab === 'discovery' && canSeeDiscovery && <DiscoveryPanel spaceId={currentSpaceId} />}
+                {tab === 'integrations' && (canManageSpace || isOwner) && <IntegrationsPanel spaceId={currentSpaceId} />}
                 {tab === 'members' && <MembersPanel spaceId={currentSpaceId} />}
                 {tab === 'roles' && canManageRoles && <RolesPanel spaceId={currentSpaceId} />}
                 {tab === 'bans' && canBanMembers && <BansPanel spaceId={currentSpaceId} />}

@@ -24,6 +24,9 @@ import { useAuthStore } from '../../stores/authStore';
 import { selfIdentityOf } from '../../utils/identity';
 import { findLastOwnEditableMessage } from './messageEditing';
 import { describeError } from '../../i18n/errors';
+import { CommandPopover, type CommandItem } from './CommandPopover';
+import { useBotStore } from '../../stores/botStore';
+import type { BotCommand } from '@concord/shared';
 
 interface MessageInputProps {
   channelId: string;
@@ -124,6 +127,70 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
 
   const remaining = MAX_MESSAGE_LENGTH - draftText.length;
   const isOverLimit = remaining < 0;
+
+  const currentSpaceId = useSpaceStore((s) => s.channelToSpaceMap.get(channelId));
+  const installedBots = useBotStore((s) => (currentSpaceId ? s.installedSpaceBots[currentSpaceId] : undefined));
+
+  useEffect(() => {
+    if (currentSpaceId && !isDm) {
+      void useBotStore.getState().loadSpaceBots(currentSpaceId);
+    }
+  }, [currentSpaceId, isDm]);
+
+  const availableCommands = useMemo<CommandItem[]>(() => {
+    if (isDm || !currentSpaceId) return [];
+    const list: CommandItem[] = [
+      { name: 'ajuda', description: 'Mostra todos os comandos dos bots instalados neste espaço', botName: 'Sistema' },
+    ];
+    if (installedBots) {
+      for (const item of installedBots) {
+        let cmds: BotCommand[] = [];
+        try {
+          cmds = Array.isArray(item.bot.commands)
+            ? item.bot.commands
+            : JSON.parse(item.bot.commands || '[]');
+        } catch {
+          cmds = [];
+        }
+        for (const c of cmds) {
+          if (!list.some((existing) => existing.name.toLowerCase() === c.name.toLowerCase())) {
+            list.push({
+              name: c.name.toLowerCase(),
+              description: c.description || '',
+              botName: item.bot.name,
+            });
+          }
+        }
+      }
+    }
+    return list;
+  }, [isDm, currentSpaceId, installedBots]);
+
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+
+  const commandQueryMatch = useMemo(() => {
+    if (isDm || !draftText.startsWith('/')) return null;
+    const firstSpace = draftText.indexOf(' ');
+    const firstNewline = draftText.indexOf('\n');
+    if (firstSpace !== -1 || firstNewline !== -1) return null;
+    return draftText.slice(1).toLowerCase();
+  }, [isDm, draftText]);
+
+  const matchingCommands = useMemo(() => {
+    if (commandQueryMatch === null) return [];
+    return availableCommands.filter((c) => c.name.startsWith(commandQueryMatch));
+  }, [commandQueryMatch, availableCommands]);
+
+  const showCommandPopover = commandQueryMatch !== null && matchingCommands.length > 0;
+
+  useEffect(() => {
+    setSelectedCommandIndex(0);
+  }, [commandQueryMatch]);
+
+  const selectCommand = useCallback((cmd: CommandItem) => {
+    setDraft(channelId, `/${cmd.name} `);
+    textareaRef.current?.focus();
+  }, [channelId, setDraft]);
 
   // Auto-focus textarea on channel navigation
   useEffect(() => {
@@ -322,6 +389,27 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
     }
 
     if (stagedTransfers.length === 0) {
+      // Check if this is a slash command in a space channel
+      if (!isDm && trimmed.startsWith('/')) {
+        const match = trimmed.match(/^\/([a-zA-Z0-9_-]+)(?:\s+(.*))?$/s);
+        if (match && match[1]) {
+          const commandName = match[1];
+          const commandArgs = match[2] || '';
+          clearComposer(channelId);
+          if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.focus();
+          }
+          try {
+            await useBotStore.getState().executeCommand(channelId, commandName, commandArgs);
+          } catch (err: any) {
+            const errMsg = err?.body?.error || err?.message || describeError(err);
+            addToast(errMsg, 'warning');
+          }
+          return;
+        }
+      }
+
       // Consume the draft synchronously; network completion must not erase newer typing.
       clearComposer(channelId);
       try {
@@ -385,6 +473,40 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
     // IME confirmation must not select a candidate or send the message.
     if (e.nativeEvent.isComposing) return;
     if (handleMentionKey(e)) return;
+
+    if (showCommandPopover && matchingCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedCommandIndex((prev) => (prev + 1) % matchingCommands.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedCommandIndex((prev) => (prev - 1 + matchingCommands.length) % matchingCommands.length);
+        return;
+      }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const chosen = matchingCommands[selectedCommandIndex];
+        if (chosen) {
+          selectCommand(chosen);
+        }
+        return;
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const chosen = matchingCommands[selectedCommandIndex];
+        if (chosen) {
+          selectCommand(chosen);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setDraft(channelId, draftText + ' ');
+        return;
+      }
+    }
 
     const isPlainArrowUp = e.key === 'ArrowUp'
       && !e.altKey
@@ -792,6 +914,16 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
             selectedIndex={mentionState.selectedIndex}
             onSelect={selectMention}
             anchorRef={mentionAnchorRef}
+          />
+        )}
+
+        {/* Slash Command autocomplete popover */}
+        {showCommandPopover && (
+          <CommandPopover
+            commands={matchingCommands}
+            selectedIndex={selectedCommandIndex}
+            onSelect={selectCommand}
+            anchorRef={textareaRef}
           />
         )}
 

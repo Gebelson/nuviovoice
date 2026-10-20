@@ -117,6 +117,32 @@ export function StoreFrontPage({
             </div>
           </div>
 
+          {/* Main Store Switcher: Produtos | Bots */}
+          <div className="inline-flex p-1 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md">
+            <button
+              type="button"
+              className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-accent-primary text-white shadow-md flex items-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18" />
+                <path d="M16 10a4 4 0 0 1-8 0" />
+              </svg>
+              Produtos & Serviços
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/store/bots')}
+              className="px-5 py-2 rounded-xl text-xs font-bold transition-all text-txt-secondary hover:text-white hover:bg-white/5 flex items-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M9 3v18M3 9h18" />
+              </svg>
+              Biblioteca de Bots
+            </button>
+          </div>
+
           {/* Search Box */}
           <div className="relative max-w-2xl">
             <input
