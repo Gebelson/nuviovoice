@@ -12,6 +12,18 @@
     "live": "LIVE",
     "you": "(您)"
   },
+  "preview": {
+    "loading": "正在加载直播...",
+    "ended": "此直播已结束。",
+    "noPermission": "您没有权限查看此直播。",
+    "failed": "无法加载预览。",
+    "retry": "重试",
+    "noAudio": "无声预览",
+    "watchStream": "观看直播",
+    "switchCallTitle": "切换通话？",
+    "switchCallDesc": "您已在通话中。要切换通话以观看此直播吗？",
+    "switchCallConfirm": "切换通话"
+  },
   "moderation": {
     "spaceMute": "空间静音",
     "spaceUnmute": "解除空间静音",

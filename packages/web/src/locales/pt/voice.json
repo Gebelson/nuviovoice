@@ -12,6 +12,18 @@
     "live": "AO VIVO",
     "you": "(você)"
   },
+  "preview": {
+    "loading": "Carregando transmissão...",
+    "ended": "Esta transmissão foi encerrada.",
+    "noPermission": "Você não tem permissão para visualizar esta transmissão.",
+    "failed": "Não foi possível carregar a prévia.",
+    "retry": "Tentar novamente",
+    "noAudio": "Prévia sem áudio",
+    "watchStream": "Assistir transmissão",
+    "switchCallTitle": "Mudar de chamada?",
+    "switchCallDesc": "Você já está em uma chamada. Deseja mudar para assistir a esta transmissão?",
+    "switchCallConfirm": "Mudar de chamada"
+  },
   "moderation": {
     "spaceMute": "Silenciar no espaço",
     "spaceUnmute": "Reativar microfone no espaço",

@@ -97,6 +97,7 @@ export function VoiceChannel({ channelId, channelName, onClick, locked, canManag
   });
   const members = useSpaceStore((s) => s.members);
   const channelToSpaceMap = useSpaceStore((s) => s.channelToSpaceMap);
+  const spaces = useSpaceStore((s) => s.spaces);
   // The user's row id on the channel's instance: the ids in `voiceUsers` are
   // that instance's.
   const myIdHere = useSelfIdInChannel(channelId);
@@ -239,6 +240,7 @@ export function VoiceChannel({ channelId, channelName, onClick, locked, canManag
             const hasCamera = participant?.isCameraOn ?? wsStatus?.isCameraOn ?? false;
             const isScreenSharing = participant?.isScreenSharing ?? wsStatus?.isScreenSharing ?? false;
             const spaceId = channelToSpaceMap.get(channelId);
+            const spaceName = spaceId ? spaces.find((s) => s.id === spaceId)?.name : undefined;
             const isSpaceMuted = spaceMutedUserIds.has(`${spaceId}:${userId}`);
             const isSpaceDeafened = spaceDeafenedUserIds.has(`${spaceId}:${userId}`);
             const isPermissionMuted = permissionMutedUserIds.has(`${spaceId}:${userId}`);
@@ -277,6 +279,10 @@ export function VoiceChannel({ channelId, channelName, onClick, locked, canManag
                   displayName={displayName}
                   avatar={avatar}
                   avatarColor={avatarColor ?? undefined}
+                  channelId={channelId}
+                  channelName={channelName}
+                  spaceId={spaceId}
+                  spaceName={spaceName}
                   isMuted={isMuted}
                   isDeafened={isParticipantDeafened}
                   isCameraOn={hasCamera}

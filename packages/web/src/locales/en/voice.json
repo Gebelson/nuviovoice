@@ -12,6 +12,18 @@
     "live": "LIVE",
     "you": "(you)"
   },
+  "preview": {
+    "loading": "Loading stream...",
+    "ended": "This stream has ended.",
+    "noPermission": "You do not have permission to view this stream.",
+    "failed": "Could not load preview.",
+    "retry": "Retry",
+    "noAudio": "Muted preview",
+    "watchStream": "Watch stream",
+    "switchCallTitle": "Switch call?",
+    "switchCallDesc": "You are already in a call. Do you want to switch to watch this stream?",
+    "switchCallConfirm": "Switch call"
+  },
   "moderation": {
     "spaceMute": "Space Mute",
     "spaceUnmute": "Space Unmute",

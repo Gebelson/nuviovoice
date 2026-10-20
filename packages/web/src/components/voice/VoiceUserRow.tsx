@@ -1,11 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '../ui/Avatar';
+import { LiveStreamBadge } from './LiveStreamBadge';
 
 export interface VoiceUserRowProps {
   userId: string;
   displayName: string;
   avatar: string | null;
   avatarColor?: string;
+  channelId?: string;
+  channelName?: string;
+  spaceId?: string;
+  spaceName?: string;
   isMuted?: boolean;
   isDeafened?: boolean;
   isCameraOn?: boolean;
@@ -26,6 +31,10 @@ export function VoiceUserRow({
   displayName,
   avatar,
   avatarColor,
+  channelId,
+  channelName,
+  spaceId,
+  spaceName,
   isMuted,
   isDeafened,
   isCameraOn,
@@ -128,9 +137,18 @@ export function VoiceUserRow({
             )}
           </svg>
         )}
-        {/* Screen sharing LIVE badge */}
+        {/* Screen sharing LIVE badge with real-time hover preview */}
         {isScreenSharing && (
-          <span className="bg-accent-rose text-white text-[9px] font-bold px-1 rounded leading-[14px]">{t('voice:badges.live')}</span>
+          <LiveStreamBadge
+            userId={userId}
+            displayName={displayName}
+            avatar={avatar}
+            avatarColor={avatarColor}
+            channelId={channelId}
+            channelName={channelName}
+            spaceId={spaceId}
+            spaceName={spaceName}
+          />
         )}
         {/* Locally muted — volume X icon */}
         {isLocallyMuted && (

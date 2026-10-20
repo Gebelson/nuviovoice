@@ -126,4 +126,67 @@ export async function livekitRoutes(app: FastifyInstance): Promise<void> {
     };
     return reply.code(200).send(response);
   });
+
+  app.post<{ Body: { channelId?: string; dmChannelId?: string } }>('/api/livekit/preview-token', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    if (!config.livekit.apiKey || !config.livekit.apiSecret) {
+      return sendError(reply, 503, 'voice_disabled');
+    }
+
+    const { channelId, dmChannelId } = request.body ?? {};
+    let roomName: string;
+
+    if (dmChannelId && typeof dmChannelId === 'string') {
+      if (!isDmMember(dmChannelId, request.userId)) {
+        return sendError(reply, 403, 'not_dm_member');
+      }
+
+      const db = getDb();
+      const channel = db.select({ federatedId: schema.dmChannels.federatedId })
+        .from(schema.dmChannels)
+        .where(eq(schema.dmChannels.id, dmChannelId))
+        .get();
+
+      roomName = channel?.federatedId ? channel.federatedId : `dm-${dmChannelId}`;
+    } else if (channelId && typeof channelId === 'string') {
+      const spaceId = getChannelSpaceId(channelId);
+      if (!spaceId) {
+        return sendError(reply, 404, 'channel_not_found');
+      }
+      const hasView = hasPermission(request.userId, spaceId, PermissionBits.VIEW_CHANNEL, channelId);
+      const hasConnect = hasPermission(request.userId, spaceId, PermissionBits.CONNECT, channelId);
+      if (!hasView && !hasConnect) {
+        return sendError(reply, 403, 'voice_connect_forbidden');
+      }
+      roomName = channelId;
+    } else {
+      return sendError(reply, 400, 'validation_failed');
+    }
+
+    // Ephemeral spectator token with hidden: true (never broadcasted to room or visible in participant lists)
+    const identity = `preview:${request.userId}:${Date.now()}`;
+    const token = new AccessToken(config.livekit.apiKey, config.livekit.apiSecret, {
+      identity,
+      ttl: '5m',
+    });
+
+    token.addGrant({
+      room: roomName,
+      roomJoin: true,
+      canPublish: false,
+      canPublishData: false,
+      canSubscribe: true,
+      hidden: true,
+    });
+
+    const jwt = await token.toJwt();
+    const livekitUrl = config.livekit.url ?? '';
+
+    const response: LiveKitTokenResponse = {
+      token: jwt,
+      url: livekitUrl,
+    };
+    return reply.code(200).send(response);
+  });
 }

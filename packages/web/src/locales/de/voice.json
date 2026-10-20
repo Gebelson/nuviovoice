@@ -12,6 +12,18 @@
     "live": "LIVE",
     "you": "(du)"
   },
+  "preview": {
+    "loading": "Stream wird geladen...",
+    "ended": "Dieser Stream wurde beendet.",
+    "noPermission": "Du hast keine Berechtigung, diesen Stream anzusehen.",
+    "failed": "Vorschau konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "noAudio": "Vorschau ohne Ton",
+    "watchStream": "Stream ansehen",
+    "switchCallTitle": "Anruf wechseln?",
+    "switchCallDesc": "Du bist bereits in einem Anruf. Möchtest du wechseln, um diesen Stream anzusehen?",
+    "switchCallConfirm": "Anruf wechseln"
+  },
   "moderation": {
     "spaceMute": "Im Space stummschalten",
     "spaceUnmute": "Stummschaltung im Space aufheben",
