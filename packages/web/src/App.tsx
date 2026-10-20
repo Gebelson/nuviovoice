@@ -10,6 +10,7 @@ import { TelemetryAsk } from './components/telemetry/TelemetryAsk';
 import { ScreenShareSetup } from './components/voice/ScreenShareSetup';
 import { useAuthStore } from './stores/authStore';
 import { isElectron } from './platform/platform';
+import { initializeNativeContextMenuSuppression } from './platform/nativeContextMenu';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -46,6 +47,11 @@ export function App() {
     if (typeof window.backspace?.rendererReady === 'function') {
       window.backspace.rendererReady();
     }
+  }, []);
+
+  // Suppress native browser context menu in Nuvio Web, preserving all custom menus
+  useEffect(() => {
+    return initializeNativeContextMenuSuppression();
   }, []);
 
   const showTitleBar = isElectron();

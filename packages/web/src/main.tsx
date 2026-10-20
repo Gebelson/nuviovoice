@@ -8,11 +8,15 @@ import './styles/globals.css';
 import { initializeInterfaceScale } from './platform/interfaceScale';
 import { waitForEmojiShortcodeNames } from './utils/emojiShortcodes';
 import { registerDiagnostics } from './utils/diagnostics';
+import { initializeNativeContextMenuSuppression } from './platform/nativeContextMenu';
 
 registerDiagnostics();
 
 const stopInterfaceScale = initializeInterfaceScale();
 if (import.meta.hot) import.meta.hot.dispose(stopInterfaceScale);
+
+const stopNativeContextMenu = initializeNativeContextMenuSuppression();
+if (import.meta.hot) import.meta.hot.dispose(stopNativeContextMenu);
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
