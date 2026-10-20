@@ -26,5 +26,6 @@ packages/web/src/components/store/SellerDashboard.tsx
 packages/web/src/components/store/SellerProfilePage.tsx
 packages/web/src/components/store/StoreAdminQueue.tsx
 packages/web/src/components/store/StoreFrontPage.tsx
+packages/web/src/components/store/StoreNavTabs.tsx
 packages/web/src/components/store/VisualBlockRenderer.tsx
 packages/web/src/components/voice/VoiceInvitePage.tsx

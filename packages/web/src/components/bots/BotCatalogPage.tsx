@@ -4,6 +4,7 @@ import { useBotStore } from '../../stores/botStore';
 import { useAuthStore } from '../../stores/authStore';
 import { resolveUploadUrl } from '../../utils/assetUrls';
 import { BotInstallModal } from './BotInstallModal';
+import { StoreNavTabs } from '../store/StoreNavTabs';
 import type { Bot } from '@concord/shared';
 
 export function BotCatalogPage() {
@@ -23,6 +24,7 @@ export function BotCatalogPage() {
   const loadCategories = useBotStore((s) => s.loadCategories);
   const loadBots = useBotStore((s) => s.loadBots);
   const isLoading = useBotStore((s) => s.isLoading);
+  const error = useBotStore((s) => s.error);
 
   const currentUser = useAuthStore((s) => s.user);
 
@@ -55,7 +57,7 @@ export function BotCatalogPage() {
                 Biblioteca de Bots & Aplicações
               </div>
               <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                Descubra Bots para seu Espaço
+                Biblioteca de Bots
               </h1>
               <p className="text-sm md:text-base text-txt-secondary mt-1 max-w-xl">
                 Automatize tarefas, modere comunidades, gerencie músicas e integre
@@ -63,11 +65,30 @@ export function BotCatalogPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => navigate('/developers')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 text-white text-sm font-semibold transition-all shadow-md backdrop-blur-md"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/20"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                Publicar meu bot
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/developers')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 text-white text-xs font-semibold transition-all shadow-md backdrop-blur-md"
               >
                 <svg
                   width="16"
@@ -85,29 +106,8 @@ export function BotCatalogPage() {
           </div>
 
           {/* Main Store Switcher: Produtos | Bots */}
-          <div className="inline-flex p-1 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md">
-            <button
-              type="button"
-              onClick={() => navigate('/store')}
-              className="px-5 py-2 rounded-xl text-xs font-bold transition-all text-txt-secondary hover:text-white hover:bg-white/5 flex items-center gap-2"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              Produtos & Serviços
-            </button>
-            <button
-              type="button"
-              className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-accent-primary text-white shadow-md flex items-center gap-2"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M9 3v18M3 9h18" />
-              </svg>
-              Biblioteca de Bots
-            </button>
+          <div>
+            <StoreNavTabs />
           </div>
 
           {/* Search Bar */}
@@ -242,15 +242,48 @@ export function BotCatalogPage() {
               />
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-16 px-4 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-3">
+            <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 mx-auto">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-white">Falha ao carregar bots</h3>
+            <p className="text-xs text-txt-secondary max-w-sm mx-auto">{error}</p>
+            <button
+              onClick={() => void loadBots()}
+              className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-transform active:scale-95 shadow-md"
+            >
+              Tentar novamente
+            </button>
+          </div>
         ) : bots.length === 0 ? (
           <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] space-y-3">
             <div className="text-4xl">🤖</div>
             <h3 className="text-lg font-bold text-white">
-              Nenhum bot encontrado
+              {search || selectedCategory
+                ? 'Nenhum bot encontrado'
+                : 'Nenhum bot disponível no momento.'}
             </h3>
             <p className="text-sm text-txt-muted max-w-sm mx-auto">
-              Tente buscar por outros termos ou explore outras categorias.
+              {search || selectedCategory
+                ? 'Tente buscar por outros termos ou explore outras categorias.'
+                : 'Seja o primeiro a publicar um bot oficial ou comunitário para o Nuvio.'}
             </p>
+            {!search && !selectedCategory && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/developers')}
+                  className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-md inline-flex items-center gap-2"
+                >
+                  Publicar meu bot
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -43,7 +43,7 @@ export function StoreContainer() {
   }
 
   // Route: /store/admin
-  if (path === '/store/admin') {
+  if (path === '/store/admin' || path.startsWith('/store/admin/')) {
     return <StoreAdminQueue />;
   }
 

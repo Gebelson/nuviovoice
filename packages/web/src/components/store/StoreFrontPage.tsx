@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStoreStore } from '../../stores/storeStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useFormatters } from '../../i18n/formatters';
+import { StoreNavTabs } from './StoreNavTabs';
 import type { Product } from '../../types/store';
 
 export function StoreFrontPage({
@@ -34,6 +35,7 @@ export function StoreFrontPage({
   const loadProducts = useStoreStore((s) => s.loadProducts);
   const loadFavorites = useStoreStore((s) => s.loadFavorites);
   const isLoading = useStoreStore((s) => s.isLoading);
+  const error = useStoreStore((s) => s.error);
 
   const currentUser = useAuthStore((s) => s.user);
   const isAdmin = Boolean(currentUser?.isAdmin);
@@ -68,10 +70,10 @@ export function StoreFrontPage({
                 Marketplace Oficial Nuvio
               </div>
               <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                Loja Integrada
+                Loja de Produtos
               </h1>
               <p className="text-sm md:text-base text-txt-secondary mt-1 max-w-xl">
-                Explore bots, serviços de design, modelos de servidores, e-books e produtos criados pela comunidade Nuvio com curadoria oficial.
+                Explore pacotes de arte, templates de servidores, plugins, temas e produtos criados pela comunidade Nuvio com curadoria oficial.
               </p>
             </div>
 
@@ -118,29 +120,8 @@ export function StoreFrontPage({
           </div>
 
           {/* Main Store Switcher: Produtos | Bots */}
-          <div className="inline-flex p-1 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md">
-            <button
-              type="button"
-              className="px-5 py-2 rounded-xl text-xs font-bold transition-all bg-accent-primary text-white shadow-md flex items-center gap-2"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              Produtos & Serviços
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/store/bots')}
-              className="px-5 py-2 rounded-xl text-xs font-bold transition-all text-txt-secondary hover:text-white hover:bg-white/5 flex items-center gap-2"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect width="18" height="18" x="3" y="3" rx="2" />
-                <path d="M9 3v18M3 9h18" />
-              </svg>
-              Biblioteca de Bots
-            </button>
+          <div>
+            <StoreNavTabs />
           </div>
 
           {/* Search Box */}
@@ -149,7 +130,7 @@ export function StoreFrontPage({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar bots, pacotes de arte, templates de canais..."
+              placeholder="Buscar produtos, templates, pacotes de arte..."
               className="w-full bg-surface-channel/90 border border-border-hard rounded-2xl pl-12 pr-4 py-3.5 text-sm text-white placeholder-txt-tertiary focus:outline-none focus:border-accent-primary shadow-xl"
             />
             <svg
@@ -261,6 +242,24 @@ export function StoreFrontPage({
             <div className="w-8 h-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
             <p className="text-xs text-txt-tertiary">Buscando catálogo da loja...</p>
           </div>
+        ) : error ? (
+          <div className="py-16 text-center border border-red-500/20 bg-red-500/5 rounded-2xl p-8 space-y-3">
+            <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 mx-auto">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-white">Falha ao carregar produtos</h3>
+            <p className="text-xs text-txt-secondary max-w-sm mx-auto">{error}</p>
+            <button
+              onClick={() => void loadProducts()}
+              className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-transform active:scale-95 shadow-md"
+            >
+              Tentar novamente
+            </button>
+          </div>
         ) : displayedProducts.length === 0 ? (
           <div className="py-16 text-center border border-dashed border-border-hard rounded-2xl p-8">
             <div className="w-12 h-12 rounded-xl bg-surface-panel flex items-center justify-center text-txt-tertiary mx-auto mb-3">
@@ -269,11 +268,17 @@ export function StoreFrontPage({
                 <line x1="8" y1="12" x2="16" y2="12" />
               </svg>
             </div>
-            <h3 className="text-base font-bold text-white mb-1">Nenhum produto encontrado</h3>
+            <h3 className="text-base font-bold text-white mb-1">
+              {search || selectedCategory || selectedProductType
+                ? 'Nenhum produto encontrado'
+                : 'Nenhum produto disponível no momento.'}
+            </h3>
             <p className="text-xs text-txt-secondary max-w-sm mx-auto">
               {activeTab === 'favorites'
                 ? 'Você ainda não favoritou nenhum produto. Clique no ícone de coração nos produtos para salvar aqui.'
-                : 'Não encontramos anúncios com os filtros selecionados. Tente buscar outros termos ou limpar a categoria.'}
+                : search || selectedCategory || selectedProductType
+                ? 'Não encontramos anúncios com os filtros selecionados. Tente buscar outros termos ou limpar a categoria.'
+                : 'Volte em breve para conferir os produtos e serviços publicados pela comunidade.'}
             </p>
           </div>
         ) : (
