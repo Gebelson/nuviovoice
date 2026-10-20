@@ -12,7 +12,8 @@ import { useContextMenuStore, type ContextMenuItem } from '../../stores/contextM
 import { useNavigate } from 'react-router-dom';
 import { getSpaceGradient } from '../../utils/gradients';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
-import type { Channel } from '@concord/shared';
+import { isPublicSpace, type Channel } from '@concord/shared';
+import { SpaceUnreadBadge } from './SpaceUnreadBadge';
 import { Mascot } from '../ui/Mascot';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { TransferOwnershipModal } from '../modals/TransferOwnershipModal';
@@ -169,6 +170,23 @@ export function MobileSpacesScreen() {
   const resolvedLayout = useMemo(
     () => resolveSpaceLayout(spaces, spaceLayout, folders),
     [spaces, spaceLayout, folders],
+  );
+
+  // Split into private spaces (top, before +) and public spaces (bottom, before explore)
+  const privateLayoutItems = useMemo(
+    () => resolvedLayout.filter(item => {
+      if (item.type === 'space') return !isPublicSpace(item.space);
+      return !item.spaces.every(s => isPublicSpace(s));
+    }),
+    [resolvedLayout],
+  );
+
+  const publicLayoutItems = useMemo(
+    () => resolvedLayout.filter(item => {
+      if (item.type === 'space') return isPublicSpace(item.space);
+      return item.spaces.every(s => isPublicSpace(s));
+    }),
+    [resolvedLayout],
   );
 
   const handleSpaceSelect = (spaceId: string) => {
@@ -675,6 +693,83 @@ export function MobileSpacesScreen() {
     );
   };
 
+  const renderLayoutItem = (item: (typeof resolvedLayout)[number]) => {
+    if (item.type === 'folder') {
+      const folder = item.folder;
+      const isSelected = item.spaces.some(s => s.id === selectedSpaceId);
+      return (
+        <div key={`folder-${folder.id}`} className="relative shrink-0">
+          <button
+            onClick={() => setOpenFolderId(folder.id)}
+            onContextMenu={(e) => e.preventDefault()}
+            className={`w-10 h-10 flex items-center justify-center transition-all bg-surface-elevated ${
+              isSelected
+                ? 'rounded-xl ring-2 ring-accent-primary ring-offset-2 ring-offset-surface-base'
+                : 'rounded-2xl hover:rounded-xl'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={folder.color || 'currentColor'} strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+            </svg>
+          </button>
+        </div>
+      );
+    }
+
+    // Standalone space — full space icon rendering with ring selection, badge, and context menu
+    const space = item.space;
+    const isSelected = space.id === selectedSpaceId;
+    const iconUrl = space.icon
+      ? (space.icon.startsWith('http') || space.icon.startsWith('/')
+          ? space.icon
+          : `/api/uploads/${space.icon}`)
+      : null;
+    const grad = getSpaceGradient(space.id, space.name, space.avatarColor);
+
+    return (
+      <div key={space.id} className="relative shrink-0">
+        <button
+          data-context-menu
+          onClick={() => handleSpaceSelect(space.id)}
+          onContextMenu={(e) => handleSpaceContextMenu(e, space.id)}
+          className={`w-10 h-10 overflow-hidden flex items-center justify-center transition-all ${
+            isSelected
+              ? 'rounded-xl ring-2 ring-accent-primary ring-offset-2 ring-offset-surface-base'
+              : 'rounded-2xl hover:rounded-xl'
+          }`}
+          style={!iconUrl ? { background: grad.gradient } : undefined}
+        >
+          {iconUrl ? (
+            <img src={iconUrl} alt={space.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-[15px] font-bold text-white">
+              {space.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </button>
+        <SpaceUnreadBadge spaceId={space.id} />
+        {(() => {
+          const origin = (space as TaggedSpace)._instanceOrigin;
+          if (!origin) return null;
+          const instances = useInstanceStore.getState().instances;
+          const inst = instances.find(i => i.origin === origin);
+          const isDisconnected = inst ? inst.status !== 'connected' : false;
+          return (
+            <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-surface-base flex items-center justify-center pointer-events-none">
+              {isDisconnected ? (
+                <div className="w-[8px] h-[8px] rounded-full bg-accent-amber" />
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-txt-tertiary/80">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                </svg>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-full">
       {/* Space strip */}
@@ -685,112 +780,49 @@ export function MobileSpacesScreen() {
             setMobileTab('dms');
             navigate('/channels/@me');
           }}
-          className="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-txt-secondary hover:text-txt-primary hover:bg-accent-primary transition-all"
+          className="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-txt-secondary hover:text-txt-primary hover:bg-accent-primary transition-all shrink-0"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
           </svg>
         </button>
 
-        <div className="w-8 h-px bg-border-soft my-0.5" />
+        <div className="w-8 h-[2px] bg-white/[0.08] rounded-full my-0.5 shrink-0" />
 
-        {/* Space icons (folder-aware) */}
-        {resolvedLayout.map((item) => {
-          if (item.type === 'folder') {
-            const folder = item.folder;
-            const hasUnread = item.spaces.some(s => spaceHasUnread(s.id));
-            const isSelected = item.spaces.some(s => s.id === selectedSpaceId);
-            return (
-              <div key={`folder-${folder.id}`} className="relative">
-                <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 flex items-center">
-                  <div className={`bg-white rounded-r-full transition-all duration-200 w-full ${
-                    isSelected ? 'h-8' : hasUnread ? 'h-2' : 'h-0'
-                  }`} />
-                </div>
-                <button
-                  onClick={() => setOpenFolderId(folder.id)}
-                  onContextMenu={(e) => e.preventDefault()}
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all ${
-                    isSelected ? 'rounded-xl ring-2 ring-accent-primary/50' : 'hover:rounded-xl'
-                  } bg-surface-elevated`}
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={folder.color || 'currentColor'} strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                  </svg>
-                </button>
-              </div>
-            );
-          }
-
-          // Standalone space — full space icon rendering with federation badge and context menu
-          const space = item.space;
-          const isSelected = space.id === selectedSpaceId;
-          const hasUnread = spaceHasUnread(space.id);
-          const iconUrl = space.icon
-            ? (space.icon.startsWith('http') || space.icon.startsWith('/')
-                ? space.icon
-                : `/api/uploads/${space.icon}`)
-            : null;
-          const grad = getSpaceGradient(space.id, space.name, space.avatarColor);
-
-          return (
-            <div key={space.id} className="relative">
-              {/* Unread / selected pill */}
-              <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 flex items-center">
-                <div
-                  className={`bg-white rounded-r-full transition-all duration-200 w-full ${
-                    isSelected ? 'h-8' : hasUnread ? 'h-2' : 'h-0'
-                  }`}
-                />
-              </div>
-              <button
-                data-context-menu
-                onClick={() => handleSpaceSelect(space.id)}
-                onContextMenu={(e) => handleSpaceContextMenu(e, space.id)}
-                className={`w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center transition-all ${
-                  isSelected ? 'rounded-xl ring-2 ring-accent-primary/50' : 'hover:rounded-xl'
-                }`}
-                style={!iconUrl ? { background: grad.gradient } : undefined}
-              >
-                {iconUrl ? (
-                  <img src={iconUrl} alt={space.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-[15px] font-bold text-white">
-                    {space.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </button>
-              {(() => {
-                const origin = (space as TaggedSpace)._instanceOrigin;
-                if (!origin) return null;
-                const instances = useInstanceStore.getState().instances;
-                const inst = instances.find(i => i.origin === origin);
-                const isDisconnected = inst ? inst.status !== 'connected' : false;
-                return (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-surface-base flex items-center justify-center">
-                    {isDisconnected ? (
-                      <div className="w-[8px] h-[8px] rounded-full bg-accent-amber" />
-                    ) : (
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-txt-tertiary/80">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-                      </svg>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })}
-
-        <div className="w-8 h-px bg-border-soft my-0.5" />
+        {/* Private spaces (folder-aware) */}
+        {privateLayoutItems.map(renderLayoutItem)}
 
         {/* Add space button */}
         <button
-          onClick={() => setShowAddSheet(true)}
-          className="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-accent-mint hover:bg-accent-mint/10 transition-colors"
+          onClick={() => openModal('createSpace')}
+          className="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-accent-mint hover:bg-accent-mint/10 transition-colors shrink-0"
+          aria-label={t('spaces:sidebar.createSpace', 'Criar espaço')}
+          title={t('spaces:sidebar.createSpace', 'Criar espaço')}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </button>
+
+        {/* Divider between private and public spaces */}
+        <div className="w-8 h-[2px] bg-white/[0.08] rounded-full my-1 shrink-0" />
+
+        {/* Public spaces (folder-aware) */}
+        {publicLayoutItems.map(renderLayoutItem)}
+
+        {/* Explore button */}
+        <button
+          onClick={() => {
+            setMobileTab('explore');
+            navigate('/explore');
+          }}
+          className="w-10 h-10 rounded-2xl bg-surface-elevated flex items-center justify-center text-txt-secondary hover:text-accent-primary hover:bg-interactive-hover transition-colors shrink-0"
+          aria-label={t('spaces:sidebar.exploreSpaces', 'Explorar espaços')}
+          title={t('spaces:sidebar.exploreSpaces', 'Explorar espaços')}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.5 8.5l-2.5 5.5-5.5 2.5 2.5-5.5 5.5-2.5z" />
           </svg>
         </button>
       </div>
@@ -1051,6 +1083,7 @@ export function MobileSpacesScreen() {
             }}
             onUpdateFolder={handleUpdateFolder}
             onUngroup={handleUngroup}
+            selectedSpaceId={selectedSpaceId}
           />
         );
       })()}

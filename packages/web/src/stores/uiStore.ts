@@ -101,9 +101,9 @@ interface UIState {
   setFloatingPanelHeight: (height: number) => void;
 
   // Mobile navigation
-  mobileScreen: 'spaces' | 'dms' | 'you';
+  mobileScreen: 'spaces' | 'dms' | 'explore' | 'store' | 'you';
   mobileStack: MobileStackEntry[];
-  setMobileTab: (tab: 'spaces' | 'dms' | 'you') => void;
+  setMobileTab: (tab: 'spaces' | 'dms' | 'explore' | 'store' | 'you') => void;
   pushMobileScreen: (screen: string, params?: Record<string, string>) => void;
   popMobileScreen: () => void;
 

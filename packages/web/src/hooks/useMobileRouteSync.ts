@@ -4,8 +4,29 @@ import { useUIStore } from '../stores/uiStore';
 /** Restore the route below settings when scaling mounts the mobile shell. */
 export function useMobileRouteSync(pathname: string): void {
   useEffect(() => {
+    if (pathname === '/explore' || pathname.startsWith('/explore/')) {
+      if (useUIStore.getState().mobileScreen !== 'explore') {
+        useUIStore.setState({ mobileScreen: 'explore', mobileStack: [] });
+      }
+      return;
+    }
+    if (pathname === '/store' || pathname.startsWith('/store/')) {
+      if (useUIStore.getState().mobileScreen !== 'store') {
+        useUIStore.setState({ mobileScreen: 'store', mobileStack: [] });
+      }
+      return;
+    }
+
     const match = pathname.match(/^\/channels\/([^/]+)\/([^/]+)$/);
-    if (!match) return;
+    if (!match) {
+      if (pathname === '/channels/@me' || pathname.startsWith('/channels/@me/')) {
+        const current = useUIStore.getState().mobileScreen;
+        if (current === 'explore' || current === 'store') {
+          useUIStore.setState({ mobileScreen: 'dms' });
+        }
+      }
+      return;
+    }
     const params = { spaceId: match[1]!, channelId: match[2]! };
     const { mobileStack: stack, pushMobileScreen } = useUIStore.getState();
     const matchesRoute = (entry: (typeof stack)[number] | undefined) =>

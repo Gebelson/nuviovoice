@@ -26,6 +26,7 @@ import { FriendsPage } from '../chat/FriendsPage';
 import { ProjectHubPage } from '../projectHub/ProjectHubPage';
 import type { ProjectLinks } from '../../utils/projectLinks';
 import { ExplorePage } from '../chat/ExplorePage';
+import { StoreContainer } from '../store/StoreContainer';
 import { UserProfileModal } from '../modals/UserProfileModal';
 import {
   GeneralPanel,
@@ -128,6 +129,7 @@ export const mobileScreenMap: Readonly<Record<string, (params?: Record<string, s
   'group-dm-info': (params) => <MobileGroupDmInfo params={params} />,
   'voice-full': () => <MobileVoiceFullScreen />,
   'explore': () => <ExplorePage />,
+  'store': () => <StoreContainer />,
   'backspace': () => <MobileBackspaceScreen />,
   'user-profile': (params) => {
     // Open the user profile modal with the userId from params
@@ -179,6 +181,8 @@ export function MobileShell() {
   const rootScreens: Record<string, React.ReactNode> = {
     spaces: <MobileSpacesScreen />, // i18n-check: allow-literal (object keys, not JSX text)
     dms: <MobileDmsScreen />, // i18n-check: allow-literal (object keys, not JSX text)
+    explore: <ExplorePage />,
+    store: <StoreContainer />,
     you: <MobileYouScreen />,
   };
 

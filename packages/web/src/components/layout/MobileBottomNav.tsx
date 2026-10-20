@@ -4,7 +4,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useChatStore } from '../../stores/chatStore';
 import { isIncomingRequest, useSocialStore } from '../../stores/socialStore';
 import { useSpaceStore } from '../../stores/spaceStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useInstanceUpdateBadge } from '../../hooks/useInstanceUpdateBadge';
 import { useHubUpdateState } from '../../hooks/useHubUpdateState';
 
@@ -14,6 +14,7 @@ export function MobileBottomNav() {
   const mobileStack = useUIStore((s) => s.mobileStack);
   const setMobileTab = useUIStore((s) => s.setMobileTab);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Badge data
   const unreadChannels = useChatStore((s) => s.unreadChannels);
@@ -36,27 +37,53 @@ export function MobileBottomNav() {
   }).length;
 
   // Compute whether any space has unread text channels
-  const hasUnreadSpaces = Array.from(unreadChannels).some(chId => !voiceChannelIds.has(chId));
+  const hasUnreadSpaces = Array.from(unreadChannels).some((chId) => !voiceChannelIds.has(chId));
 
   // Pending friend requests — filter for incoming only
-  const pendingIncoming = requests.filter(r => r.status === 'pending' && isIncomingRequest(r));
+  const pendingIncoming = requests.filter((r) => r.status === 'pending' && isIncomingRequest(r));
 
-  const handleTab = (tab: 'spaces' | 'dms' | 'you') => {
+  const isTabActive = (tabId: 'spaces' | 'dms' | 'explore' | 'store' | 'you') => {
+    if (tabId === 'explore') {
+      return location.pathname.startsWith('/explore') || mobileScreen === 'explore';
+    }
+    if (tabId === 'store') {
+      return location.pathname.startsWith('/store') || mobileScreen === 'store';
+    }
+    if (tabId === 'dms') {
+      return (
+        (location.pathname.startsWith('/channels/@me') && mobileScreen !== 'you') ||
+        (mobileScreen === 'dms' &&
+          !location.pathname.startsWith('/explore') &&
+          !location.pathname.startsWith('/store'))
+      );
+    }
+    if (tabId === 'you') {
+      return mobileScreen === 'you';
+    }
+    if (tabId === 'spaces') {
+      return (
+        mobileScreen === 'spaces' &&
+        !location.pathname.startsWith('/explore') &&
+        !location.pathname.startsWith('/store') &&
+        !location.pathname.startsWith('/channels/@me')
+      );
+    }
+    return false;
+  };
+
+  const handleTab = (tab: 'spaces' | 'dms' | 'explore' | 'store' | 'you') => {
     setMobileTab(tab);
-    if (tab === 'dms') navigate('/channels/@me');
-    if (tab === 'spaces') {
-      // Prefer `currentSpaceId` (the canonical "currently selected space" —
-      // updated by URL routing, the space strip, SpaceInviteCard joins, etc.).
-      // Fall back to `lastSelectedSpaceId`, the sticky memory that survives
-      // navigating to `/channels/@me`. AppLayout's URL effect clears
-      // `currentSpaceId` to null whenever the URL is `@me`; without the
-      // sticky memory, returning to Spaces from a DM/Friends/Settings detour
-      // would have nothing to anchor to and `MobileSpacesScreen`'s auto-select
-      // would fall back to `spaces[0]`.
+    if (tab === 'dms') {
+      navigate('/channels/@me');
+    } else if (tab === 'spaces') {
       const { currentSpaceId, lastSelectedSpaceId } = useSpaceStore.getState();
       const target = currentSpaceId ?? lastSelectedSpaceId;
       if (target) navigate(`/channels/${target}`);
       else navigate('/');
+    } else if (tab === 'explore') {
+      navigate('/explore');
+    } else if (tab === 'store') {
+      navigate('/store');
     }
   };
 
@@ -82,6 +109,27 @@ export function MobileBottomNav() {
       badge: unreadDmCount > 0 ? unreadDmCount : null,
     },
     {
+      id: 'explore' as const,
+      label: t('nav.explore'),
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+        </svg>
+      ),
+      badge: null,
+    },
+    {
+      id: 'store' as const,
+      label: t('nav.store'),
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.651V9.35m0 0a3.001 3.001 0 003.75-.614A2.993 2.993 0 009 9.35c.828 0 1.579-.336 2.125-.879A2.993 2.993 0 0013.25 9.35c.828 0 1.579-.336 2.125-.879A3.001 3.001 0 0019.125 9.35m-16.5 0L4.47 4.19A1.5 1.5 0 015.932 3h12.136a1.5 1.5 0 011.462 1.19l1.845 5.16" />
+        </svg>
+      ),
+      badge: null,
+    },
+    {
       id: 'you' as const,
       label: t('nav.you'),
       icon: (
@@ -95,34 +143,38 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="glass-bubble flex items-center justify-around shrink-0"
+      className="glass-bubble flex items-center justify-around shrink-0 px-1"
       style={{
         paddingBottom: 'var(--safe-bottom)',
-        height: 'calc(56px + var(--safe-bottom))',
+        height: 'calc(58px + var(--safe-bottom))',
       }}
     >
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => handleTab(tab.id)}
-          className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative transition-colors ${
-            mobileScreen === tab.id ? 'text-accent-primary' : 'text-txt-secondary'
-          }`}
-        >
-          <div className="relative">
-            {tab.icon}
-            {tab.badge === 'dot' && (
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-notification rounded-full" />
-            )}
-            {typeof tab.badge === 'number' && (
-              <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 bg-notification text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {tab.badge > 99 ? '99+' : tab.badge}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] font-medium">{tab.label}</span>
-        </button>
-      ))}
+      {tabs.map((tab) => {
+        const active = isTabActive(tab.id);
+        return (
+          <button
+            key={tab.id}
+            onClick={() => handleTab(tab.id)}
+            title={tab.label}
+            aria-label={tab.label}
+            className={`flex items-center justify-center flex-1 h-full min-h-[44px] min-w-[44px] relative transition-colors ${
+              active ? 'text-accent-primary' : 'text-txt-secondary hover:text-txt-primary'
+            }`}
+          >
+            <div className="relative flex items-center justify-center">
+              {tab.icon}
+              {tab.badge === 'dot' && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-notification rounded-full" />
+              )}
+              {typeof tab.badge === 'number' && (
+                <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 bg-notification text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {tab.badge > 99 ? '99+' : tab.badge}
+                </span>
+              )}
+            </div>
+          </button>
+        );
+      })}
     </nav>
   );
 }

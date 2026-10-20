@@ -128,11 +128,11 @@ describe('MobileBottomNav: You tab dot for friend requests', () => {
 
 describe('MobileBottomNav localization', () => {
   it.each([
-    { language: 'en', labels: ['Spaces', 'DMs', 'You'] },
-    { language: 'de', labels: ['Spaces', 'Direktnachrichten', 'Du'] },
-    { language: 'ru', labels: ['Пространства', 'Личные сообщения', 'Вы'] },
-    { language: 'zh', labels: ['空间', '私信', '我'] },
-    { language: 'pt', labels: ['Espaços', 'Mensagens diretas', 'Você'] },
+    { language: 'en', labels: ['Spaces', 'DMs', 'Explore', 'Store', 'You'] },
+    { language: 'de', labels: ['Spaces', 'Direktnachrichten', 'Entdecken', 'Shop', 'Du'] },
+    { language: 'ru', labels: ['Пространства', 'Личные сообщения', 'Обзор', 'Магазин', 'Вы'] },
+    { language: 'zh', labels: ['空间', '私信', '探索', '商店', '我'] },
+    { language: 'pt', labels: ['Espaços', 'Mensagens diretas', 'Explorar', 'Loja', 'Você'] },
   ] as const)('renders all tabs in $language', async ({ language, labels }) => {
     await setLanguage(language);
     renderNav();

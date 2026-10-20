@@ -22,9 +22,10 @@ interface MobileFolderSheetProps {
   onSelectSpace: (spaceId: string) => void;
   onUpdateFolder: (folderId: string, updates: { name?: string | null; color?: string | null }) => void;
   onUngroup: (folderId: string) => void;
+  selectedSpaceId?: string | null;
 }
 
-export function MobileFolderSheet({ folder, onClose, onSelectSpace, onUpdateFolder, onUngroup }: MobileFolderSheetProps) {
+export function MobileFolderSheet({ folder, onClose, onSelectSpace, onUpdateFolder, onUngroup, selectedSpaceId }: MobileFolderSheetProps) {
   const { t } = useTranslation(['spaces', 'common']);
   const spaces = useSpaceStore((s) => s.spaces);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -137,6 +138,7 @@ export function MobileFolderSheet({ folder, onClose, onSelectSpace, onUpdateFold
         {/* Folder spaces */}
         <div className="flex-1 overflow-y-auto px-2 py-1">
           {folderSpaces.map(space => {
+            const isSelected = space.id === selectedSpaceId;
             const iconUrl = space.icon
               ? (space.icon.startsWith('http') || space.icon.startsWith('/') ? space.icon : `/api/uploads/${space.icon}`)
               : null;
@@ -145,10 +147,14 @@ export function MobileFolderSheet({ folder, onClose, onSelectSpace, onUpdateFold
               <button
                 key={space.id}
                 onClick={() => { onSelectSpace(space.id); onClose(); }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-interactive-hover text-left transition-colors"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-interactive-hover text-left transition-colors ${
+                  isSelected ? 'bg-interactive-active' : ''
+                }`}
               >
                 <div
-                  className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0"
+                  className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${
+                    isSelected ? 'ring-2 ring-accent-primary ring-offset-2 ring-offset-surface-base' : ''
+                  }`}
                   style={!iconUrl ? { background: grad.gradient } : undefined}
                 >
                   {iconUrl ? (
@@ -157,7 +163,9 @@ export function MobileFolderSheet({ folder, onClose, onSelectSpace, onUpdateFold
                     <span className="text-xs font-bold text-white">{space.name.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
-                <span className="text-sm text-txt-primary truncate">{space.name}</span>
+                <span className={`text-sm truncate ${isSelected ? 'text-txt-primary font-semibold' : 'text-txt-primary'}`}>
+                  {space.name}
+                </span>
               </button>
             );
           })}
