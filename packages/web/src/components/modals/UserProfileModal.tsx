@@ -17,7 +17,7 @@ import { useSelfIdentity } from '../../stores/authStore';
 import { getAvatarGradient, getSpaceGradient, adjustColor, mutedGradient } from '../../utils/gradients';
 import { parseFederatedUsername } from '../../utils/identity';
 import { openDirectMessage } from '../../utils/openDirectMessage';
-import { normalizeUserAssets } from '../../utils/assetUrls';
+import { normalizeUserAssets, resolveUploadUrl } from '../../utils/assetUrls';
 import { loadFederatedMutuals, type TaggedMutualFriend, type MutualSpace } from '../../utils/mutuals';
 import { friendRequestTarget } from '../../utils/friendRequestTarget';
 import { presenceLabel } from '../../i18n/presence';
@@ -148,9 +148,7 @@ export function UserProfileModal() {
 
   // Banner. Another instance's assets are absolute URLs
   // (`normalizeUserAssets`); a bare filename is the page's own instance's.
-  const bannerSrc = user.banner
-    ? (user.banner.startsWith('http') || user.banner.startsWith('/') ? user.banner : api.uploads.url(user.banner))
-    : null;
+  const bannerSrc = resolveUploadUrl(user.banner);
   const bannerFallback = user.accentColor
     ? mutedGradient(user.accentColor, adjustColor(user.accentColor, -40))
     : (() => {

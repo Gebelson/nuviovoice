@@ -15,6 +15,7 @@ import { AVATAR_COLORS, detachedHomeOf } from '@concord/shared';
 import { PASSWORD_MIN_LENGTH } from '@concord/shared/src/constants';
 import type { User, ChosenUserStatus, AvatarColor } from '@concord/shared';
 import { describeError } from '../../../i18n/errors';
+import { resolveUploadUrl } from '../../../utils/assetUrls';
 
 const BIO_MAX_LENGTH = 190;
 
@@ -154,15 +155,11 @@ export function AccountPanel() {
     bannerFilename !== null;
 
   // Compute banner display
-  const currentBannerUrl = user.banner
-    ? (user.banner.startsWith('http') ? user.banner : api.uploads.url(user.banner))
-    : null;
+  const currentBannerUrl = resolveUploadUrl(user.banner);
   const displayBannerSrc = bannerPreview ?? (bannerFilename === '' ? null : currentBannerUrl);
 
   // Compute avatar display
-  const currentAvatarSrc = user.avatar
-    ? (user.avatar.startsWith('http') ? user.avatar : api.uploads.url(user.avatar))
-    : null;
+  const currentAvatarSrc = resolveUploadUrl(user.avatar);
   const displayAvatarSrc = avatarPreview ?? (avatarFilename === '' ? null : currentAvatarSrc);
 
   // Banner fallback: accent gradient or avatar gradient (alpha baked into gradient colors)
@@ -198,14 +195,18 @@ export function AccountPanel() {
     const previewUrl = URL.createObjectURL(blob);
     setAvatarPreview(previewUrl);
     setAvatarCropSrc(null);
-    const file = new File([blob], 'avatar.webp', { type: blob.type || 'image/webp' });
+    const ext = blob.type === 'image/png' ? 'png' : 'webp';
+    const file = new File([blob], `avatar.${ext}`, { type: blob.type || 'image/webp' });
     setUploadingAvatar(true);
+    setError('');
     try {
       const tid = await useTransferStore.getState().startUpload(file, { tray: false });
       const { filename } = await waitForTransferAttachment(tid);
       setAvatarFilename(filename);
-    } catch {
-      setError(t('settings:account.profile.avatar.uploadFailed'));
+    } catch (err) {
+      console.error('[AccountPanel] Avatar upload failed:', err);
+      const detail = err instanceof Error && err.message ? `: ${err.message}` : '';
+      setError(`${t('settings:account.profile.avatar.uploadFailed')}${detail}`);
       setAvatarPreview(null);
       URL.revokeObjectURL(previewUrl);
     } finally {
@@ -218,14 +219,18 @@ export function AccountPanel() {
     const previewUrl = URL.createObjectURL(blob);
     setBannerPreview(previewUrl);
     setBannerCropSrc(null);
-    const file = new File([blob], 'banner.webp', { type: blob.type || 'image/webp' });
+    const ext = blob.type === 'image/png' ? 'png' : 'webp';
+    const file = new File([blob], `banner.${ext}`, { type: blob.type || 'image/webp' });
     setUploadingBanner(true);
+    setError('');
     try {
       const tid = await useTransferStore.getState().startUpload(file, { tray: false });
       const { filename } = await waitForTransferAttachment(tid);
       setBannerFilename(filename);
-    } catch {
-      setError(t('settings:account.profile.banner.uploadFailed'));
+    } catch (err) {
+      console.error('[AccountPanel] Banner upload failed:', err);
+      const detail = err instanceof Error && err.message ? `: ${err.message}` : '';
+      setError(`${t('settings:account.profile.banner.uploadFailed')}${detail}`);
       setBannerPreview(null);
       URL.revokeObjectURL(previewUrl);
     } finally {
@@ -261,6 +266,16 @@ export function AccountPanel() {
 
       await updateProfile(updates as Parameters<typeof updateProfile>[0]);
       addToast(t('settings:account.save.updated'), 'success', 2000);
+      setAvatarFilename(null);
+      setBannerFilename(null);
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+        setAvatarPreview(null);
+      }
+      if (bannerPreview) {
+        URL.revokeObjectURL(bannerPreview);
+        setBannerPreview(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? describeError(err) : t('settings:account.save.failed'));
     } finally {

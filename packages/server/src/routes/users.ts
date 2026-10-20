@@ -513,10 +513,10 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
     }
     // Clean up attachment records for newly-set profile images — the reference
     // now lives in the users table, so the attachment record is unnecessary
-    if (avatar && typeof avatar === 'string' && avatar.includes('/api/uploads/')) {
+    if (avatar && typeof avatar === 'string' && !avatar.startsWith('http')) {
       deleteAttachmentByFilename(avatar);
     }
-    if (updateData.banner && typeof updateData.banner === 'string' && updateData.banner.includes('/api/uploads/')) {
+    if (updateData.banner && typeof updateData.banner === 'string' && !updateData.banner.startsWith('http')) {
       deleteAttachmentByFilename(updateData.banner);
     }
 

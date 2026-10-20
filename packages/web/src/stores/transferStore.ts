@@ -232,7 +232,10 @@ export const useTransferStore = create<TransferStore>()(
       },
 
       startUpload: async (file, opts) => {
-        const token = getTokenForOrigin(opts.origin ?? '');
+        const isHome = !opts.origin || !opts.origin.trim();
+        const token =
+          getTokenForOrigin(opts.origin ?? '') ??
+          (isHome ? (useAuthStore.getState().token ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('backspace_token') : null)) : null);
         const user = useAuthStore.getState().user;
         if (!token) throw new Error('Cannot start upload — not authenticated');
 
@@ -348,7 +351,10 @@ export const useTransferStore = create<TransferStore>()(
         const t = get().get(id);
         if (!t || t.type !== 'upload') return;
 
-        const token = getTokenForOrigin(t.origin ?? '');
+        const isHome = !t.origin || !t.origin.trim();
+        const token =
+          getTokenForOrigin(t.origin ?? '') ??
+          (isHome ? (useAuthStore.getState().token ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('backspace_token') : null)) : null);
         if (!token) {
           get().setError(id, { message: 'Not authenticated for this instance', permanent: true });
           return;

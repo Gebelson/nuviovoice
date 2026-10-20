@@ -10,6 +10,7 @@ import { useInstanceUpdateBadge } from '../../hooks/useInstanceUpdateBadge';
 import { useHubUpdateState } from '../../hooks/useHubUpdateState';
 import { BackspaceMark } from '../projectHub/BackspaceMark';
 import { HubUpdateDot } from '../projectHub/HubUpdateDot';
+import { resolveUploadUrl } from '../../utils/assetUrls';
 
 /**
  * A row on the You screen. `badge` is drawn at the trailing edge, before the
@@ -35,8 +36,8 @@ export function MobileYouScreen() {
 
   if (!user) return null;
 
-  const avatarUrl = user.avatar ? `/api/uploads/${user.avatar}` : null;
-  const bannerUrl = user.banner ? `/api/uploads/${user.banner}` : null;
+  const avatarUrl = resolveUploadUrl(user.avatar);
+  const bannerUrl = resolveUploadUrl(user.banner);
 
   const actionRows: ActionRow[] = [
     {
@@ -103,7 +104,7 @@ export function MobileYouScreen() {
           className="h-24 relative"
           style={{
             background: bannerUrl
-              ? `url(/api/uploads/${user.banner}) center/cover`
+              ? `url(${bannerUrl}) center/cover`
               : user.accentColor || 'linear-gradient(135deg, rgb(var(--accent-primary)), rgb(var(--accent-lavender)))',
           }}
         />

@@ -1,8 +1,30 @@
 import { getApiForOrigin } from '../stores/spaceStore';
+import { api } from '../api/client';
 
 /** Strip /api/uploads/ prefix to get bare filename. No-op for bare filenames and absolute URLs. */
 export function stripUploadPrefix(filename: string): string {
   return filename.startsWith('/api/uploads/') ? filename.slice('/api/uploads/'.length) : filename;
+}
+
+/**
+ * Authoritatively resolves an upload filename or /api/uploads/ path into a valid image URL.
+ * Passes through external URLs (http/https/blob/data) unchanged.
+ * For local/bare filenames or /api/uploads/* paths, routes through api.uploads.url() to ensure
+ * consistency across Web (Vercel), Desktop (Electron), and dev environments.
+ */
+export function resolveUploadUrl(urlOrFilename: string | null | undefined): string | null {
+  if (!urlOrFilename || !urlOrFilename.trim()) return null;
+  const trimmed = urlOrFilename.trim();
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('data:')
+  ) {
+    return trimmed;
+  }
+  const bare = stripUploadPrefix(trimmed);
+  return api.uploads.url(bare);
 }
 
 /**

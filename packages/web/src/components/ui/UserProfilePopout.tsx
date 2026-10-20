@@ -11,6 +11,7 @@ import { api } from '../../api/client';
 import { useSelfIdentity } from '../../stores/authStore';
 import { openDirectMessage } from '../../utils/openDirectMessage';
 import { describeError } from '../../i18n/errors';
+import { resolveUploadUrl } from '../../utils/assetUrls';
 import { useUIStore, type ProfileMemberContext } from '../../stores/uiStore';
 import { getAvatarGradient, adjustColor, mutedGradient } from '../../utils/gradients';
 import { isMine, parseFederatedUsername } from '../../utils/identity';
@@ -139,9 +140,7 @@ export function UserProfilePopout({ user: propUser, origin, onClose, anchor, pla
 
   // Banner display. Another instance's assets arrive as absolute URLs
   // (`normalizeUserAssets`); a bare filename is the page's own instance's.
-  const bannerSrc = user.banner
-    ? (user.banner.startsWith('http') || user.banner.startsWith('/') ? user.banner : api.uploads.url(user.banner))
-    : null;
+  const bannerSrc = resolveUploadUrl(user.banner);
   const bannerFallback = user.accentColor
     ? mutedGradient(user.accentColor, adjustColor(user.accentColor, -40))
     : (() => {

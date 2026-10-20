@@ -1,6 +1,7 @@
 import React from 'react';
 import type { User } from '@concord/shared';
 import { getAvatarGradient, getSpaceGradient } from '../../utils/gradients';
+import { resolveUploadUrl } from '../../utils/assetUrls';
 
 interface AvatarProps {
   src?: string | null;
@@ -96,8 +97,7 @@ export function Avatar({ src, name, size = 40, status, className = '', onClick, 
       >
         {src ? (
           <img
-            src={(src.startsWith('http') || src.startsWith('blob:') || src.startsWith('data:') || src.startsWith('/'))
-              ? src : `/api/uploads/${src}`}
+            src={resolveUploadUrl(src) ?? src}
             alt={name}
             loading="lazy"
             className="w-full h-full rounded-full object-cover"

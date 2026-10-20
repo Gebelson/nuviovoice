@@ -21,6 +21,7 @@ import { ActivityCard, hasRichActivity, getActivityAccentClass } from '../ui/Act
 import { getPrimaryActivity } from '@concord/shared/src/activities.js';
 import { parseFederatedUsername, isFederationGlobeApplicable, userDisplayName, type IdentityFields } from '../../utils/identity';
 import { openDirectMessage } from '../../utils/openDirectMessage';
+import { resolveUploadUrl } from '../../utils/assetUrls';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import { friendRequestTarget } from '../../utils/friendRequestTarget';
 import { replaceEmojiShortcodes, useEmojiShortcodeNames } from '../../utils/emojiShortcodes';
@@ -705,12 +706,8 @@ function UserDiscoverCard({
     ? (() => { try { return new URL(user._instanceOrigin).host; } catch { return user._instanceOrigin; } })()
     : null;
 
-  const avatarUrl = user.avatar
-    ? (user.avatar.startsWith('http') || user.avatar.startsWith('/') ? user.avatar : `/api/uploads/${user.avatar}`)
-    : null;
-  const bannerUrl = user.banner
-    ? (user.banner.startsWith('http') || user.banner.startsWith('/') ? user.banner : `/api/uploads/${user.banner}`)
-    : null;
+  const avatarUrl = resolveUploadUrl(user.avatar);
+  const bannerUrl = resolveUploadUrl(user.banner);
 
   const handleSendRequest = async () => {
     setActionLoading(true);
