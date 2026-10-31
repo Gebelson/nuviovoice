@@ -32,6 +32,7 @@ export function SoundpadAddModal({ open, onClose, spaceId, canManageSoundpad }: 
 
   // Audio preview state
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const previewSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -225,10 +226,19 @@ export function SoundpadAddModal({ open, onClose, spaceId, canManageSoundpad }: 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          e.stopPropagation();
+          onClose();
+        }
+      }}
+    >
       <div
         className="w-full max-w-lg bg-surface-chat border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto no-scrollbar text-txt-primary"
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -255,7 +265,30 @@ export function SoundpadAddModal({ open, onClose, spaceId, canManageSoundpad }: 
             <label className="text-xs font-bold text-txt-tertiary uppercase tracking-wider block mb-1.5">
               Arquivo de Áudio (MP3, WAV, OGG, WebM - Max 10MB, 30s)
             </label>
-            <div className="relative border border-dashed border-white/15 hover:border-accent-primary/60 rounded-2xl p-4 text-center bg-white/[0.02] hover:bg-white/[0.04] transition-all cursor-pointer">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDraggingOver(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDraggingOver(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDraggingOver(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) void handleFileChange(f);
+              }}
+              className={`relative border border-dashed rounded-2xl p-4 text-center transition-all cursor-pointer ${
+                isDraggingOver
+                  ? 'border-accent-primary bg-accent-primary/10'
+                  : 'border-white/15 hover:border-accent-primary/60 bg-white/[0.02] hover:bg-white/[0.04]'
+              }`}
+            >
               <input
                 type="file"
                 accept="audio/*,.mp3,.wav,.ogg,.webm,.m4a,.aac"
@@ -384,6 +417,7 @@ export function SoundpadAddModal({ open, onClose, spaceId, canManageSoundpad }: 
                 Categoria
               </label>
               <input
+                id="soundpad-category-input"
                 type="text"
                 list="soundpad-categories-list"
                 value={category}
@@ -402,6 +436,7 @@ export function SoundpadAddModal({ open, onClose, spaceId, canManageSoundpad }: 
                 Destino
               </label>
               <select
+                id="soundpad-dest-select"
                 value={scope}
                 onChange={(e) => setScope(e.target.value as SoundScope)}
                 className="w-full bg-surface-channel border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-accent-primary"

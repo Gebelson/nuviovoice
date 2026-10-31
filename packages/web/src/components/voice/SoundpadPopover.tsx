@@ -71,12 +71,30 @@ export function SoundpadPopover({
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
+      if (e.key !== 'Escape') return;
+
+      // Se o modal de adicionar som estiver aberto, fechar apenas ele
+      if (addModalOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        setAddModalOpen(false);
+        return;
       }
+
+      // Se o popover de volume estiver aberto, fechar apenas ele
+      if (showVolumeSlider) {
+        e.preventDefault();
+        setShowVolumeSlider(false);
+        return;
+      }
+
+      onClose();
     };
 
     const handleClickOutside = (e: MouseEvent) => {
+      // Enquanto o modal de adicionar som estiver aberto, ele controla seu próprio ciclo de fechamento
+      if (addModalOpen) return;
+
       const target = e.target as Node;
       if (anchorRef.current?.contains(target)) return;
       if (popoverRef.current && !popoverRef.current.contains(target)) {
@@ -90,7 +108,7 @@ export function SoundpadPopover({
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [open, onClose, anchorRef]);
+  }, [open, addModalOpen, showVolumeSlider, onClose, anchorRef]);
 
   // Filtered sounds calculation
   const filteredSounds = useMemo(() => {
