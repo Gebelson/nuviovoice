@@ -1,3 +1,4 @@
+import { isWinkContent, isValidWinkId, formatWinkContent } from '@concord/shared/src/winks.js';
 import { and, eq } from 'drizzle-orm';
 import { MAX_MESSAGE_LENGTH } from '@concord/shared';
 import type { ErrorCode, ErrorDetails } from '@concord/shared/src/errors';
@@ -43,6 +44,8 @@ export interface DmMessageCreateInput {
   content: string | null;
   attachmentIds: string[];
   replyToId: string | null;
+  type?: string;
+  winkId?: string;
 }
 
 /** The raw fields of a create, as a request body or a WebSocket event holds them. */
@@ -50,6 +53,8 @@ export interface DmMessageCreateFields {
   content?: unknown;
   attachments?: unknown;
   replyToId?: unknown;
+  type?: unknown;
+  winkId?: unknown;
 }
 
 function refuse<T>(status: DmMessageRefusal['status'], code: ErrorCode, details?: ErrorDetails): DmMessageCheck<T> {
@@ -92,6 +97,17 @@ export function checkDmMessageCreate(
   if (isDeadOneOnOne(dmChannelId, userId)) return refuse(403, 'recipient_deleted');
 
   const { content, attachments, replyToId } = fields;
+  const fieldsAny = fields as Record<string, unknown>;
+  const rawWinkId = fieldsAny.winkId || (typeof content === 'string' ? isWinkContent(content).winkId : null);
+  const isWinkRequest = fieldsAny.type === 'wink' || !!fieldsAny.winkId || (typeof content === 'string' && isWinkContent(content).isWink);
+
+  if (isWinkRequest) {
+    if (!rawWinkId || !isValidWinkId(rawWinkId)) {
+      return refuse(400, 'validation_failed');
+    }
+    const finalContent = formatWinkContent(rawWinkId);
+    return { ok: true, value: { content: finalContent, attachmentIds: [], replyToId: null, type: 'wink', winkId: rawWinkId } as any };
+  }
   if (content !== undefined && content !== null && typeof content !== 'string') return refuse(400, 'validation_failed');
   if (attachments !== undefined && attachments !== null && !isStringArray(attachments)) return refuse(400, 'validation_failed');
   if (replyToId !== undefined && replyToId !== null && typeof replyToId !== 'string') return refuse(400, 'validation_failed');

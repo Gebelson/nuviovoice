@@ -1,4 +1,6 @@
 import { isStickerMessage } from '../../utils/stickerMessages';
+import { isWinkContent } from '@concord/shared/src/winks';
+import { WinkMessageCard } from './WinkMessageCard';
 import { StickerMessage } from './StickerMessage';
 import { useAuthorMenu } from './useAuthorMenu';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -307,7 +309,9 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
   // A sticker draws its own image: no edit (its content is a token, not
   // text), and no embed (an older instance unfurls the asset URL into one).
   const isSticker = isStickerMessage(message.content);
-  const canEdit = isAuthor && !isSticker;
+  const winkInfo = isWinkContent(message.content);
+  const isWink = (message as any).type === 'wink' || winkInfo.isWink;
+  const canEdit = isAuthor && !isSticker && !isWink;
   const imageEmbedSourceUrl = isGifOnly ? null : getImageEmbedSourceUrl(message.content, message.embeds || []);
   // sourceUrl: the original URL for context menu Copy/Open Link actions
   const sourceUrl = isGifOnly
@@ -679,6 +683,8 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
                   <div className="text-txt-message text-[15px] leading-[1.5] break-words whitespace-pre-wrap selection:bg-accent-primary/30">
                     {isSticker
                       ? <StickerMessage token={message.content} />
+                      : isWink && winkInfo.winkId
+                      ? <WinkMessageCard winkId={winkInfo.winkId} senderName={displayName} channelId={mentionChannelId} />
                       : <MarkdownRenderer content={message.content} channelId={mentionChannelId} />}
                     {message.editedAt && (
                       <span className="text-[10px] text-txt-tertiary ml-1 select-none font-medium">{t('chat:message.edited')}</span>
@@ -687,7 +693,7 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
                 )}
 
                 {/* Embeds */}
-                {!isEditing && !isSticker && message.embeds && message.embeds.length > 0 && (
+                {!isEditing && !isSticker && !isWink && message.embeds && message.embeds.length > 0 && (
                   <div className="flex flex-col gap-2 mt-1">
                     {message.embeds.map((embed) => (
                       <EmbedRenderer key={embed.id} embed={embed} />

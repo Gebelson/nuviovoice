@@ -6,6 +6,7 @@ import { api } from '../../api/client';
 import {
   AccountPanel,
   AppearancePanel,
+  ChatPanel,
   VoicePanel,
   ConnectionsPanel,
   PrivacyPanel,
@@ -26,6 +27,7 @@ interface MobileSettingsScreenProps {
 type PanelTitleKey =
   | 'settings:nav.tabs.account'
   | 'settings:nav.tabs.appearance'
+  | 'settings:nav.tabs.chat'
   | 'settings:nav.tabs.voice'
   | 'settings:nav.tabs.privacy'
   | 'settings:nav.tabs.connections'
@@ -46,6 +48,7 @@ const panelConfig: Record<
 > = {
   account: { titleKey: 'settings:nav.tabs.account', body: () => <AccountPanel /> },
   appearance: { titleKey: 'settings:nav.tabs.appearance', body: () => <AppearancePanel /> },
+  chat: { titleKey: 'settings:nav.tabs.chat', body: () => <ChatPanel /> },
   voice: { titleKey: 'settings:nav.tabs.voice', body: () => <VoicePanel /> },
   privacy: { titleKey: 'settings:nav.tabs.privacy', body: () => <PrivacyPanel /> },
   connections: { titleKey: 'settings:nav.tabs.connections', body: () => <ConnectionsPanel /> },

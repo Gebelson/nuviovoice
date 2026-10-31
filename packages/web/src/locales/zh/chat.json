@@ -89,7 +89,9 @@
     "typing": {
       "named_other": "{{names}} 正在输入",
       "several": "多人正在输入"
-    }
+    },
+    "winks": "Winks",
+    "winksPicker": "选择 Winks"
   },
   "menu": {
     "saveImage": "保存图片",

@@ -1,3 +1,4 @@
+import { isWinkContent } from '@concord/shared/src/winks.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { getDb, schema } from '../db/index.js';
@@ -276,6 +277,16 @@ export function hydrateChannelMessages(
 }
 
 export async function messageRoutes(app: FastifyInstance): Promise<void> {
+  // POST /api/channels/:id/winks - Strictly forbidden in space channels
+  app.post<{ Params: { id: string } }>('/api/channels/:id/winks', {
+    preHandler: authenticate,
+  }, async (_request, reply) => {
+    return reply.code(403).send({
+      error: 'Winks are only allowed in direct messages',
+      code: 'winks_not_allowed_in_channels',
+    });
+  });
+
   // GET /api/channels/:id/messages - Get messages with cursor pagination
   // (before or after; see docs/systems/api.md, "Message history paging")
   app.get<{ Params: { id: string }; Querystring: PaginatedQuery }>('/api/channels/:id/messages', {
@@ -347,6 +358,16 @@ export async function messageRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const hasContent = content && typeof content === 'string' && content.trim().length > 0;
+        // Winks are strictly forbidden in space channels (public and private spaces)
+    const bodyAny = request.body as unknown as Record<string, unknown> | undefined;
+    const isWink = bodyAny?.type === 'wink' || !!bodyAny?.winkId || isWinkContent(content).isWink;
+    if (isWink) {
+      return reply.code(403).send({
+        error: 'Winks are only allowed in direct messages',
+        code: 'winks_not_allowed_in_channels',
+      });
+    }
+
     const hasAttachments = attachmentIds && attachmentIds.length > 0;
 
     if (!hasContent && !hasAttachments) {

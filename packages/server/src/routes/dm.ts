@@ -1,3 +1,4 @@
+import { isWinkContent, isValidWinkId, formatWinkContent } from '@concord/shared/src/winks.js';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { eq, and, or, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb, schema } from '../db/index.js';
@@ -2085,6 +2086,55 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // POST /api/dm/:id/messages - Send a DM message
+  
+  // POST /api/dm/:id/winks - Send a Wink in a direct message
+  app.post<{ Params: { id: string }; Body: { winkId: string } }>('/api/dm/:id/winks', {
+    preHandler: authenticate,
+    config: {
+      rateLimit: {
+        max: DM_MESSAGE_CREATE_RATE_LIMIT.max,
+        timeWindow: DM_MESSAGE_CREATE_RATE_LIMIT.windowMs,
+        keyGenerator: (request: FastifyRequest) => request.ip,
+      },
+    },
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const check = checkDmMessageCreate(id, request.userId, {
+      type: 'wink',
+      winkId: request.body?.winkId,
+    });
+    if (!check.ok) {
+      return sendError(reply, check.refusal.status, check.refusal.code, check.refusal.details);
+    }
+
+    const db = getDb();
+    const sender = db.select().from(schema.users).where(eq(schema.users.id, request.userId)).get();
+    const senderName = sender?.displayName || sender?.username || 'Usuário';
+
+    const messageId = generateSnowflake();
+    const now = Date.now();
+    const content = formatWinkContent(request.body.winkId, senderName);
+
+    db.insert(schema.dmMessages).values({
+      id: messageId,
+      dmChannelId: id,
+      userId: request.userId,
+      content,
+      type: 'wink',
+      createdAt: now,
+    }).run();
+
+    const message = getDmMessageWithUser(messageId);
+    if (!message) {
+      return sendError(reply, 500, 'message_create_failed');
+    }
+
+    broadcastDmMessage(id, message);
+    queueDmRelay(message, id, 'create');
+
+    return reply.code(201).send(message);
+  });
+
   app.post<{ Params: { id: string }; Body: CreateDmMessageRequest }>('/api/dm/:id/messages', {
     config: {
       rateLimit: {

@@ -173,7 +173,8 @@
       "connections": "Verbindungen",
       "keybinds": "Tastenkürzel",
       "desktop": "Desktop",
-      "instance": "Instanz"
+      "instance": "Instanz",
+      "chat": "Chat"
     },
     "logOut": "Abmelden",
     "backToMenu": "Zurück zum Einstellungsmenü"

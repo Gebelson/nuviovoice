@@ -173,7 +173,8 @@
       "connections": "连接",
       "keybinds": "按键绑定",
       "desktop": "桌面端",
-      "instance": "实例"
+      "instance": "实例",
+      "chat": "聊天"
     },
     "logOut": "退出登录",
     "backToMenu": "返回设置菜单"

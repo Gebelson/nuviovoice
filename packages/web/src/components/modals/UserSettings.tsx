@@ -9,6 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 import {
   AccountPanel,
   AppearancePanel,
+  ChatPanel,
   VoicePanel,
   PrivacyPanel,
   ConnectionsPanel,
@@ -32,6 +33,7 @@ import { SettingsSectionsProvider, useSettingsSectionsContext } from './Settings
 const USER_SETTINGS_TABS = [
   { id: 'account', group: 'user', label: 'settings:nav.tabs.account' },
   { id: 'appearance', group: 'user', label: 'settings:nav.tabs.appearance' },
+  { id: 'chat', group: 'user', label: 'settings:nav.tabs.chat' },
   { id: 'voice', group: 'user', label: 'settings:nav.tabs.voice' },
   { id: 'privacy', group: 'user', label: 'settings:nav.tabs.privacy' },
   { id: 'connections', group: 'app', label: 'settings:nav.tabs.connections' },
@@ -197,6 +199,7 @@ export function UserSettingsModal() {
   const panels: Record<UserSettingsTab, () => ReactNode> = {
     account: () => <AccountPanel />,
     appearance: () => <AppearancePanel />,
+    chat: () => <ChatPanel />,
     voice: () => <VoicePanel />,
     privacy: () => <PrivacyPanel />,
     connections: () => <ConnectionsPanel />,

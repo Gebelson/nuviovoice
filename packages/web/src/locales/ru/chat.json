@@ -98,7 +98,9 @@
       "named_many": "{{names}} печатают",
       "named_other": "{{names}} печатают",
       "several": "Несколько человек печатают"
-    }
+    },
+    "winks": "Winks",
+    "winksPicker": "Выбор Winks"
   },
   "menu": {
     "saveImage": "Сохранить изображение",

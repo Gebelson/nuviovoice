@@ -95,7 +95,9 @@
       "named_many": "{{names}} estão digitando",
       "named_other": "{{names}} estão digitando",
       "several": "Várias pessoas estão digitando"
-    }
+    },
+    "winks": "Winks",
+    "winksPicker": "Seletor de Winks"
   },
   "menu": {
     "saveImage": "Salvar imagem",

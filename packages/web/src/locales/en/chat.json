@@ -92,7 +92,9 @@
       "named_one": "{{names}} is typing",
       "named_other": "{{names}} are typing",
       "several": "Several people are typing"
-    }
+    },
+    "winks": "Winks",
+    "winksPicker": "Wink picker"
   },
   "menu": {
     "saveImage": "Save Image",

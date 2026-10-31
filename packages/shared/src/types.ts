@@ -647,7 +647,7 @@ export interface Message {
   userId: string;
   replyToId: string | null;
   content: string | null;
-  type?: 'user' | 'system';
+  type?: 'user' | 'system' | 'wink';
   editedAt: number | null;
   createdAt: number;
   /**
@@ -2421,3 +2421,7 @@ export interface SoundpadPlayEvent {
   volume: number;
   timestamp: number;
 }
+
+
+// ─── Winks ──────────────────────────────────────────────────────────────────
+export * from './winks.js';

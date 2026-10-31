@@ -339,6 +339,7 @@ export class BackspaceApiClient {
     messagesAround: (id: string, messageId: string, limit?: number) => Promise<DmMessageWithUser[]>;
     messagesAfter: (id: string, after: string, limit?: number) => Promise<HistoryPageAfter<DmMessageWithUser>>;
     sendMessage: (id: string, data: CreateDmMessageRequest) => Promise<DmMessageWithUser>;
+    sendWink: (id: string, winkId: string) => Promise<DmMessageWithUser>;
     updateMessage: (id: string, data: UpdateMessageRequest) => Promise<DmMessageWithUser>;
     deleteMessage: (id: string) => Promise<{ success: boolean }>;
     hideMessage: (id: string) => Promise<{ success: boolean }>;
@@ -853,6 +854,8 @@ export class BackspaceApiClient {
       },
       sendMessage: (id: string, data: CreateDmMessageRequest) =>
         request<DmMessageWithUser>('POST', `/dm/${id}/messages`, data),
+      sendWink: (id: string, winkId: string) =>
+        request<DmMessageWithUser>('POST', `/dm/${id}/winks`, { winkId }),
       updateMessage: (id: string, data: UpdateMessageRequest) =>
         request<DmMessageWithUser>('PATCH', `/dm/messages/${id}`, data),
       deleteMessage: (id: string) =>

@@ -92,7 +92,9 @@
       "named_one": "{{names}} schreibt",
       "named_other": "{{names}} schreiben",
       "several": "Mehrere Personen schreiben"
-    }
+    },
+    "winks": "Winks",
+    "winksPicker": "Wink-Auswahl"
   },
   "menu": {
     "saveImage": "Bild speichern",

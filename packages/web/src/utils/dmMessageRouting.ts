@@ -2,6 +2,8 @@ import type { DmChannel, DmMessageWithUser, MessageWithUser } from '@concord/sha
 import { isMe } from '../stores/authStore';
 import { useChatStore } from '../stores/chatStore';
 import { useSpaceStore, resolveDmChannelId } from '../stores/spaceStore';
+import { isWinkContent } from '@concord/shared/src/winks';
+import { useWinkStore } from '../stores/winkStore';
 
 /**
  * Routing of DM WebSocket events to the conversation they belong to.
@@ -81,6 +83,27 @@ function recordLastMessage(origin: string, channelId: string, message: DmMessage
  * nothing else: when a failover pins that copy, its row shows the newest
  * message and sorts by it.
  */
+
+function checkAndTriggerIncomingWink(origin: string, channelId: string, message: DmMessageWithUser): void {
+  if (isOwnMessage(origin, message)) return;
+  const winkInfo = isWinkContent(message.content);
+  if (!winkInfo.isWink || !winkInfo.winkId) return;
+
+  const { currentChannelId } = useChatStore.getState();
+  if (channelId === currentChannelId) {
+    const winkSettings = useWinkStore.getState().settings;
+    if (!winkSettings.disableIncoming && winkSettings.autoplay) {
+      const senderName = message.user?.displayName || message.user?.username || 'Alguém';
+      useWinkStore.getState().triggerWink({
+        winkId: winkInfo.winkId,
+        senderName,
+        channelId,
+        isLocalReplay: false,
+      });
+    }
+  }
+}
+
 function deliverToConversation(origin: string, primaryId: string, message: DmMessageWithUser): void {
   if (primaryId !== message.dmChannelId) {
     useSpaceStore.getState().patchDmCopy(message.dmChannelId, dm => ({ ...dm, lastMessage: message }));
@@ -88,6 +111,7 @@ function deliverToConversation(origin: string, primaryId: string, message: DmMes
   }
   useChatStore.getState().addRealtimeMessage(primaryId, asChatMessage(message));
   recordLastMessage(origin, primaryId, message);
+  checkAndTriggerIncomingWink(origin, primaryId, message);
 }
 
 /** A conversation no list placed: give it its own entry under the origin that sent it. */
@@ -100,6 +124,7 @@ function deliverAsNewConversation(origin: string, message: DmMessageWithUser): v
   if (message.dmChannelId !== currentChannelId && !isOwnMessage(origin, message)) {
     markChannelUnread(message.dmChannelId);
   }
+  checkAndTriggerIncomingWink(origin, message.dmChannelId, message);
 }
 
 /**

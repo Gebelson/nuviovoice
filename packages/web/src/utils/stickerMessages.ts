@@ -1,4 +1,5 @@
 import { stickerUrl } from '@concord/shared/src/stickers';
+import { isWinkContent, getOfficialWink } from '@concord/shared/src/winks';
 import i18n from '../i18n';
 
 /**
@@ -19,5 +20,13 @@ export function isStickerMessage(content: string | null | undefined): boolean {
  * returned as it is.
  */
 export function messageTextForPreview(content: string): string {
-  return isStickerMessage(content) ? i18n.t('chat:stickers.sticker') : content;
+  if (isStickerMessage(content)) {
+    return i18n.t('chat:stickers.sticker');
+  }
+  const winkInfo = isWinkContent(content);
+  if (winkInfo.isWink && winkInfo.winkId) {
+    const wink = getOfficialWink(winkInfo.winkId);
+    return wink ? `Wink: ${wink.name}` : 'Wink';
+  }
+  return content;
 }

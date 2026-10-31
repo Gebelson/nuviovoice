@@ -5,7 +5,7 @@ import { layoutRect } from '../../platform/interfaceScale';
 import React, { useState, useRef, useCallback, useMemo, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChatStore } from '../../stores/chatStore';
-import { isDmChannel, useIsDmChannel, getChannelOrigin, useSpaceStore } from '../../stores/spaceStore';
+import { isDmChannel, useIsDmChannel, getChannelOrigin, useSpaceStore, getApiForOrigin } from '../../stores/spaceStore';
 import { wsSend } from '../../hooks/useWebSocket';
 import { MentionPopover } from './MentionPopover';
 import { TypingIndicator } from './TypingIndicator';
@@ -20,12 +20,16 @@ import { useTransferStore, type Transfer } from '../../stores/transferStore';
 import { usePendingMessageStore } from '../../stores/pendingMessageStore';
 import { putHandle, supportsFsHandles, supportsDnDHandles } from '../../utils/idbHandles';
 import { useVisualViewportInset } from '../../hooks/useVisualViewportInset';
-import { useAuthStore } from '../../stores/authStore';
 import { selfIdentityOf } from '../../utils/identity';
 import { findLastOwnEditableMessage } from './messageEditing';
 import { describeError } from '../../i18n/errors';
 import { CommandPopover, type CommandItem } from './CommandPopover';
 import { useBotStore } from '../../stores/botStore';
+import { useAuthStore, myRowForOrigin } from '../../stores/authStore';
+import { WinkPickerPopover } from './WinkPickerPopover';
+import { useWinkStore } from '../../stores/winkStore';
+import { SparklesIcon } from '../ui/icons';
+import type { OfficialWink } from '@concord/shared/src/winks';
 import type { BotCommand } from '@concord/shared';
 
 interface MessageInputProps {
@@ -70,6 +74,8 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
 
   // UI-only state stays local
   const [activePopover, setActivePopover] = useState<InputPopoverTab | null>(null);
+  const [winksOpen, setWinksOpen] = useState(false);
+  const winksButtonRef = useRef<HTMLButtonElement>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -649,8 +655,36 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
   );
 
   const togglePopover = useCallback((tab: InputPopoverTab) => {
+    setWinksOpen(false);
     setActivePopover((prev) => (prev === tab ? null : tab));
   }, []);
+
+  const handleToggleWinks = useCallback(() => {
+    setActivePopover(null);
+    setWinksOpen((prev) => !prev);
+  }, []);
+
+  const handleWinkSelect = useCallback(
+    async (wink: OfficialWink) => {
+      setWinksOpen(false);
+      try {
+        const origin = getChannelOrigin(channelId);
+        const client = getApiForOrigin(origin);
+        const myRow = myRowForOrigin(origin);
+        const senderName = myRow?.displayName || myRow?.username || 'Você';
+        useWinkStore.getState().triggerWink({
+          winkId: wink.id,
+          senderName,
+          channelId,
+          isLocalReplay: true,
+        });
+        await client.dm.sendWink(channelId, wink.id);
+      } catch (err: unknown) {
+        addToast(describeError(err), 'warning');
+      }
+    },
+    [channelId, addToast],
+  );
 
   // anyActiveOrQueued: a visual indicator something is in flight; pending/paused
   // bubbles are still allowed to ship (orchestrator handles them).
@@ -870,6 +904,15 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
     >
       <TypingIndicator channelId={channelId} />
 
+      {/* Winks popover (DMs only) */}
+      {isDm && winksOpen && (
+        <WinkPickerPopover
+          onSelect={handleWinkSelect}
+          onClose={() => setWinksOpen(false)}
+          anchorRef={winksButtonRef}
+        />
+      )}
+
       {/* Input popover (emoji / gif) */}
       {activePopover && (
         <InputPopover
@@ -1022,6 +1065,22 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M2 5.5A2.5 2.5 0 0 1 4.5 3h15A2.5 2.5 0 0 1 22 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5v-13ZM5.1 14V10h3.2v1.2H6.5v.6h1.6v1.1H6.5V14H5.1Zm4.5 0V10h1.4v4H9.6Zm2.5 0V10h3.2v1.2h-1.8v.5h1.6v1h-1.6V14h-1.4Z" />
               </svg>
+            </button>
+          )}
+
+          {/* Winks button (immediately to the left of the emoji button, DMs only) */}
+          {isDm && (
+            <button
+              ref={winksButtonRef}
+              type="button"
+              onClick={handleToggleWinks}
+              className={`w-10 h-10 desktop:w-[34px] desktop:h-[34px] flex items-center justify-center rounded-[6px] transition-colors flex-shrink-0 ${
+                winksOpen ? 'text-accent-primary' : 'text-txt-tertiary hover:text-txt-secondary'
+              }`}
+              title={t('chat:composer.winks')}
+              aria-label={t('chat:composer.winksPicker')}
+            >
+              <SparklesIcon width="18" height="18" />
             </button>
           )}
 

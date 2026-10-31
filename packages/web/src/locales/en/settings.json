@@ -173,7 +173,8 @@
       "connections": "Connections",
       "keybinds": "Keybinds",
       "desktop": "Desktop",
-      "instance": "Instance"
+      "instance": "Instance",
+      "chat": "Chat"
     },
     "logOut": "Log Out",
     "backToMenu": "Back to settings menu"

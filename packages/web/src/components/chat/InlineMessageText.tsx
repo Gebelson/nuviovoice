@@ -3,6 +3,7 @@ import { MentionBadge } from './MentionBadge';
 import { replaceEmojiShortcodesInMarkdownSource, useEmojiShortcodeNames } from '../../utils/emojiShortcodes';
 import { splitMentions } from '../../utils/mentionTokens';
 import { isStickerMessage, messageTextForPreview } from '../../utils/stickerMessages';
+import { isWinkContent } from '@concord/shared/src/winks';
 
 interface InlineMessageTextProps {
   content: string;
@@ -21,7 +22,7 @@ interface InlineMessageTextProps {
  */
 export function InlineMessageText({ content, channelId }: InlineMessageTextProps) {
   useEmojiShortcodeNames();
-  if (isStickerMessage(content)) return <>{messageTextForPreview(content)}</>;
+  if (isStickerMessage(content) || isWinkContent(content).isWink) return <>{messageTextForPreview(content)}</>;
   return (
     <>
       {splitMentions(content).map((part, i) => {

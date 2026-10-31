@@ -15,4 +15,9 @@ describe('sticker message text', () => {
     expect(messageTextForPreview(token)).toBe('Sticker');
     expect(messageTextForPreview('hello')).toBe('hello');
   });
+
+  it('gives one-line surfaces a label for a wink', () => {
+    const winkContent = '{"_nuvio_wink":true,"winkId":"kiss","senderName":"Alice"}';
+    expect(messageTextForPreview(winkContent)).toBe('Wink: Beijo animado');
+  });
 });

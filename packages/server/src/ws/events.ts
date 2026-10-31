@@ -1,3 +1,4 @@
+import { isWinkContent, isValidWinkId, formatWinkContent } from '@concord/shared/src/winks.js';
 import { handleChannelPoke } from './channelPoke.js';
 import type { WebSocket } from 'ws';
 import { addsMassMention, hasMassMention } from '@concord/shared/src/mentions.js';
@@ -2558,3 +2559,60 @@ export const handleDmCallAcceptForTest = handleDmCallAccept;
 export const handleDmCallRejectForTest = handleDmCallReject;
 export const handleDmCallEndForTest = handleDmCallEnd;
 export const sendFederatedCallStartForTest = sendFederatedCallStart;
+
+
+function handleDmWinkSend(event: Record<string, unknown>, userId: string, ws: WebSocket): void {
+  if (!consumeWsDmMessageCreate(socketAddressOf(ws) ?? `user:${userId}`)) {
+    refuseDmMessage(ws, 'rate_limited');
+    return;
+  }
+
+  const dmChannelId = event.dmChannelId;
+  if (!dmChannelId || typeof dmChannelId !== 'string') {
+    refuseDmMessage(ws, 'validation_failed');
+    return;
+  }
+
+  const winkId = event.winkId;
+  if (!isValidWinkId(winkId)) {
+    refuseDmMessage(ws, 'validation_failed');
+    return;
+  }
+
+  const check = checkDmMessageCreate(dmChannelId, userId, {
+    content: formatWinkContent(winkId),
+    type: 'wink',
+    winkId,
+  });
+  if (!check.ok) {
+    refuseDmMessage(ws, check.refusal.code, check.refusal.details);
+    return;
+  }
+
+  const db = getDb();
+  const messageId = generateSnowflake();
+  const now = Date.now();
+  const sender = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
+  const senderName = sender?.displayName || sender?.username || 'Usuário';
+  const content = formatWinkContent(winkId, senderName);
+
+  db.transaction((tx) => {
+    tx.insert(schema.dmMessages).values({
+      id: messageId,
+      dmChannelId,
+      userId,
+      content,
+      type: 'wink',
+      createdAt: now,
+    }).run();
+  });
+
+  const dmMessage = getDmMessageWithUser(messageId);
+  if (!dmMessage) {
+    refuseDmMessage(ws, 'message_create_failed');
+    return;
+  }
+
+  broadcastDmMessage(dmChannelId, dmMessage);
+  queueDmRelay(dmMessage, dmChannelId, 'create');
+}

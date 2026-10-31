@@ -173,7 +173,8 @@
       "connections": "Подключения",
       "keybinds": "Горячие клавиши",
       "desktop": "Приложение",
-      "instance": "Сервер"
+      "instance": "Сервер",
+      "chat": "Чат"
     },
     "logOut": "Выйти",
     "backToMenu": "Назад к меню настроек"

@@ -173,7 +173,8 @@
       "connections": "Conexões",
       "keybinds": "Atalhos",
       "desktop": "Desktop",
-      "instance": "Instância"
+      "instance": "Instância",
+      "chat": "Chat"
     },
     "logOut": "Sair",
     "backToMenu": "Voltar ao menu de configurações"
