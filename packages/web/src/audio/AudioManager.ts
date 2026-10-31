@@ -1,5 +1,6 @@
 import { NoiseSuppressionController } from './processors/NoiseSuppressionController';
 import type { NoiseSuppressionMode, NoiseSuppressionStatus } from './processors/types';
+import { synthesizePresetBuffer } from './soundpadPresets';
 
 export class AudioManager {
   private static instance: AudioManager | null = null;
@@ -16,6 +17,14 @@ export class AudioManager {
   private testListenMode: 'original' | 'processed' = 'processed';
   private masterCompressor: DynamicsCompressorNode | null = null;
   private masterBoost: GainNode | null = null;
+  private micMuteGain: GainNode | null = null;
+  private soundpadGain: GainNode | null = null;
+  private soundpadCompressor: DynamicsCompressorNode | null = null;
+  private soundpadDestinationGain: GainNode | null = null;
+  private soundpadLocalGain: GainNode | null = null;
+  private soundpadBuffers: Map<string, AudioBuffer> = new Map();
+  private soundpadActiveSources: Set<AudioBufferSourceNode> = new Set();
+  private isMicMuted: boolean = false;
   
   private currentInputDeviceId: string = 'default';
   private desiredOutputDeviceId: string = 'default';
@@ -98,7 +107,37 @@ export class AudioManager {
     this.masterBoost.connect(this.masterCompressor);
     this.masterCompressor.connect(this.ctx.destination);
 
-    this.processedAnalyser.connect(this.inputGain);
+    // Microphone Mute Gain: allows muting mic audio without closing the live track
+    this.micMuteGain = this.ctx.createGain();
+    this.micMuteGain.gain.setValueAtTime(this.isMicMuted ? 0 : 1, this.ctx.currentTime);
+
+    // Soundpad dedicated pipeline
+    this.soundpadGain = this.ctx.createGain();
+    this.soundpadGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+
+    this.soundpadCompressor = this.ctx.createDynamicsCompressor();
+    this.soundpadCompressor.threshold.value = -6;
+    this.soundpadCompressor.knee.value = 3;
+    this.soundpadCompressor.ratio.value = 6;
+    this.soundpadCompressor.attack.value = 0.001;
+    this.soundpadCompressor.release.value = 0.05;
+
+    this.soundpadDestinationGain = this.ctx.createGain();
+    this.soundpadDestinationGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+
+    this.soundpadLocalGain = this.ctx.createGain();
+    this.soundpadLocalGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+
+    // Soundpad sources -> soundpadGain -> soundpadCompressor -> [remote & local]
+    this.soundpadGain.connect(this.soundpadCompressor);
+    this.soundpadCompressor.connect(this.soundpadDestinationGain);
+    this.soundpadDestinationGain.connect(this.inputDestination);
+
+    this.soundpadCompressor.connect(this.soundpadLocalGain);
+    this.soundpadLocalGain.connect(this.masterBoost);
+
+    this.processedAnalyser.connect(this.micMuteGain);
+    this.micMuteGain.connect(this.inputGain);
     this.inputGain.connect(this.inputDestination);
     this.inputGain.connect(this.silentGain);
     this.silentGain.connect(this.ctx.destination);
@@ -486,11 +525,17 @@ export class AudioManager {
       }
     }
 
-    // 3. Processed analyser feeds inputGain -> inputDestination (published track)
+    // 3. Processed analyser feeds micMuteGain -> inputGain -> inputDestination (published track)
     if (this.processedAnalyser && this.inputGain) {
       try {
         this.processedAnalyser.disconnect();
-        this.processedAnalyser.connect(this.inputGain);
+        if (this.micMuteGain) {
+          this.processedAnalyser.connect(this.micMuteGain);
+          try { this.micMuteGain.disconnect(); } catch {}
+          this.micMuteGain.connect(this.inputGain);
+        } else {
+          this.processedAnalyser.connect(this.inputGain);
+        }
       } catch {}
     }
 
@@ -733,6 +778,124 @@ export class AudioManager {
     gain.connect(this.masterBoost!);
     osc.start(now);
     osc.stop(now + 0.45);
+  }
+
+  setMicMuted(muted: boolean): void {
+    this.isMicMuted = muted;
+    if (this.micMuteGain && this.ctx) {
+      this.micMuteGain.gain.setValueAtTime(muted ? 0 : 1, this.ctx.currentTime);
+    }
+  }
+
+  getIsMicMuted(): boolean {
+    return this.isMicMuted;
+  }
+
+  setSoundpadVolume(volume: number): void {
+    if (!this.isInitialized) this.initContext();
+    if (this.soundpadGain && this.ctx) {
+      const gainValue = Math.max(0, Math.min(1.5, volume / 100));
+      this.soundpadGain.gain.setTargetAtTime(gainValue, this.ctx.currentTime, 0.05);
+    }
+  }
+
+  async loadSoundpadBuffer(urlOrPresetId: string): Promise<AudioBuffer | null> {
+    if (this.soundpadBuffers.has(urlOrPresetId)) {
+      return this.soundpadBuffers.get(urlOrPresetId)!;
+    }
+    if (!this.ctx) this.initContext();
+    if (!this.ctx) return null;
+
+    const presetId = urlOrPresetId.replace(/^preset:/, '').replace(/\.wav$/, '');
+    const fetchUrl = urlOrPresetId.startsWith('http') || urlOrPresetId.startsWith('/') || urlOrPresetId.startsWith('data:')
+      ? urlOrPresetId
+      : `/sounds/soundpad/${presetId}.wav`;
+
+    try {
+      const res = await fetch(fetchUrl);
+      if (res.ok) {
+        const arrayBuffer = await res.arrayBuffer();
+        const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+        this.soundpadBuffers.set(urlOrPresetId, audioBuffer);
+        return audioBuffer;
+      }
+    } catch (err) {
+      console.warn(`[AudioManager] Could not fetch soundpad audio from ${fetchUrl}:`, err);
+    }
+
+    // Procedural synthesis fallback
+    const synth = synthesizePresetBuffer(this.ctx, presetId);
+    if (synth) {
+      this.soundpadBuffers.set(urlOrPresetId, synth);
+      return synth;
+    }
+
+    return null;
+  }
+
+  async playSoundpad(
+    soundUrlOrPresetId: string,
+    options: { volume?: number; onEnded?: () => void } = {}
+  ): Promise<{ stop: () => void; duration: number } | null> {
+    await this.resumeContext();
+    if (!this.ctx || !this.soundpadGain) return null;
+
+    const buffer = await this.loadSoundpadBuffer(soundUrlOrPresetId);
+    if (!buffer) return null;
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+
+    const playGain = this.ctx.createGain();
+    const soundVolume = options.volume ?? 1.0;
+    playGain.gain.setValueAtTime(soundVolume, this.ctx.currentTime);
+
+    source.connect(playGain);
+    playGain.connect(this.soundpadGain);
+
+    this.soundpadActiveSources.add(source);
+
+    let stopped = false;
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      try {
+        source.stop();
+        source.disconnect();
+        playGain.disconnect();
+      } catch {}
+      this.soundpadActiveSources.delete(source);
+      options.onEnded?.();
+    };
+
+    source.onended = () => {
+      if (!stopped) {
+        stopped = true;
+        try {
+          source.disconnect();
+          playGain.disconnect();
+        } catch {}
+        this.soundpadActiveSources.delete(source);
+        options.onEnded?.();
+      }
+    };
+
+    source.start();
+    return { stop, duration: buffer.duration };
+  }
+
+  stopAllSoundpad(): void {
+    for (const src of this.soundpadActiveSources) {
+      try {
+        src.stop();
+        src.disconnect();
+      } catch {}
+    }
+    this.soundpadActiveSources.clear();
+  }
+
+  isSoundpadPlaying(): boolean {
+    return this.soundpadActiveSources.size > 0;
   }
 
   getContext(): AudioContext | null {

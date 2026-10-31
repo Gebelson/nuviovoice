@@ -567,6 +567,89 @@ export function ensureDefaults(db: Database.Database): void {
     }
     console.log('[defaults] Seeded default official starter bots');
   }
+
+  // 13. Soundpad tables and 16 official preset sounds
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS soundpad_sounds (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      space_id TEXT REFERENCES spaces(id) ON DELETE CASCADE,
+      category TEXT NOT NULL DEFAULT 'Geral',
+      audio_url TEXT NOT NULL,
+      storage_key TEXT,
+      builtin_sound_id TEXT,
+      duration_ms INTEGER NOT NULL DEFAULT 0,
+      default_volume REAL NOT NULL DEFAULT 1.0,
+      emoji TEXT,
+      icon_url TEXT,
+      tags TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'approved',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_soundpad_scope ON soundpad_sounds(scope);
+    CREATE INDEX IF NOT EXISTS idx_soundpad_owner_id ON soundpad_sounds(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_soundpad_space_id ON soundpad_sounds(space_id);
+    CREATE INDEX IF NOT EXISTS idx_soundpad_category ON soundpad_sounds(category);
+
+    CREATE TABLE IF NOT EXISTS soundpad_favorites (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      sound_id TEXT NOT NULL REFERENCES soundpad_sounds(id) ON DELETE CASCADE,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, sound_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_soundpad_fav_user ON soundpad_favorites(user_id);
+
+    CREATE TABLE IF NOT EXISTS soundpad_usage (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      sound_id TEXT NOT NULL REFERENCES soundpad_sounds(id) ON DELETE CASCADE,
+      play_count INTEGER NOT NULL DEFAULT 1,
+      last_played_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, sound_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_soundpad_usage_user ON soundpad_usage(user_id);
+  `);
+
+  const officialCount = (db.prepare("SELECT count(*) as count FROM soundpad_sounds WHERE scope = 'official'").get() as { count: number }).count;
+  if (officialCount === 0) {
+    const officialPresets = [
+      { id: 'official-airhorn', name: 'Airhorn', category: 'Clássicos', emoji: '📢', url: '/sounds/soundpad/airhorn.wav', duration: 1300, vol: 0.85, tags: ['airhorn', 'buzina', 'hype', 'loud'] },
+      { id: 'official-crickets', name: 'Crickets', category: 'Clássicos', emoji: '🦗', url: '/sounds/soundpad/crickets.wav', duration: 1800, vol: 0.85, tags: ['crickets', 'grilos', 'silence', 'awkward'] },
+      { id: 'official-sad-violin', name: 'Sad Violin', category: 'Clássicos', emoji: '🎻', url: '/sounds/soundpad/sad_violin.wav', duration: 2400, vol: 0.85, tags: ['violin', 'triste', 'sad', 'drama'] },
+      { id: 'official-womp-womp', name: 'Womp Womp', category: 'Clássicos', emoji: '🎺', url: '/sounds/soundpad/womp_womp.wav', duration: 1400, vol: 0.85, tags: ['womp', 'fail', 'trompete', 'derrota'] },
+      { id: 'official-rimshot', name: 'Rimshot', category: 'Clássicos', emoji: '🥁', url: '/sounds/soundpad/rimshot.wav', duration: 600, vol: 0.85, tags: ['rimshot', 'ba dum tss', 'piada', 'bateria'] },
+      { id: 'official-sad-trombone', name: 'Sad Trombone', category: 'Clássicos', emoji: '📯', url: '/sounds/soundpad/sad_trombone.wav', duration: 2200, vol: 0.85, tags: ['trombone', 'fail', 'wah wah'] },
+      { id: 'official-dun-dun-dun', name: 'DUN DUN DUN', category: 'Clássicos', emoji: '⚡', url: '/sounds/soundpad/dun_dun_dun.wav', duration: 2000, vol: 0.85, tags: ['dun', 'dramatico', 'suspense', 'choque'] },
+      { id: 'official-vine-boom', name: 'Vine Boom', category: 'Clássicos', emoji: '💥', url: '/sounds/soundpad/vine_boom.wav', duration: 1500, vol: 0.85, tags: ['boom', 'bass', 'meme', 'impacto'] },
+      { id: 'official-bruh', name: 'Bruh', category: 'Diversão', emoji: '🗿', url: '/sounds/soundpad/bruh.wav', duration: 700, vol: 0.85, tags: ['bruh', 'meme', 'facepalm', 'moai'] },
+      { id: 'official-oh-no', name: 'Oh No', category: 'Diversão', emoji: '😱', url: '/sounds/soundpad/oh_no.wav', duration: 900, vol: 0.85, tags: ['oh no', 'desastre', 'meme', 'panico'] },
+      { id: 'official-sheesh', name: 'Sheesh', category: 'Diversão', emoji: '🥶', url: '/sounds/soundpad/sheesh.wav', duration: 1000, vol: 0.85, tags: ['sheesh', 'hiss', 'apito', 'gelo'] },
+      { id: 'official-bonk', name: 'Bonk', category: 'Diversão', emoji: '🔨', url: '/sounds/soundpad/bonk.wav', duration: 500, vol: 0.85, tags: ['bonk', 'martelo', 'pancada', 'meme'] },
+      { id: 'official-noice', name: 'Noice', category: 'Diversão', emoji: '👌', url: '/sounds/soundpad/noice.wav', duration: 700, vol: 0.85, tags: ['noice', 'nice', 'estalo', 'perfeito'] },
+      { id: 'official-sus', name: 'Sus', category: 'Diversão', emoji: '👁️', url: '/sounds/soundpad/sus.wav', duration: 1300, vol: 0.85, tags: ['sus', 'among us', 'impostor', 'estranho'] },
+      { id: 'official-wilhelm', name: 'Wilhelm', category: 'Diversão', emoji: '🗣️', url: '/sounds/soundpad/wilhelm.wav', duration: 1200, vol: 0.85, tags: ['wilhelm', 'grito', 'scream', 'filme'] },
+      { id: 'official-toot', name: 'Toot', category: 'Diversão', emoji: '🎉', url: '/sounds/soundpad/toot.wav', duration: 650, vol: 0.85, tags: ['toot', 'festa', 'buzina', 'alegria'] },
+    ];
+
+    const insertSound = db.prepare(`
+      INSERT INTO soundpad_sounds (
+        id, name, scope, owner_id, space_id, category, audio_url,
+        builtin_sound_id, duration_ms, default_volume, emoji, tags, status, created_at, updated_at
+      ) VALUES (
+        ?, ?, 'official', NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?
+      )
+    `);
+
+    for (const s of officialPresets) {
+      insertSound.run(
+        s.id, s.name, s.category, s.url, s.id.replace('official-', ''),
+        s.duration, s.vol, s.emoji, JSON.stringify(s.tags), now, now
+      );
+    }
+    console.log('[defaults] Seeded 16 official soundpad preset sounds');
+  }
 }
 
 /**

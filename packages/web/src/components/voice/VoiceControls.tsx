@@ -5,9 +5,10 @@ import { useSpaceStore, getChannelOrigin, getMyUserIdForOrigin } from '../../sto
 import { useAuthStore } from '../../stores/authStore';
 import { ScreenShareSettingsPopover } from './ScreenShareSettingsPopover';
 import { ConnectionInfoPopover } from './ConnectionInfoPopover';
+import { SoundpadPopover } from './SoundpadPopover';
+import { useSoundpadStore } from '../../stores/soundpadStore';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { handleCameraAction, handleDisconnectAction, handleScreenShareAction, reconnectVoice } from '../../utils/voiceActions';
-import { broadcastVoiceStatus, broadcastDeafenViaLiveKit } from '../../utils/voice';
 import { usePopOutCall } from '../../hooks/usePopOutCall';
 
 /**
@@ -32,8 +33,11 @@ export function VoiceControls() {
   // Screen-share button: idle → source picker; live → settings + stop menu.
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showConnectionInfo, setShowConnectionInfo] = useState(false);
+  const [showSoundpad, setShowSoundpad] = useState(false);
   const connectionBtnRef = useRef<HTMLButtonElement>(null);
   const shareBtnRef = useRef<HTMLButtonElement>(null);
+  const soundpadBtnRef = useRef<HTMLButtonElement>(null);
+  const isSoundpadPlaying = useSoundpadStore((s) => !!s.playingSoundId);
 
   const activeDmCall = useVoiceStore((s) => s.activeDmCall);
   const channelPerms = useSpaceStore((s) => currentVoiceChannelId ? s.channelPermissions.get(currentVoiceChannelId) : undefined);
@@ -42,6 +46,8 @@ export function VoiceControls() {
   const isDmCall = !!activeDmCall;
   const canSpeak = isDmCall || hasPermissionBit(channelPerms, PermissionBits.SPEAK);
   const canStream = isDmCall || hasPermissionBit(channelPerms, PermissionBits.STREAM);
+  const canUseSoundpad = isDmCall || hasPermissionBit(channelPerms, PermissionBits.USE_SOUNDPAD);
+  const canManageSoundpad = isDmCall || hasPermissionBit(channelPerms, PermissionBits.MANAGE_SOUNDPAD);
   const { isSupported: isPopOutSupported, isPoppedOut, togglePopOut } = usePopOutCall();
 
   const user = useAuthStore((s) => s.user);
@@ -52,30 +58,22 @@ export function VoiceControls() {
   const isSpaceDeafened = !!(myOriginId && spaceId && spaceDeafenedUserIds.has(`${spaceId}:${myOriginId}`));
   const isPermissionMuted = !!(myOriginId && spaceId && permissionMutedUserIds.has(`${spaceId}:${myOriginId}`));
 
-  const isMicDisabled = isMuted || isDeafened || isSpaceMuted || isSpaceDeafened || isPermissionMuted;
-
-  const localParticipant = useVoiceStore((s) => s.participants.find((p) => p.isLocal));
-  const isSpeaking = useVoiceStore((s) => (localParticipant ? s.speakingParticipantIds.has(localParticipant.identity) : false));
-
-  const handleMicToggle = () => {
-    if (isSpaceMuted || isSpaceDeafened || isPermissionMuted) return;
-    const wasDeafened = useVoiceStore.getState().isDeafened;
-    useVoiceStore.getState().toggleMic();
-    broadcastVoiceStatus();
-    if (wasDeafened && !useVoiceStore.getState().isDeafened) {
-      broadcastDeafenViaLiveKit();
-    }
-  };
-
-  const micTooltip = isMicDisabled
-    ? (isPermissionMuted ? t('spaces:sidebar.userArea.permissionMuted') : (isSpaceMuted || isSpaceDeafened) ? t('spaces:sidebar.userArea.spaceMuted') : t('voice:controls.activateMic'))
-    : t('voice:controls.deactivateMic');
+  const isSoundpadBlocked = isSpaceMuted || isPermissionMuted || !canUseSoundpad;
+  const soundpadTooltip = !canUseSoundpad
+    ? t('voice:controls.soundpadNoPermission')
+    : (isSpaceMuted || isPermissionMuted)
+      ? t('spaces:sidebar.userArea.spaceMuted')
+      : t('voice:controls.soundpad');
 
   // A share that ends outside the menu (OS "Stop sharing" bar, track loss,
   // keybind) must not leave a stale settings popover anchored to the button.
   useEffect(() => {
     if (!isScreenSharing) setShowShareMenu(false);
   }, [isScreenSharing]);
+
+  useEffect(() => {
+    if (!currentVoiceChannelId && !activeDmCall) setShowSoundpad(false);
+  }, [currentVoiceChannelId, activeDmCall]);
 
   if (!currentVoiceChannelId && !activeDmCall) return null;
 
@@ -262,48 +260,45 @@ export function VoiceControls() {
           </button>
         )}
 
-        {/* Microphone (Mute / Unmute) */}
+        {/* Soundpad (Megaphone) */}
         <button
-          onClick={handleMicToggle}
-          disabled={isSpaceMuted || isSpaceDeafened || isPermissionMuted}
+          ref={soundpadBtnRef}
+          onClick={() => {
+            if (isSoundpadBlocked) return;
+            const next = !showSoundpad;
+            setShowSoundpad(next);
+            if (next) {
+              setShowShareMenu(false);
+              setShowConnectionInfo(false);
+            }
+          }}
+          disabled={isSoundpadBlocked}
           className={`${btnBase} ${
-            isSpaceMuted || isSpaceDeafened || isPermissionMuted
-              ? 'bg-surface-base text-accent-amber/60 cursor-not-allowed'
-              : isMicDisabled
-                ? 'bg-surface-base text-[#929aab] hover:bg-surface-channel'
-                : isSpeaking
-                  ? 'bg-surface-base text-status-online hover:bg-surface-channel'
-                  : 'bg-surface-base text-[#929aab] hover:bg-surface-channel hover:text-txt-primary'
+            isSoundpadBlocked
+              ? 'bg-surface-base text-accent-amber/60 cursor-not-allowed opacity-60'
+              : showSoundpad
+                ? 'bg-surface-channel text-accent-primary ring-1 ring-accent-primary/40'
+                : isSoundpadPlaying
+                  ? 'bg-surface-base text-accent-primary animate-pulse'
+                  : btnDefaultStyle
           }`}
-          title={micTooltip}
-          aria-label={micTooltip}
-          aria-pressed={!isMicDisabled}
+          title={soundpadTooltip}
+          aria-label={t('voice:controls.openSoundpad')}
+          aria-haspopup="dialog"
+          aria-expanded={showSoundpad}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            {/* Subtle circular halo matching reference */}
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
-              opacity={!isMicDisabled && isSpeaking ? 0.22 : 0.08}
-            />
-            {/* Top pip */}
-            <path d="M12 1a2 2 0 012 2v1a2 2 0 01-4 0V3a2 2 0 012-2z" />
-            {/* Mic capsule */}
-            <path d="M12 7c-1.66 0-3 1.34-3 3v2c0 1.66 1.34 3 3 3s3-1.34 3-3v-2c0-1.66-1.34-3-3-3z" />
-            {/* Mic cradle and vertical stem */}
-            <path d="M17 11v1c0 2.76-2.24 5-5 5s-5-2.24-5-5v-1H5v1c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92v-1h-2z" />
-            {/* Diagonal cut / slash line when mic is muted / disabled */}
-            {isMicDisabled && (
-              <line
-                x1="4"
-                y1="4"
-                x2="20"
-                y2="20"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                opacity="0.4"
-              />
-            )}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m3 11 18-5v12L3 14v-3z" />
+            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
           </svg>
         </button>
 
@@ -313,6 +308,16 @@ export function VoiceControls() {
           onClose={() => setShowShareMenu(false)}
           anchorRef={shareBtnRef}
           onStopSharing={handleStopSharing}
+        />
+
+        {/* Soundpad Popover */}
+        <SoundpadPopover
+          open={showSoundpad}
+          onClose={() => setShowSoundpad(false)}
+          anchorRef={soundpadBtnRef}
+          spaceId={spaceId}
+          channelId={currentVoiceChannelId}
+          canManageSoundpad={canManageSoundpad}
         />
       </div>
     </>

@@ -498,7 +498,9 @@
       "moveMembers": "Перемещение участников",
       "stream": "Трансляция",
       "disconnectMembers": "Отключение участников",
-      "mentionEveryone": "Упоминать @everyone, @here и роли"
+      "mentionEveryone": "Упоминать @everyone, @here и роли",
+      "useSoundpad": "Использовать саундпад",
+      "manageSoundpad": "Управление саундпадом"
     },
     "tristate": {
       "deny": "Запретить",

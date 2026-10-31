@@ -93,6 +93,9 @@ import type {
   BotInstallation,
   BotReview,
   BotCommand,
+  SoundpadSound,
+  SoundpadCategory,
+  SoundScope,
 } from '@concord/shared';
 import type {
   Product,
@@ -526,6 +529,26 @@ export class BackspaceApiClient {
     adminReview: (id: string, data: { status: string }) => Promise<{ success: boolean }>;
     adminVerify: (id: string, data: { isVerified: boolean }) => Promise<{ success: boolean; isVerified: boolean }>;
     executeCommand: (channelId: string, data: { command: string; args?: string }) => Promise<{ success: boolean; message: MessageWithUser }>;
+  };
+
+  readonly soundpad: {
+    getSounds: (params?: { spaceId?: string; category?: string; search?: string }) => Promise<{ sounds: SoundpadSound[]; categories: SoundpadCategory[] }>;
+    createSound: (data: {
+      name: string;
+      audioBase64: string;
+      format?: string;
+      scope?: SoundScope;
+      spaceId?: string | null;
+      category?: string;
+      emoji?: string | null;
+      tags?: string[];
+      defaultVolume?: number;
+      durationMs?: number;
+    }) => Promise<{ sound: SoundpadSound }>;
+    updateSound: (id: string, data: Partial<SoundpadSound>) => Promise<{ sound: SoundpadSound }>;
+    deleteSound: (id: string) => Promise<{ success: boolean; soundId: string }>;
+    toggleFavorite: (id: string) => Promise<{ isFavorite: boolean; soundId: string }>;
+    recordPlay: (id: string, data?: { channelId?: string; spaceId?: string; volume?: number }) => Promise<{ success: boolean }>;
   };
 
   readonly admin: {
@@ -1242,6 +1265,30 @@ export class BackspaceApiClient {
           `/channels/${encodeURIComponent(channelId)}/commands/execute`,
           data
         ),
+    };
+
+    this.soundpad = {
+      getSounds: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.spaceId) qs.set('spaceId', params.spaceId);
+        if (params?.category) qs.set('category', params.category);
+        if (params?.search) qs.set('search', params.search);
+        const query = qs.toString();
+        return request<{ sounds: SoundpadSound[]; categories: SoundpadCategory[] }>(
+          'GET',
+          `/soundpad/sounds${query ? `?${query}` : ''}`
+        );
+      },
+      createSound: (data) =>
+        request<{ sound: SoundpadSound }>('POST', '/soundpad/sounds', data),
+      updateSound: (id: string, data) =>
+        request<{ sound: SoundpadSound }>('PATCH', `/soundpad/sounds/${encodeURIComponent(id)}`, data),
+      deleteSound: (id: string) =>
+        request<{ success: boolean; soundId: string }>('DELETE', `/soundpad/sounds/${encodeURIComponent(id)}`),
+      toggleFavorite: (id: string) =>
+        request<{ isFavorite: boolean; soundId: string }>('POST', `/soundpad/sounds/${encodeURIComponent(id)}/favorite`),
+      recordPlay: (id: string, data) =>
+        request<{ success: boolean }>('POST', `/soundpad/sounds/${encodeURIComponent(id)}/play`, data),
     };
 
     this.admin = {

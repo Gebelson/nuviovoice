@@ -153,6 +153,10 @@ export interface VoiceState {
   retainWatchers: (present: ReadonlySet<string>) => void;
   soundEffectVolume: number;                 // 0-200 (100 = default)
   setSoundEffectVolume: (volume: number) => void;
+  soundpadVolume: number;                    // 0-100 (80 = default)
+  setSoundpadVolume: (volume: number) => void;
+  activeSoundpadEffect: { soundId: string; soundName: string; emoji: string; userId: string; timestamp: number } | null;
+  setActiveSoundpadEffect: (effect: { soundId: string; soundName: string; emoji: string; userId: string; timestamp: number } | null) => void;
   messageSoundAllChannels: boolean;          // false (default) = DM + mention only; true = every channel
   setMessageSoundAllChannels: (allChannels: boolean) => void;
   pipEnabled: boolean;                       // true (default) = floating window shows while browsing other channels
@@ -340,6 +344,13 @@ export const useVoiceStore = create<VoiceState>()(
 
       soundEffectVolume: 100,
       setSoundEffectVolume: (volume) => set({ soundEffectVolume: volume }),
+      soundpadVolume: 80,
+      setSoundpadVolume: (volume) => {
+        set({ soundpadVolume: volume });
+        AudioManager.getInstance().setSoundpadVolume(volume);
+      },
+      activeSoundpadEffect: null,
+      setActiveSoundpadEffect: (effect) => set({ activeSoundpadEffect: effect }),
       messageSoundAllChannels: false,
       setMessageSoundAllChannels: (allChannels) => set({ messageSoundAllChannels: allChannels }),
       pipEnabled: true,
@@ -991,6 +1002,7 @@ export const useVoiceStore = create<VoiceState>()(
         rnnoiseEnabled: state.rnnoiseEnabled,
         noiseSuppressionMode: state.noiseSuppressionMode,
         soundEffectVolume: state.soundEffectVolume,
+        soundpadVolume: state.soundpadVolume,
         messageSoundAllChannels: state.messageSoundAllChannels,
         pipEnabled: state.pipEnabled,
         pipAlwaysOnTop: state.pipAlwaysOnTop,
@@ -1025,6 +1037,8 @@ export const useVoiceStore = create<VoiceState>()(
         merged.streamMutes = currentState.streamMutes;
         merged.watchingStreams = currentState.watchingStreams;
         merged.unwatchedCameras = currentState.unwatchedCameras;
+        merged.soundpadVolume = persistedState?.soundpadVolume ?? 80;
+        merged.activeSoundpadEffect = null;
         return merged;
       },
     }

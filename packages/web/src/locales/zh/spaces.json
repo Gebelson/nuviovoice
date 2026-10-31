@@ -489,7 +489,9 @@
       "moveMembers": "移动成员",
       "stream": "视频推流",
       "disconnectMembers": "断开成员连接",
-      "mentionEveryone": "提及 @everyone、@here 和身份组"
+      "mentionEveryone": "提及 @everyone、@here 和身份组",
+      "useSoundpad": "使用音效板",
+      "manageSoundpad": "管理音效板"
     },
     "tristate": {
       "deny": "拒绝",

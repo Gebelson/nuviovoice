@@ -4,7 +4,7 @@ import i18n from 'i18next';
 import { VoiceControls } from './VoiceControls';
 import { useVoiceStore } from '../../stores/voiceStore';
 import { useSpaceStore } from '../../stores/spaceStore';
-import * as voiceUtils from '../../utils/voice';
+import { PermissionBits } from '../../utils/permissions';
 
 vi.mock('../../audio/AudioManager', () => ({
   AudioManager: { getInstance: () => ({ onResumed: () => () => {} }) },
@@ -31,13 +31,18 @@ vi.mock('./ConnectionInfoPopover', () => ({
   ConnectionInfoPopover: () => null,
 }));
 
-describe('VoiceControls Microphone Button', () => {
+vi.mock('./SoundpadPopover', () => ({
+  SoundpadPopover: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="soundpad-popover">Soundpad Popover</div> : null,
+}));
+
+describe('VoiceControls Soundpad Button', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     await i18n.changeLanguage('pt');
     useSpaceStore.setState({
       channels: [{ id: 'voice-1', name: 'voice', type: 'voice' } as any],
-      channelPermissions: new Map(),
+      channelPermissions: new Map([['voice-1', PermissionBits.USE_SOUNDPAD]]),
       channelToSpaceMap: new Map(),
       members: [],
     });
@@ -56,48 +61,49 @@ describe('VoiceControls Microphone Button', () => {
     });
   });
 
-  it('renders unmuted microphone state with "Desativar microfone" tooltip and no slash line', () => {
+  it('renders enabled Soundpad button with megaphone icon and tooltip when permitted', () => {
     render(<VoiceControls />);
 
-    const micBtn = screen.getByTitle('Desativar microfone');
-    expect(micBtn).toBeInTheDocument();
-    expect(micBtn).toHaveAttribute('aria-label', 'Desativar microfone');
-    expect(micBtn).toHaveAttribute('aria-pressed', 'true');
+    const soundpadBtn = screen.getByTitle('Soundpad');
+    expect(soundpadBtn).toBeInTheDocument();
+    expect(soundpadBtn).toHaveAttribute('aria-label', 'Abrir Soundpad');
+    expect(soundpadBtn).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(soundpadBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(soundpadBtn).not.toBeDisabled();
 
-    // In unmuted state, the diagonal slash line is NOT present
-    const svg = micBtn.querySelector('svg');
+    // Megaphone SVG contains path elements
+    const svg = soundpadBtn.querySelector('svg');
     expect(svg).toBeInTheDocument();
-    expect(svg?.querySelector('line')).toBeNull();
+    expect(svg?.querySelectorAll('path').length).toBe(2);
   });
 
-  it('renders muted microphone state with "Ativar microfone" tooltip and slash line', () => {
-    useVoiceStore.setState({ isMuted: true });
+  it('renders disabled Soundpad button when user lacks USE_SOUNDPAD permission', () => {
+    useSpaceStore.setState({
+      channelPermissions: new Map([['voice-1', 0n]]),
+    });
 
     render(<VoiceControls />);
 
-    const micBtn = screen.getByTitle('Ativar microfone');
-    expect(micBtn).toBeInTheDocument();
-    expect(micBtn).toHaveAttribute('aria-label', 'Ativar microfone');
-    expect(micBtn).toHaveAttribute('aria-pressed', 'false');
-
-    // In muted state, the diagonal slash line is present
-    const svg = micBtn.querySelector('svg');
-    expect(svg).toBeInTheDocument();
-    const line = svg?.querySelector('line');
-    expect(line).not.toBeNull();
-    expect(line).toHaveAttribute('x1', '4');
-    expect(line).toHaveAttribute('y1', '4');
-    expect(line).toHaveAttribute('x2', '20');
-    expect(line).toHaveAttribute('y2', '20');
+    const soundpadBtn = screen.getByTitle('Você não tem permissão para usar o Soundpad');
+    expect(soundpadBtn).toBeInTheDocument();
+    expect(soundpadBtn).toBeDisabled();
+    expect(soundpadBtn).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('toggles mute on click and calls broadcastVoiceStatus', () => {
+  it('toggles Soundpad popover open and closed on click', () => {
     render(<VoiceControls />);
 
-    const micBtn = screen.getByTitle('Desativar microfone');
-    fireEvent.click(micBtn);
+    const soundpadBtn = screen.getByTitle('Soundpad');
+    expect(screen.queryByTestId('soundpad-popover')).not.toBeInTheDocument();
 
-    expect(useVoiceStore.getState().isMuted).toBe(true);
-    expect(voiceUtils.broadcastVoiceStatus).toHaveBeenCalledTimes(1);
+    // Click to open
+    fireEvent.click(soundpadBtn);
+    expect(soundpadBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('soundpad-popover')).toBeInTheDocument();
+
+    // Click again to close
+    fireEvent.click(soundpadBtn);
+    expect(soundpadBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('soundpad-popover')).not.toBeInTheDocument();
   });
 });

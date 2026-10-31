@@ -28,4 +28,7 @@ packages/web/src/components/store/StoreAdminQueue.tsx
 packages/web/src/components/store/StoreFrontPage.tsx
 packages/web/src/components/store/StoreNavTabs.tsx
 packages/web/src/components/store/VisualBlockRenderer.tsx
+packages/web/src/components/voice/SoundpadAddModal.tsx
+packages/web/src/components/voice/SoundpadPopover.tsx
 packages/web/src/components/voice/VoiceInvitePage.tsx
+packages/web/src/components/voice/VoiceUser.tsx

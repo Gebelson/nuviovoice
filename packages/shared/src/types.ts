@@ -2380,3 +2380,44 @@ export type FederationRejectedReason =
 
 /** `federation_peers.status_reason`: set for `needs_attention` and `rejected`, null otherwise. */
 export type FederationPeerStatusReason = FederationNeedsAttentionReason | FederationRejectedReason;
+
+// ─── Soundpad Types ──────────────────────────────────────────────────────────
+
+export type SoundScope = 'official' | 'personal' | 'space';
+
+export interface SoundpadSound {
+  id: string;
+  name: string;
+  scope: SoundScope;
+  ownerId: string | null;
+  spaceId: string | null;
+  category: string;
+  audioUrl: string;
+  storageKey?: string | null;
+  builtinSoundId?: string | null;
+  durationMs: number;
+  defaultVolume: number; // 0 to 1
+  emoji?: string | null;
+  iconUrl?: string | null;
+  tags?: string[] | null;
+  isFavorite?: boolean;
+  playCount?: number;
+  createdAt: string;
+}
+
+export interface SoundpadCategory {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export interface SoundpadPlayEvent {
+  type: 'soundpad_play';
+  soundId: string;
+  name: string;
+  emoji?: string | null;
+  userId: string;
+  username?: string;
+  volume: number;
+  timestamp: number;
+}

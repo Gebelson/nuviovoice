@@ -11,6 +11,7 @@ vi.mock('../../../audio/AudioManager', () => ({
 }));
 vi.mock('./AudioInputSection', () => ({ AudioInputSection: () => null }));
 vi.mock('./AudioOutputSection', () => ({ AudioOutputSection: () => null }));
+vi.mock('./NoiseSuppressionSection', () => ({ NoiseSuppressionSection: () => null }));
 vi.mock('./VideoSection', () => ({ VideoSection: () => null }));
 
 const PIP_LABEL = 'Show floating window during calls';

@@ -492,7 +492,9 @@
       "moveMembers": "Move Members",
       "stream": "Stream",
       "disconnectMembers": "Disconnect Members",
-      "mentionEveryone": "Mention @everyone, @here and Roles"
+      "mentionEveryone": "Mention @everyone, @here and Roles",
+      "useSoundpad": "Use Soundpad",
+      "manageSoundpad": "Manage Soundpad"
     },
     "tristate": {
       "deny": "Deny",

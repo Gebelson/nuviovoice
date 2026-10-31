@@ -1193,3 +1193,49 @@ export const botReviews = sqliteTable('bot_reviews', {
 
 
 
+
+// ─── Soundpad ────────────────────────────────────────────────────────────────
+
+export const soundpadSounds = sqliteTable('soundpad_sounds', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  scope: text('scope').notNull(), // 'official' | 'personal' | 'space'
+  ownerId: text('owner_id').references(() => users.id, { onDelete: 'cascade' }),
+  spaceId: text('space_id').references(() => spaces.id, { onDelete: 'cascade' }),
+  category: text('category').notNull().default('Geral'),
+  audioUrl: text('audio_url').notNull(),
+  storageKey: text('storage_key'),
+  builtinSoundId: text('builtin_sound_id'),
+  durationMs: integer('duration_ms').notNull().default(0),
+  defaultVolume: real('default_volume').notNull().default(1.0),
+  emoji: text('emoji'),
+  iconUrl: text('icon_url'),
+  tags: text('tags').notNull().default('[]'),
+  status: text('status').notNull().default('approved'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  scopeIdx: index('idx_soundpad_scope').on(table.scope),
+  ownerIdx: index('idx_soundpad_owner_id').on(table.ownerId),
+  spaceIdx: index('idx_soundpad_space_id').on(table.spaceId),
+  categoryIdx: index('idx_soundpad_category').on(table.category),
+}));
+
+export const soundpadFavorites = sqliteTable('soundpad_favorites', {
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  soundId: text('sound_id').notNull().references(() => soundpadSounds.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.soundId] }),
+  userIdx: index('idx_soundpad_fav_user').on(table.userId),
+}));
+
+export const soundpadUsage = sqliteTable('soundpad_usage', {
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  soundId: text('sound_id').notNull().references(() => soundpadSounds.id, { onDelete: 'cascade' }),
+  playCount: integer('play_count').notNull().default(1),
+  lastPlayedAt: integer('last_played_at').notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.soundId] }),
+  userIdx: index('idx_soundpad_usage_user').on(table.userId),
+}));

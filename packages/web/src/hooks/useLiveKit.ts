@@ -501,6 +501,21 @@ export function useLiveKit() {
         useVoiceStore.getState().setUserDeafened(userId, msg.deafened === true);
         updateParticipants();
       }
+      if (msg.type === 'soundpad_play') {
+        const pUserId = participant ? parseIdentity(participant.identity).userId : '';
+        useVoiceStore.getState().setActiveSoundpadEffect({
+          soundId: msg.soundId,
+          soundName: msg.soundName,
+          emoji: msg.emoji,
+          userId: msg.userId || pUserId,
+          timestamp: Date.now(),
+        });
+        setTimeout(() => {
+          if (useVoiceStore.getState().activeSoundpadEffect?.soundId === msg.soundId) {
+            useVoiceStore.getState().setActiveSoundpadEffect(null);
+          }
+        }, 3000);
+      }
     } catch { }
   }, [updateParticipants]);
 
@@ -551,6 +566,7 @@ export function useLiveKit() {
           return;
         }
 
+        audioManager.setMicMuted(effectiveMuted || effectiveDeafened);
         // If effectively muted or deafened, mute the track in-place (keep it published)
         if (effectiveMuted || effectiveDeafened) {
           if (micPub?.track && !micPub.isMuted) {

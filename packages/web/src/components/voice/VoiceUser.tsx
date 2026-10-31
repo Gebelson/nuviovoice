@@ -27,6 +27,7 @@ export function VoiceUser({ tile, large }: VoiceUserProps) {
   const permissionMutedUserIds = useVoiceStore((s) => s.permissionMutedUserIds);
   const unwatchedCameras = useVoiceStore((s) => s.unwatchedCameras);
   const participantMutes = useVoiceStore((s) => s.participantMutes);
+  const activeSoundpadEffect = useVoiceStore((s) => s.activeSoundpadEffect);
   const spaceId = useSpaceStore((s) => currentVoiceChannelId ? s.channelToSpaceMap.get(currentVoiceChannelId) : null);
 
   const openContextMenu = useContextMenuStore((s) => s.open);
@@ -198,8 +199,21 @@ export function VoiceUser({ tile, large }: VoiceUserProps) {
               const isPermissionMutedUser = spaceId ? permissionMutedUserIds.has(`${spaceId}:${participant.userId}`) : false;
               const effectivelyMuted = participant.isMuted || isSpaceMutedUser || isSpaceDeafenedUser || isPermissionMutedUser;
               const effectivelyDeafened = (isLocal ? isDeafened : participant.isDeafened) || isSpaceDeafenedUser;
+              const isEffectActiveForUser = activeSoundpadEffect && (
+                activeSoundpadEffect.userId === participant.userId ||
+                (isLocal && (activeSoundpadEffect.userId === 'local' || activeSoundpadEffect.userId === participant.userId))
+              );
               return (
                 <>
+                  {isEffectActiveForUser && (
+                    <div
+                      className="h-5 px-1.5 bg-accent-primary text-white rounded-full flex items-center gap-1 text-[10px] font-bold animate-bounce shadow-md"
+                      title={`Soundpad: ${activeSoundpadEffect.soundName}`}
+                    >
+                      <span>{activeSoundpadEffect.emoji || '📢'}</span>
+                      <span className="max-w-[60px] truncate">{activeSoundpadEffect.soundName}</span>
+                    </div>
+                  )}
                   {effectivelyMuted && (
                     <div className={`w-5 h-5 ${(isSpaceMutedUser || isSpaceDeafenedUser || isPermissionMutedUser) ? 'bg-accent-amber/90' : 'bg-accent-rose/90'} rounded-full flex items-center justify-center`}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="white">

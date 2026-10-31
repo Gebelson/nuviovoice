@@ -495,7 +495,9 @@
       "moveMembers": "Mover membros",
       "stream": "Transmitir",
       "disconnectMembers": "Desconectar membros",
-      "mentionEveryone": "Mencionar @everyone, @here e cargos"
+      "mentionEveryone": "Mencionar @everyone, @here e cargos",
+      "useSoundpad": "Usar Soundpad",
+      "manageSoundpad": "Gerenciar Soundpad"
     },
     "tristate": {
       "deny": "Negar",

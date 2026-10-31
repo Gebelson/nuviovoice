@@ -492,7 +492,9 @@
       "moveMembers": "Mitglieder verschieben",
       "stream": "Streamen",
       "disconnectMembers": "Mitglieder trennen",
-      "mentionEveryone": "@everyone, @here und Rollen erwähnen"
+      "mentionEveryone": "@everyone, @here und Rollen erwähnen",
+      "useSoundpad": "Soundpad verwenden",
+      "manageSoundpad": "Soundpad verwalten"
     },
     "tristate": {
       "deny": "Verbieten",

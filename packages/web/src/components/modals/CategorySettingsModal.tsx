@@ -30,6 +30,8 @@ const CATEGORY_PERMISSIONS: PermissionDef[] = [
   { key: 'DEAFEN_MEMBERS', bit: PermissionBits.DEAFEN_MEMBERS },
   { key: 'MOVE_MEMBERS', bit: PermissionBits.MOVE_MEMBERS },
   { key: 'DISCONNECT_MEMBERS', bit: PermissionBits.DISCONNECT_MEMBERS },
+  { key: 'USE_SOUNDPAD', bit: PermissionBits.USE_SOUNDPAD },
+  { key: 'MANAGE_SOUNDPAD', bit: PermissionBits.MANAGE_SOUNDPAD },
 ];
 
 // ─── Overview Tab ───────────────────────────────────────────────────────────────
