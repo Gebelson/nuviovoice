@@ -8,10 +8,12 @@ export function WinkAnimationPlayer() {
   const activeWink = useWinkStore((s) => s.activeWink);
   const dismissActiveWink = useWinkStore((s) => s.dismissActiveWink);
   const reduceMotion = useWinkStore((s) => s.settings.reduceMotion);
+  const playAudio = useWinkStore((s) => s.settings.playAudio);
+  const volume = useWinkStore((s) => s.settings.volume);
   const currentChannelId = useChatStore((s) => s.currentChannelId);
   const [screenShake, setScreenShake] = useState(false);
 
-  const wink = activeWink ? getOfficialWink(activeWink.winkId) : null;
+  const wink = activeWink ? useWinkStore.getState().getWink(activeWink.winkId) : null;
 
   // Screen shake effect for knocking-screen wink
   useEffect(() => {
@@ -66,7 +68,29 @@ export function WinkAnimationPlayer() {
 
       {/* Main Animation Arena */}
       <div className="relative w-full h-full flex items-center justify-center p-6">
-        {renderWinkVisual(wink.id, reduceMotion)}
+        {wink.webmUrl || wink.mp4Url ? (
+          <div className="relative max-w-[85vw] max-h-[75vh] flex items-center justify-center pointer-events-none">
+            <video
+              ref={(el) => {
+                if (el) {
+                  el.volume = Math.min(1, Math.max(0, (volume / 100) * (wink.defaultVolume ?? 1.0)));
+                }
+              }}
+              autoPlay
+              playsInline
+              muted={!playAudio || !wink.hasAudio}
+              onEnded={dismissActiveWink}
+              onError={() => dismissActiveWink()}
+              className="max-w-full max-h-[75vh] object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+              style={{ backgroundColor: 'transparent' }}
+            >
+              {wink.webmUrl && <source src={wink.webmUrl} type="video/webm" />}
+              {wink.mp4Url && <source src={wink.mp4Url} type="video/mp4" />}
+            </video>
+          </div>
+        ) : (
+          renderWinkVisual(wink.id, reduceMotion)
+        )}
       </div>
     </div>
   );

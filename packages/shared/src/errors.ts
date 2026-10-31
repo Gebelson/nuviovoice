@@ -275,6 +275,13 @@ export const ERROR_CODES = [
   'sticker_not_found',
   'sticker_collection_full',
   'sticker_name_invalid',
+
+  // Winks
+  'wink_not_found',
+  'wink_not_ready',
+  'unsupported_file_format',
+  'file_required',
+  'body_required',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

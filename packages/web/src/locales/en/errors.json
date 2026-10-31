@@ -227,5 +227,10 @@
   "sticker_not_local": "This sticker is stored on another server, so it was not added to your collection.",
   "sticker_not_found": "That sticker no longer exists.",
   "sticker_collection_full": "Your collection is full at {{max}} stickers. Remove one to add another.",
-  "sticker_name_invalid": "Sticker names can be 1 to {{max}} characters on one line, with at least one visible character and no control characters."
+  "sticker_name_invalid": "Sticker names can be 1 to {{max}} characters on one line, with at least one visible character and no control characters.",
+  "wink_not_found": "Wink not found.",
+  "wink_not_ready": "Wink is not ready for publication.",
+  "unsupported_file_format": "Unsupported video file format. Please upload MOV, MP4, or WebM.",
+  "file_required": "A video file is required.",
+  "body_required": "Request body is required."
 }

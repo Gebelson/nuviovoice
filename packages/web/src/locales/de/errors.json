@@ -227,5 +227,10 @@
   "sticker_not_local": "Dieser Sticker liegt auf einem anderen Server und wurde deshalb nicht zu deiner Sammlung hinzugefügt.",
   "sticker_not_found": "Diesen Sticker gibt es nicht mehr.",
   "sticker_collection_full": "Deine Sammlung ist mit {{max}} Stickern voll. Entferne einen, um einen neuen hinzuzufügen.",
-  "sticker_name_invalid": "Stickernamen dürfen 1 bis {{max}} Zeichen in einer Zeile haben, mindestens ein sichtbares Zeichen und keine Steuerzeichen."
+  "sticker_name_invalid": "Stickernamen dürfen 1 bis {{max}} Zeichen in einer Zeile haben, mindestens ein sichtbares Zeichen und keine Steuerzeichen.",
+  "wink_not_found": "Wink nicht gefunden.",
+  "wink_not_ready": "Wink ist noch nicht zur Veröffentlichung bereit.",
+  "unsupported_file_format": "Nicht unterstütztes Videoformat. Bitte MOV, MP4 oder WebM hochladen.",
+  "file_required": "Eine Videodatei ist erforderlich.",
+  "body_required": "Anfragetext ist erforderlich."
 }

@@ -1,15 +1,61 @@
-export type WinkCategory = 'romance' | 'fun' | 'emotions' | 'celebration';
+export type WinkCategory =
+  | 'romance'
+  | 'fun'
+  | 'emotions'
+  | 'celebration'
+  | 'humor'
+  | 'reactions'
+  | 'love'
+  | 'troll'
+  | 'drama';
+
+export type WinkStatus = 'pending' | 'validating' | 'processing' | 'completed' | 'failed';
 
 export interface OfficialWink {
   id: string;
   name: string;
-  nameKey: string;
+  nameKey?: string;
   description: string;
   category: WinkCategory;
   durationMs: number;
   hasAudio: boolean;
-  soundType: string;
+  soundType?: string;
   previewEmoji: string;
+
+  // Media properties for uploaded video winks
+  originalFilename?: string | null;
+  originalMime?: string | null;
+  originalSize?: number | null;
+  videoPath?: string | null;
+  webmPath?: string | null;
+  webmUrl?: string | null;
+  mp4Path?: string | null;
+  mp4Url?: string | null;
+  thumbnailPath?: string | null;
+  thumbnailUrl?: string | null;
+  hasAlpha?: boolean;
+  audioCodec?: string | null;
+  videoCodec?: string | null;
+  width?: number | null;
+  height?: number | null;
+  fps?: number | null;
+  defaultVolume?: number | null; // 0.0 to 1.0
+  status?: WinkStatus;
+  errorMessage?: string | null;
+  published?: boolean;
+  version?: number;
+  creatorId?: string | null;
+  createdAt?: number;
+  updatedAt?: number;
+  publishedAt?: number | null;
+}
+
+export interface WinkAdminMetrics {
+  total: number;
+  published: number;
+  processing: number;
+  drafts: number;
+  failed: number;
 }
 
 export interface WinkMessagePayload {
@@ -33,6 +79,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'kiss',
     previewEmoji: '💋',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'giant-heart',
@@ -44,6 +92,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'heartbeat',
     previewEmoji: '💖',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'heart-rain',
@@ -55,6 +105,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'sparkle',
     previewEmoji: '🌧️',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'confetti',
@@ -66,6 +118,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'party',
     previewEmoji: '🎉',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'popping-balloon',
@@ -77,6 +131,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'pop',
     previewEmoji: '🎈',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'laughing-face',
@@ -88,6 +144,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'laugh',
     previewEmoji: '😂',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'crying-face',
@@ -99,6 +157,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'cry',
     previewEmoji: '😭',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'angry-face',
@@ -110,6 +170,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'angry',
     previewEmoji: '😡',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'shooting-stars',
@@ -121,6 +183,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'chime',
     previewEmoji: '🌠',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'blooming-flower',
@@ -132,6 +196,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'bloom',
     previewEmoji: '🌸',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'warm-hug',
@@ -143,6 +209,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'hug',
     previewEmoji: '🤗',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'funky-dance',
@@ -154,6 +222,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'dance',
     previewEmoji: '🕺',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'fireworks',
@@ -165,6 +235,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'fireworks',
     previewEmoji: '🎆',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'in-love',
@@ -176,6 +248,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'love',
     previewEmoji: '😍',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'knocking-screen',
@@ -187,6 +261,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'knock',
     previewEmoji: '✊',
+    published: true,
+    status: 'completed',
   },
   {
     id: 'surprise-gift',
@@ -198,11 +274,13 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     soundType: 'gift',
     previewEmoji: '🎁',
+    published: true,
+    status: 'completed',
   },
 ] as const;
 
 export const OFFICIAL_WINK_MAP = new Map<string, OfficialWink>(
-  OFFICIAL_WINKS.map((w) => [w.id, w]),
+  OFFICIAL_WINKS.map((w) => [w.id, w as OfficialWink]),
 );
 
 export function getOfficialWink(id: string): OfficialWink | undefined {
@@ -210,7 +288,7 @@ export function getOfficialWink(id: string): OfficialWink | undefined {
 }
 
 export function isValidWinkId(id: unknown): id is string {
-  return typeof id === 'string' && OFFICIAL_WINK_MAP.has(id);
+  return typeof id === 'string' && id.trim().length > 0;
 }
 
 export function isWinkContent(content: string | null | undefined): { isWink: boolean; winkId: string | null } {
@@ -218,7 +296,7 @@ export function isWinkContent(content: string | null | undefined): { isWink: boo
   const trimmed = content.trim();
   if (trimmed.startsWith('wink:')) {
     const id = trimmed.slice(5).trim();
-    if (isValidWinkId(id)) return { isWink: true, winkId: id };
+    if (id.length > 0) return { isWink: true, winkId: id };
   }
   try {
     const parsed = JSON.parse(trimmed);
@@ -226,9 +304,9 @@ export function isWinkContent(content: string | null | undefined): { isWink: boo
       parsed &&
       (parsed.type === 'wink' || parsed.event === 'wink' || parsed._nuvio_wink === true) &&
       typeof parsed.winkId === 'string' &&
-      isValidWinkId(parsed.winkId)
+      parsed.winkId.trim().length > 0
     ) {
-      return { isWink: true, winkId: parsed.winkId };
+      return { isWink: true, winkId: parsed.winkId.trim() };
     }
   } catch {
     // not JSON

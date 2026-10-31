@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import crypto from 'crypto';
 import { insertDmMember } from '../utils/dmMemberClosed.js';
+import { OFFICIAL_WINKS } from '@concord/shared/src/winks.js';
 
 /**
  * Ensure data invariants after schema migration. Idempotent — safe to run
@@ -656,6 +657,79 @@ export function ensureDefaults(db: Database.Database): void {
 
   // 17. Ensure @everyone role in all spaces has USE_SOUNDPAD permission
   migrateSoundpadEveryonePermissions(db);
+
+  // 18. Winks table and official preset seeding
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS winks (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'diversao',
+      description TEXT NOT NULL DEFAULT '',
+      emoji TEXT NOT NULL DEFAULT '✨',
+      original_filename TEXT,
+      original_mime TEXT,
+      original_size INTEGER DEFAULT 0,
+      video_path TEXT,
+      webm_path TEXT,
+      webm_url TEXT,
+      mp4_path TEXT,
+      mp4_url TEXT,
+      thumbnail_path TEXT,
+      thumbnail_url TEXT,
+      has_alpha INTEGER NOT NULL DEFAULT 0,
+      has_audio INTEGER NOT NULL DEFAULT 0,
+      audio_codec TEXT,
+      video_codec TEXT,
+      width INTEGER DEFAULT 0,
+      height INTEGER DEFAULT 0,
+      fps INTEGER DEFAULT 0,
+      duration_ms INTEGER NOT NULL DEFAULT 4000,
+      default_volume REAL NOT NULL DEFAULT 1.0,
+      status TEXT NOT NULL DEFAULT 'pending',
+      error_message TEXT,
+      published INTEGER NOT NULL DEFAULT 0,
+      version INTEGER NOT NULL DEFAULT 1,
+      creator_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      published_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_winks_category ON winks(category);
+    CREATE INDEX IF NOT EXISTS idx_winks_status ON winks(status);
+    CREATE INDEX IF NOT EXISTS idx_winks_published ON winks(published);
+  `);
+
+  const winksCount = (db.prepare('SELECT count(*) as count FROM winks').get() as { count: number }).count;
+  if (winksCount === 0) {
+    const insertWink = db.prepare(`
+      INSERT INTO winks (
+        id, name, category, description, emoji,
+        duration_ms, has_audio, default_volume, status, published,
+        created_at, updated_at, published_at
+      ) VALUES (
+        ?, ?, ?, ?, ?,
+        ?, ?, 1.0, 'completed', 1,
+        ?, ?, ?
+      )
+    `);
+    const now = Date.now();
+    for (const w of OFFICIAL_WINKS) {
+      insertWink.run(
+        w.id,
+        w.name,
+        w.category,
+        w.description,
+        w.previewEmoji,
+        w.durationMs,
+        w.hasAudio ? 1 : 0,
+        now,
+        now,
+        now
+      );
+    }
+    console.log('[defaults] Seeded 16 official preset winks into database');
+  }
+
 }
 
 /**

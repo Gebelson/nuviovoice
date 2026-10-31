@@ -1,4 +1,4 @@
-import { isWinkContent, isValidWinkId, formatWinkContent } from '@concord/shared/src/winks.js';
+import { isWinkContent, isValidWinkId, formatWinkContent, OFFICIAL_WINK_MAP } from '@concord/shared/src/winks.js';
 import { and, eq } from 'drizzle-orm';
 import { MAX_MESSAGE_LENGTH } from '@concord/shared';
 import type { ErrorCode, ErrorDetails } from '@concord/shared/src/errors';
@@ -57,6 +57,24 @@ export interface DmMessageCreateFields {
   winkId?: unknown;
 }
 
+function isWinkPlayable(winkId: string): boolean {
+  if (OFFICIAL_WINK_MAP.has(winkId)) return true;
+  try {
+    const db = getDb();
+    const row = db.select({ id: schema.winks.id })
+      .from(schema.winks)
+      .where(and(
+        eq(schema.winks.id, winkId),
+        eq(schema.winks.published, 1),
+        eq(schema.winks.status, 'completed'),
+      ))
+      .get();
+    return !!row;
+  } catch {
+    return false;
+  }
+}
+
 function refuse<T>(status: DmMessageRefusal['status'], code: ErrorCode, details?: ErrorDetails): DmMessageCheck<T> {
   return { ok: false, refusal: details ? { status, code, details } : { status, code } };
 }
@@ -102,7 +120,7 @@ export function checkDmMessageCreate(
   const isWinkRequest = fieldsAny.type === 'wink' || !!fieldsAny.winkId || (typeof content === 'string' && isWinkContent(content).isWink);
 
   if (isWinkRequest) {
-    if (!rawWinkId || !isValidWinkId(rawWinkId)) {
+    if (!rawWinkId || !isValidWinkId(rawWinkId) || !isWinkPlayable(rawWinkId)) {
       return refuse(400, 'validation_failed');
     }
     const finalContent = formatWinkContent(rawWinkId);

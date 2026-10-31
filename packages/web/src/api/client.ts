@@ -96,6 +96,8 @@ import type {
   SoundpadSound,
   SoundpadCategory,
   SoundScope,
+  OfficialWink,
+  WinkAdminMetrics,
 } from '@concord/shared';
 import type {
   Product,
@@ -552,6 +554,26 @@ export class BackspaceApiClient {
     recordPlay: (id: string, data?: { channelId?: string; spaceId?: string; volume?: number }) => Promise<{ success: boolean }>;
   };
 
+  readonly winks: {
+    list: () => Promise<OfficialWink[]>;
+    get: (id: string) => Promise<OfficialWink>;
+    send: (channelId: string, winkId: string) => Promise<DmMessageWithUser>;
+  };
+
+  readonly adminWinks: {
+    list: (params?: { category?: string; status?: string; search?: string }) => Promise<{
+      winks: OfficialWink[];
+      metrics: WinkAdminMetrics;
+    }>;
+    upload: (formData: FormData) => Promise<OfficialWink>;
+    get: (id: string) => Promise<OfficialWink>;
+    update: (id: string, data: Partial<OfficialWink>) => Promise<OfficialWink>;
+    publish: (id: string) => Promise<OfficialWink>;
+    unpublish: (id: string) => Promise<OfficialWink>;
+    retry: (id: string) => Promise<OfficialWink>;
+    delete: (id: string) => Promise<{ success: boolean; id: string }>;
+  };
+
   readonly admin: {
     storageStats: () => Promise<StorageStats>;
     storageOrphans: () => Promise<{ orphans: OrphanedFile[] }>;
@@ -608,7 +630,7 @@ export class BackspaceApiClient {
         response = await fetch(`${baseUrl}${path}`, {
           method,
           headers,
-          body: body ? JSON.stringify(body) : undefined,
+          body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
           signal: controller.signal,
         });
       } catch (err) {
@@ -1334,6 +1356,34 @@ export class BackspaceApiClient {
         set: (enabled) => request<TelemetryStatus>('PUT', '/admin/telemetry', { enabled }),
         preview: () => request<TelemetryPayload>('GET', '/admin/telemetry/preview'),
       },
+    };
+
+    this.winks = {
+      list: () => request<OfficialWink[]>('GET', '/winks', undefined, false),
+      get: (id: string) => request<OfficialWink>('GET', `/winks/${encodeURIComponent(id)}`, undefined, false),
+      send: (channelId: string, winkId: string) =>
+        request<DmMessageWithUser>('POST', `/dm/${channelId}/winks`, { winkId }),
+    };
+
+    this.adminWinks = {
+      list: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.category) qs.set('category', params.category);
+        if (params?.status) qs.set('status', params.status);
+        if (params?.search) qs.set('search', params.search);
+        const query = qs.toString();
+        return request<{ winks: OfficialWink[]; metrics: WinkAdminMetrics }>(
+          'GET',
+          `/admin/winks${query ? `?${query}` : ''}`
+        );
+      },
+      upload: (formData) => request<OfficialWink>('POST', '/admin/winks/upload', formData),
+      get: (id) => request<OfficialWink>('GET', `/admin/winks/${encodeURIComponent(id)}`),
+      update: (id, data) => request<OfficialWink>('PATCH', `/admin/winks/${encodeURIComponent(id)}`, data),
+      publish: (id) => request<OfficialWink>('POST', `/admin/winks/${encodeURIComponent(id)}/publish`),
+      unpublish: (id) => request<OfficialWink>('POST', `/admin/winks/${encodeURIComponent(id)}/unpublish`),
+      retry: (id) => request<OfficialWink>('POST', `/admin/winks/${encodeURIComponent(id)}/retry`),
+      delete: (id) => request<{ success: boolean; id: string }>('DELETE', `/admin/winks/${encodeURIComponent(id)}`),
     };
   }
 }

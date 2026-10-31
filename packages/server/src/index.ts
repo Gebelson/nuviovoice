@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
+import multipart from '@fastify/multipart';
 import { config } from './config.js';
 import { getDb, getRawDb, closeDatabase } from './db/index.js';
 import { checkFfmpeg } from './utils/thumbnail.js';
@@ -41,6 +42,7 @@ import { voiceInviteRoutes } from './routes/voiceInvites.js';
 import { storeRoutes } from './routes/store.js';
 import { botsRoutes } from './routes/bots.js';
 import { soundpadRoutes } from './routes/soundpad.js';
+import { winksRoutes } from './routes/winks.js';
 import { buildCspHeaderValue, CSP_REPORT_GROUP, CSP_REPORT_PATH } from './utils/csp.js';
 import { startFederationWorkers, stopFederationWorkers } from './utils/federationWorker.js';
 import { startBackupWorker, stopBackupWorker } from './utils/backupWorker.js';
@@ -126,6 +128,12 @@ async function main(): Promise<void> {
   // manage the CSP: the policy depends on runtime config and has to defer to
   // routes that set their own, so it is applied by the onSend hook below and
   // lives in exactly one place.
+  await app.register(multipart, {
+    limits: {
+      fileSize: 500 * 1024 * 1024,
+    },
+  });
+
   await app.register(helmet, {
     contentSecurityPolicy: false,
     // Only the TLS terminator knows whether HTTPS is actually in play. Caddy
@@ -251,6 +259,7 @@ async function main(): Promise<void> {
   await app.register(storeRoutes);
   await app.register(botsRoutes);
   await app.register(soundpadRoutes);
+  await app.register(winksRoutes);
   // Registered here rather than beside the hook above so it sits behind the
   // rate limiter. The sink is unauthenticated by design and writes a log line
   // per report, and @fastify/rate-limit only covers routes registered after it.

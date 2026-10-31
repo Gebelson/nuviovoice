@@ -1,5 +1,4 @@
 import React from 'react';
-import { getOfficialWink } from '@concord/shared/src/winks';
 import { useWinkStore } from '../../stores/winkStore';
 import { SparklesIcon } from '../ui/icons';
 
@@ -10,7 +9,7 @@ interface WinkMessageCardProps {
 }
 
 export function WinkMessageCard({ winkId, senderName, channelId }: WinkMessageCardProps) {
-  const wink = getOfficialWink(winkId);
+  const wink = useWinkStore((s) => s.getWink(winkId));
   const triggerWink = useWinkStore((s) => s.triggerWink);
 
   if (!wink) {
@@ -42,11 +41,22 @@ export function WinkMessageCard({ winkId, senderName, channelId }: WinkMessageCa
 
       {/* Wink info */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-accent-primary/15 border border-accent-primary/30 flex items-center justify-center text-2xl shrink-0 shadow-inner">
-          {wink.previewEmoji}
+        <div className="w-12 h-12 rounded-xl bg-accent-primary/15 border border-accent-primary/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+          {wink.thumbnailUrl ? (
+            <img src={wink.thumbnailUrl} alt={wink.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl">{wink.previewEmoji}</span>
+          )}
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-semibold text-white truncate">{wink.name}</h4>
+          <h4 className="text-sm font-semibold text-white truncate flex items-center gap-1.5">
+            <span className="truncate">{wink.name}</span>
+            {wink.hasAlpha && (
+              <span className="px-1.5 py-0.5 text-[9px] font-normal bg-purple-500/20 text-purple-300 rounded border border-purple-500/30">
+                transparente
+              </span>
+            )}
+          </h4>
           <p className="text-[11px] text-txt-secondary truncate">{wink.description}</p>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { getOfficialWink } from '@concord/shared/src/winks';
+import { OFFICIAL_WINKS, getOfficialWink, type OfficialWink } from '@concord/shared/src/winks';
 import { playWinkSound } from '../audio/winkAudio';
+import { api } from '../api/client';
 
 export interface WinkSettings {
   autoplay: boolean;
@@ -23,7 +24,11 @@ interface WinkState {
   settings: WinkSettings;
   recentWinkIds: string[];
   activeWink: ActiveWink | null;
+  publishedWinks: OfficialWink[];
+  isLoadingPublished: boolean;
 
+  fetchPublishedWinks: () => Promise<void>;
+  getWink: (id: string) => OfficialWink | undefined;
   triggerWink: (params: {
     winkId: string;
     senderName?: string;
@@ -49,6 +54,34 @@ export const useWinkStore = create<WinkState>()(
       },
       recentWinkIds: ['kiss', 'giant-heart', 'confetti', 'knocking-screen'],
       activeWink: null,
+      publishedWinks: [...OFFICIAL_WINKS],
+      isLoadingPublished: false,
+
+      fetchPublishedWinks: async () => {
+        set({ isLoadingPublished: true });
+        try {
+          const list = await api.winks.list();
+          // Merge with built-in presets ensuring presets are preserved
+          const map = new Map<string, OfficialWink>();
+          for (const w of OFFICIAL_WINKS) {
+            map.set(w.id, w);
+          }
+          for (const w of list) {
+            map.set(w.id, w);
+          }
+          set({ publishedWinks: Array.from(map.values()), isLoadingPublished: false });
+        } catch {
+          // If server call fails, fallback to built-in presets
+          set({ publishedWinks: [...OFFICIAL_WINKS], isLoadingPublished: false });
+        }
+      },
+
+      getWink: (id: string) => {
+        const state = get();
+        const found = state.publishedWinks.find((w) => w.id === id);
+        if (found) return found;
+        return getOfficialWink(id);
+      },
 
       triggerWink: ({ winkId, senderName, isLocalReplay = false, channelId }) => {
         const state = get();
@@ -61,7 +94,7 @@ export const useWinkStore = create<WinkState>()(
           }
         }
 
-        const wink = getOfficialWink(winkId);
+        const wink = state.getWink(winkId);
         if (!wink) return;
 
         if (winkTimer) {
@@ -79,8 +112,9 @@ export const useWinkStore = create<WinkState>()(
 
         set({ activeWink: active });
 
-        // Play audio if enabled
-        if (settings.playAudio && wink.hasAudio) {
+        // If it's a procedural built-in wink without a video file, play WebAudio sound
+        const isVideo = !!(wink.webmUrl || wink.mp4Url);
+        if (!isVideo && settings.playAudio && wink.hasAudio && wink.soundType) {
           try {
             playWinkSound(wink.soundType, settings.volume);
           } catch {
@@ -88,8 +122,8 @@ export const useWinkStore = create<WinkState>()(
           }
         }
 
-        // Auto-dismiss after wink duration
-        const duration = wink.durationMs || 4000;
+        // Auto-dismiss safety timer (video onEnded also calls dismissActiveWink)
+        const duration = (wink.durationMs || 4000) + 500;
         winkTimer = setTimeout(() => {
           set({ activeWink: null });
           winkTimer = null;

@@ -181,6 +181,12 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   sticker_not_found: 'Sticker not found',
   sticker_collection_full: 'A sticker collection holds at most {{max}} stickers',
   sticker_name_invalid: 'Sticker names can be 1 to {{max}} characters on one line, with at least one visible character and no control characters.',
+  // winks
+  wink_not_found: 'Wink not found',
+  wink_not_ready: 'Wink is not ready for publication',
+  unsupported_file_format: 'Unsupported file format',
+  file_required: 'A video file is required',
+  body_required: 'Request body is required',
   // spaces
   space_owner_title_invalid: 'Owner titles can be 1 to {{max}} characters on one line, with at least one visible character and no control characters.',
   member_nickname_invalid: 'Nicknames can be at most {{max}} characters on one line, with at least one visible character and no control characters.',

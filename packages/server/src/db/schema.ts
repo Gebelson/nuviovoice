@@ -1239,3 +1239,45 @@ export const soundpadUsage = sqliteTable('soundpad_usage', {
   pk: primaryKey({ columns: [table.userId, table.soundId] }),
   userIdx: index('idx_soundpad_usage_user').on(table.userId),
 }));
+
+// ─── Winks ───────────────────────────────────────────────────────────────────
+
+export const winks = sqliteTable('winks', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  category: text('category').notNull().default('diversao'),
+  description: text('description').notNull().default(''),
+  emoji: text('emoji').notNull().default('✨'),
+  originalFilename: text('original_filename'),
+  originalMime: text('original_mime'),
+  originalSize: integer('original_size').default(0),
+  videoPath: text('video_path'),
+  webmPath: text('webm_path'),
+  webmUrl: text('webm_url'),
+  mp4Path: text('mp4_path'),
+  mp4Url: text('mp4_url'),
+  thumbnailPath: text('thumbnail_path'),
+  thumbnailUrl: text('thumbnail_url'),
+  hasAlpha: integer('has_alpha').notNull().default(0),
+  hasAudio: integer('has_audio').notNull().default(0),
+  audioCodec: text('audio_codec'),
+  videoCodec: text('video_codec'),
+  width: integer('width').default(0),
+  height: integer('height').default(0),
+  fps: integer('fps').default(0),
+  durationMs: integer('duration_ms').notNull().default(4000),
+  defaultVolume: real('default_volume').notNull().default(1.0),
+  status: text('status').notNull().default('pending'), // 'pending' | 'validating' | 'processing' | 'completed' | 'failed'
+  errorMessage: text('error_message'),
+  published: integer('published').notNull().default(0),
+  version: integer('version').notNull().default(1),
+  creatorId: text('creator_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+  publishedAt: integer('published_at'),
+}, (table) => ({
+  categoryIdx: index('idx_winks_category').on(table.category),
+  statusIdx: index('idx_winks_status').on(table.status),
+  publishedIdx: index('idx_winks_published').on(table.published),
+}));
+

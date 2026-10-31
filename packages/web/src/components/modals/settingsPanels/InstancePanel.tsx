@@ -12,8 +12,9 @@ import { StreamingPanel } from '../instanceSettingsPanels/StreamingPanel';
 import { StoragePanel } from '../instanceSettingsPanels/StoragePanel';
 import { UsersPanel } from '../instanceSettingsPanels/UsersPanel';
 import { UpdatesPanel } from '../instanceSettingsPanels/UpdatesPanel';
+import { AdminWinksPanel } from '../instanceSettingsPanels/AdminWinksPanel';
 
-type SubTab = 'general' | 'registration' | 'federation' | 'streaming' | 'storage' | 'users' | 'updates';
+type SubTab = 'general' | 'registration' | 'federation' | 'streaming' | 'storage' | 'users' | 'updates' | 'winks';
 
 export function InstancePanel() {
   const { t } = useTranslation(['settings']);
@@ -31,6 +32,7 @@ export function InstancePanel() {
     { id: 'storage', label: t('settings:instance.tabs.storage') },
     { id: 'users', label: t('settings:instance.tabs.users') },
     { id: 'updates', label: t('settings:instance.tabs.updates'), badgeDot: updateBadge },
+    { id: 'winks', label: 'Winks' },
   ], [approvalCount, updateBadge, t]);
 
   const handleNavigate = useCallback((id: string) => {
@@ -55,6 +57,7 @@ export function InstancePanel() {
       {subTab === 'storage' && <StoragePanel />}
       {subTab === 'users' && <UsersPanel />}
       {subTab === 'updates' && <UpdatesPanel />}
+      {subTab === 'winks' && <AdminWinksPanel />}
     </div>
   );
 }
