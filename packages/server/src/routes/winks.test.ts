@@ -145,7 +145,7 @@ describe('Winks backend API & security rules', () => {
       method: 'POST',
       url: '/api/dm/dm-1/winks',
       headers: { authorization: 'user-1' },
-      payload: { winkId: 'kiss' },
+      payload: { winkId: 'diabravinho' },
     });
 
     expect(res.statusCode).toBe(201);
@@ -153,14 +153,14 @@ describe('Winks backend API & security rules', () => {
     expect(body.dmChannelId).toBe('dm-1');
     expect(body.userId).toBe('user-1');
     expect(body.type).toBe('wink');
-    expect(body.content).toContain('kiss');
+    expect(body.content).toContain('diabravinho');
 
     // Confirm stored in SQLite
     const row = sqlite.prepare('SELECT * FROM dm_messages WHERE id = ?').get(body.id) as any;
     expect(row).toBeDefined();
     expect(row.type).toBe('wink');
     expect(row.content).toContain('"type":"wink"');
-    expect(row.content).toContain('"winkId":"kiss"');
+    expect(row.content).toContain('"winkId":"diabravinho"');
   });
 
   it('rejects sending a non-existent winkId', async () => {
@@ -216,8 +216,9 @@ describe('Winks backend API & security rules', () => {
     expect(body.code).toBe('winks_not_allowed_in_channels');
   });
 
-  it('verifies that all 16 official winks can be sent in DMs', async () => {
-    expect(OFFICIAL_WINKS.length).toBe(16);
+  it('verifies that all 3 official winks (diabravinho, bolsogado, nikole) can be sent in DMs', async () => {
+    expect(OFFICIAL_WINKS.length).toBe(3);
+    expect(OFFICIAL_WINKS.map((w) => w.id)).toEqual(['diabravinho', 'bolsogado', 'nikole']);
 
     for (const wink of OFFICIAL_WINKS) {
       const res = await app.inject({
@@ -265,8 +266,8 @@ describe('Winks backend API & security rules', () => {
     const body = res.json();
     expect(body.winks).toBeDefined();
     expect(body.metrics).toBeDefined();
-    expect(body.metrics.total).toBe(16); // 16 seeded preset winks
-    expect(body.metrics.published).toBe(16);
+    expect(body.metrics.total).toBe(3); // 3 seeded official winks
+    expect(body.metrics.published).toBe(3);
   });
 
   it('processes a real transparent MOV ProRes 4444 video file with alpha preservation', async () => {

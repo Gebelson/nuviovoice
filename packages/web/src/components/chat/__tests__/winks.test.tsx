@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MessageWithUser, User } from '@concord/shared';
+import type { User } from '@concord/shared';
 import { OFFICIAL_WINKS } from '@concord/shared/src/winks';
 import { useAuthStore } from '../../../stores/authStore';
 import { useChatStore } from '../../../stores/chatStore';
@@ -21,9 +21,6 @@ vi.mock('../../../audio/AudioManager', () => ({
       setVolume: vi.fn(),
     }),
   },
-}));
-vi.mock('../../../audio/winkAudio', () => ({
-  playWinkSound: vi.fn(),
 }));
 
 const me: User = {
@@ -48,7 +45,7 @@ const sendWinkMock = vi.fn().mockResolvedValue({
   id: 'msg-wink-1',
   dmChannelId: 'dm-1',
   userId: 'user-me',
-  content: '{"type":"wink","winkId":"kiss","senderName":"Alice"}',
+  content: '{"type":"wink","winkId":"diabravinho","senderName":"Alice"}',
   type: 'wink',
   createdAt: Date.now(),
 });
@@ -93,8 +90,9 @@ describe('Winks functionality in Direct Messages', () => {
         reduceMotion: false,
         disableIncoming: false,
       },
-      recentWinkIds: ['kiss', 'giant-heart', 'confetti'],
+      recentWinkIds: ['diabravinho', 'bolsogado', 'nikole'],
       activeWink: null,
+      publishedWinks: [...OFFICIAL_WINKS],
     });
   });
 
@@ -199,42 +197,45 @@ describe('Winks functionality in Direct Messages', () => {
     expect(screen.getByPlaceholderText('Encontre um Wink...')).toBeInTheDocument();
   });
 
-  it('WinkPickerPopover displays official catalog and filter by category', () => {
+  it('WinkPickerPopover displays exactly the 3 new winks in order without empty categories', () => {
     const onSelect = vi.fn();
     const onClose = vi.fn();
     const anchorRef = { current: document.createElement('div') };
 
     render(<WinkPickerPopover onSelect={onSelect} onClose={onClose} anchorRef={anchorRef} />);
 
-    // Check all 16 winks are represented
-    expect(OFFICIAL_WINKS.length).toBe(16);
+    // Check exactly 3 winks are present
+    expect(OFFICIAL_WINKS.length).toBe(3);
+    expect(OFFICIAL_WINKS.map((w) => w.id)).toEqual(['diabravinho', 'bolsogado', 'nikole']);
 
-    // Filter by Romance category
-    const romanceButton = screen.getByRole('button', { name: 'Romance' });
-    fireEvent.click(romanceButton);
+    // Check names appear in document
+    expect(screen.getAllByText('Diabravinho').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Bolsogado').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Nikole').length).toBeGreaterThan(0);
 
-    expect(screen.getByText('Beijo animado')).toBeInTheDocument();
-    expect(screen.getByText('Coração gigante')).toBeInTheDocument();
+    // Filter by Humor category
+    const humorButton = screen.getByRole('button', { name: 'Humor' });
+    fireEvent.click(humorButton);
 
-    // Click to select
-    const kissButton = screen.getByRole('button', { name: /beijo animado/i });
-    fireEvent.click(kissButton);
+    // Click to select Diabravinho
+    const diabravinhoBtn = screen.getByRole('button', { name: /diabravinho/i });
+    fireEvent.click(diabravinhoBtn);
 
-    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'kiss' }));
+    expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'diabravinho' }));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('WinkMessageCard renders correctly and triggers local replay', () => {
+  it('WinkMessageCard renders correctly and triggers local replay for valid winks', () => {
     render(
       <WinkMessageCard
-        winkId="kiss"
+        winkId="diabravinho"
         senderName="Alice"
         channelId="dm-1"
       />
     );
 
     expect(screen.getByText('Wink do Nuvio')).toBeInTheDocument();
-    expect(screen.getByText('Beijo animado')).toBeInTheDocument();
+    expect(screen.getByText('Diabravinho')).toBeInTheDocument();
 
     const replayButton = screen.getByRole('button', { name: /reproduzir/i });
     expect(replayButton).toBeInTheDocument();
@@ -243,13 +244,26 @@ describe('Winks functionality in Direct Messages', () => {
 
     const activeWink = useWinkStore.getState().activeWink;
     expect(activeWink).not.toBeNull();
-    expect(activeWink?.winkId).toBe('kiss');
+    expect(activeWink?.winkId).toBe('diabravinho');
     expect(activeWink?.isLocalReplay).toBe(true);
+  });
+
+  it('WinkMessageCard displays "Wink não disponível" for historical messages with removed winks', () => {
+    render(
+      <WinkMessageCard
+        winkId="kiss"
+        senderName="Bob"
+        channelId="dm-1"
+      />
+    );
+
+    expect(screen.getByText('Wink não disponível')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /reproduzir/i })).not.toBeInTheDocument();
   });
 
   it('WinkAnimationPlayer displays active wink and allows manual dismiss', () => {
     useWinkStore.getState().triggerWink({
-      winkId: 'confetti',
+      winkId: 'diabravinho',
       senderName: 'Bob',
       channelId: 'dm-1',
       isLocalReplay: true,
@@ -259,7 +273,7 @@ describe('Winks functionality in Direct Messages', () => {
 
     expect(screen.getByTestId('wink-animation-player')).toBeInTheDocument();
     expect(screen.getByText(/Bob/)).toBeInTheDocument();
-    expect(screen.getByText(/Confetes/)).toBeInTheDocument();
+    expect(screen.getByText(/Diabravinho/)).toBeInTheDocument();
 
     const closeBtn = screen.getByRole('button', { name: /fechar/i });
     fireEvent.click(closeBtn);
@@ -281,7 +295,7 @@ describe('Winks functionality in Direct Messages', () => {
 
     // An incoming wink should not trigger when disableIncoming is true or autoplay is false
     useWinkStore.getState().triggerWink({
-      winkId: 'kiss',
+      winkId: 'diabravinho',
       senderName: 'Bob',
       channelId: 'dm-1',
       isLocalReplay: false,
@@ -291,13 +305,13 @@ describe('Winks functionality in Direct Messages', () => {
 
     // Local replay must always trigger regardless of disableIncoming
     useWinkStore.getState().triggerWink({
-      winkId: 'kiss',
+      winkId: 'diabravinho',
       senderName: 'Bob',
       channelId: 'dm-1',
       isLocalReplay: true,
     });
 
     expect(useWinkStore.getState().activeWink).not.toBeNull();
-    expect(useWinkStore.getState().activeWink?.winkId).toBe('kiss');
+    expect(useWinkStore.getState().activeWink?.winkId).toBe('diabravinho');
   });
 });

@@ -699,36 +699,64 @@ export function ensureDefaults(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_winks_published ON winks(published);
   `);
 
-  const winksCount = (db.prepare('SELECT count(*) as count FROM winks').get() as { count: number }).count;
-  if (winksCount === 0) {
-    const insertWink = db.prepare(`
-      INSERT INTO winks (
-        id, name, category, description, emoji,
-        duration_ms, has_audio, default_volume, status, published,
-        created_at, updated_at, published_at
-      ) VALUES (
-        ?, ?, ?, ?, ?,
-        ?, ?, 1.0, 'completed', 1,
-        ?, ?, ?
-      )
-    `);
-    const now = Date.now();
-    for (const w of OFFICIAL_WINKS) {
-      insertWink.run(
-        w.id,
-        w.name,
-        w.category,
-        w.description,
-        w.previewEmoji,
-        w.durationMs,
-        w.hasAudio ? 1 : 0,
-        now,
-        now,
-        now
-      );
-    }
-    console.log('[defaults] Seeded 16 official preset winks into database');
+  // Purge any legacy/removed winks from the database so only current catalog exists
+  db.prepare("DELETE FROM winks WHERE id NOT IN ('diabravinho', 'bolsogado', 'nikole')").run();
+
+  const insertWink = db.prepare(`
+    INSERT INTO winks (
+      id, name, category, description, emoji,
+      webm_url, mp4_url, thumbnail_url,
+      has_alpha, has_audio, width, height, fps,
+      duration_ms, default_volume, status, published,
+      created_at, updated_at, published_at
+    ) VALUES (
+      ?, ?, ?, ?, ?,
+      ?, ?, ?,
+      ?, ?, ?, ?, ?,
+      ?, 1.0, 'completed', 1,
+      ?, ?, ?
+    )
+    ON CONFLICT(id) DO UPDATE SET
+      name=excluded.name,
+      category=excluded.category,
+      description=excluded.description,
+      emoji=excluded.emoji,
+      webm_url=excluded.webm_url,
+      mp4_url=excluded.mp4_url,
+      thumbnail_url=excluded.thumbnail_url,
+      has_alpha=excluded.has_alpha,
+      has_audio=excluded.has_audio,
+      width=excluded.width,
+      height=excluded.height,
+      fps=excluded.fps,
+      duration_ms=excluded.duration_ms,
+      status='completed',
+      published=1,
+      updated_at=excluded.updated_at
+  `);
+  const winkNow = Date.now();
+  for (const w of OFFICIAL_WINKS) {
+    insertWink.run(
+      w.id,
+      w.name,
+      w.category,
+      w.description,
+      w.previewEmoji,
+      w.webmUrl ?? null,
+      w.mp4Url ?? null,
+      w.thumbnailUrl ?? null,
+      w.hasAlpha ? 1 : 0,
+      w.hasAudio ? 1 : 0,
+      w.width ?? 1920,
+      w.height ?? 1080,
+      w.fps ?? 24,
+      w.durationMs,
+      winkNow,
+      winkNow,
+      winkNow
+    );
   }
+  console.log('[defaults] Seeded official winks (diabravinho, bolsogado, nikole) into database');
 
 }
 

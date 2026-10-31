@@ -8,6 +8,7 @@ import { authenticate, requireAdmin } from '../utils/auth.js';
 import { sendError } from '../utils/httpErrors.js';
 import { generateSnowflake } from '../utils/snowflake.js';
 import {
+  WINKS_DIR,
   WINKS_PROCESSED_DIR,
   WINKS_ORIGINAL_DIR,
   WINKS_TEMP_DIR,
@@ -94,9 +95,12 @@ export async function winksRoutes(app: FastifyInstance): Promise<void> {
 
     let targetPath = path.join(WINKS_PROCESSED_DIR, safeFilename);
     if (!fs.existsSync(targetPath)) {
-      targetPath = path.join(WINKS_ORIGINAL_DIR, safeFilename);
+      targetPath = path.join(WINKS_DIR, safeFilename);
       if (!fs.existsSync(targetPath)) {
-        return sendError(reply, 404, 'file_not_found');
+        targetPath = path.join(WINKS_ORIGINAL_DIR, safeFilename);
+        if (!fs.existsSync(targetPath)) {
+          return sendError(reply, 404, 'file_not_found');
+        }
       }
     }
 

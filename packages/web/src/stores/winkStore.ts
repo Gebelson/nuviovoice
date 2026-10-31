@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { OFFICIAL_WINKS, getOfficialWink, type OfficialWink } from '@concord/shared/src/winks';
-import { playWinkSound } from '../audio/winkAudio';
 import { api } from '../api/client';
 
 export interface WinkSettings {
@@ -42,6 +41,12 @@ interface WinkState {
 
 let winkTimer: ReturnType<typeof setTimeout> | null = null;
 
+const VALID_CATALOG_IDS = new Set(['diabravinho', 'bolsogado', 'nikole']);
+
+function filterValidIds(ids: string[]): string[] {
+  return ids.filter((id) => VALID_CATALOG_IDS.has(id));
+}
+
 export const useWinkStore = create<WinkState>()(
   persist(
     (set, get) => ({
@@ -52,7 +57,7 @@ export const useWinkStore = create<WinkState>()(
         reduceMotion: false,
         disableIncoming: false,
       },
-      recentWinkIds: ['kiss', 'giant-heart', 'confetti', 'knocking-screen'],
+      recentWinkIds: ['diabravinho', 'bolsogado', 'nikole'],
       activeWink: null,
       publishedWinks: [...OFFICIAL_WINKS],
       isLoadingPublished: false,
@@ -61,17 +66,20 @@ export const useWinkStore = create<WinkState>()(
         set({ isLoadingPublished: true });
         try {
           const list = await api.winks.list();
-          // Merge with built-in presets ensuring presets are preserved
           const map = new Map<string, OfficialWink>();
+          // Base presets first
           for (const w of OFFICIAL_WINKS) {
             map.set(w.id, w);
           }
+          // Merge API items, strictly filtering out any legacy preset IDs
           for (const w of list) {
-            map.set(w.id, w);
+            if (VALID_CATALOG_IDS.has(w.id)) {
+              map.set(w.id, w);
+            }
           }
           set({ publishedWinks: Array.from(map.values()), isLoadingPublished: false });
         } catch {
-          // If server call fails, fallback to built-in presets
+          // If server call fails, fallback strictly to the 3 new winks
           set({ publishedWinks: [...OFFICIAL_WINKS], isLoadingPublished: false });
         }
       },
@@ -97,6 +105,11 @@ export const useWinkStore = create<WinkState>()(
         const wink = state.getWink(winkId);
         if (!wink) return;
 
+        // Don't attempt to play nonexistent or legacy animations without media
+        if (!wink.webmUrl && !wink.mp4Url) {
+          return;
+        }
+
         if (winkTimer) {
           clearTimeout(winkTimer);
           winkTimer = null;
@@ -112,18 +125,8 @@ export const useWinkStore = create<WinkState>()(
 
         set({ activeWink: active });
 
-        // If it's a procedural built-in wink without a video file, play WebAudio sound
-        const isVideo = !!(wink.webmUrl || wink.mp4Url);
-        if (!isVideo && settings.playAudio && wink.hasAudio && wink.soundType) {
-          try {
-            playWinkSound(wink.soundType, settings.volume);
-          } catch {
-            // AudioContext restrictions handled gracefully
-          }
-        }
-
         // Auto-dismiss safety timer (video onEnded also calls dismissActiveWink)
-        const duration = (wink.durationMs || 4000) + 500;
+        const duration = (wink.durationMs || 5000) + 500;
         winkTimer = setTimeout(() => {
           set({ activeWink: null });
           winkTimer = null;
@@ -139,10 +142,11 @@ export const useWinkStore = create<WinkState>()(
       },
 
       recordRecentWink: (winkId: string) => {
+        if (!VALID_CATALOG_IDS.has(winkId)) return;
         set((state) => {
-          const filtered = state.recentWinkIds.filter((id) => id !== winkId);
+          const filtered = filterValidIds(state.recentWinkIds).filter((id) => id !== winkId);
           return {
-            recentWinkIds: [winkId, ...filtered].slice(0, 8),
+            recentWinkIds: [winkId, ...filtered].slice(0, 3),
           };
         });
       },
@@ -157,11 +161,11 @@ export const useWinkStore = create<WinkState>()(
       },
     }),
     {
-      name: 'nuvio_winks_settings_v1',
+      name: 'nuvio_winks_settings_v2',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         settings: state.settings,
-        recentWinkIds: state.recentWinkIds,
+        recentWinkIds: filterValidIds(state.recentWinkIds),
       }),
     }
   )

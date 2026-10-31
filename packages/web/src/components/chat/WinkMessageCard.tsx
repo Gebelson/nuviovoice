@@ -12,11 +12,12 @@ export function WinkMessageCard({ winkId, senderName, channelId }: WinkMessageCa
   const wink = useWinkStore((s) => s.getWink(winkId));
   const triggerWink = useWinkStore((s) => s.triggerWink);
 
-  if (!wink) {
+  // If a historical message references a removed or non-existent wink:
+  if (!wink || (!wink.webmUrl && !wink.mp4Url)) {
     return (
       <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-txt-secondary">
-        <SparklesIcon width="14" height="14" className="text-accent-primary" />
-        <span>Wink ({winkId})</span>
+        <SparklesIcon width="14" height="14" className="text-txt-tertiary" />
+        <span>Wink não disponível</span>
       </div>
     );
   }
@@ -43,7 +44,16 @@ export function WinkMessageCard({ winkId, senderName, channelId }: WinkMessageCa
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl bg-accent-primary/15 border border-accent-primary/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
           {wink.thumbnailUrl ? (
-            <img src={wink.thumbnailUrl} alt={wink.name} className="w-full h-full object-cover" />
+            <img
+              src={wink.thumbnailUrl}
+              alt={wink.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                if (!e.currentTarget.src.includes('/winks/')) {
+                  e.currentTarget.src = `/winks/${wink.id}_thumb.webp`;
+                }
+              }}
+            />
           ) : (
             <span className="text-2xl">{wink.previewEmoji}</span>
           )}
@@ -64,7 +74,7 @@ export function WinkMessageCard({ winkId, senderName, channelId }: WinkMessageCa
       {/* Action: Reproduzir novamente */}
       <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center justify-between">
         <span className="text-[10px] text-txt-tertiary">
-          Duração: ~{Math.round(wink.durationMs / 1000)}s
+          Duração: ~{Math.round((wink.durationMs || 5000) / 1000)}s
         </span>
         <button
           type="button"

@@ -9,6 +9,8 @@ interface WinkPickerPopoverProps {
   anchorRef: React.RefObject<HTMLElement | null>;
 }
 
+const OFFICIAL_ORDER = ['diabravinho', 'bolsogado', 'nikole'];
+
 export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPopoverProps) {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<WinkCategory | 'all'>('all');
@@ -48,12 +50,13 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
 
   const recentWinks = useMemo(() => {
     return recentWinkIds
+      .filter((id) => OFFICIAL_ORDER.includes(id))
       .map((id) => publishedWinks.find((w) => w.id === id))
       .filter((w): w is OfficialWink => w !== undefined);
   }, [recentWinkIds, publishedWinks]);
 
   const filteredWinks = useMemo(() => {
-    let list = publishedWinks;
+    let list = publishedWinks.filter((w) => OFFICIAL_ORDER.includes(w.id));
     if (selectedCategory !== 'all') {
       list = list.filter((w) => w.category === selectedCategory);
     }
@@ -63,11 +66,17 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
         (w) =>
           w.name.toLowerCase().includes(q) ||
           w.description.toLowerCase().includes(q) ||
-          w.id.toLowerCase().includes(q) ||
-          w.category.toLowerCase().includes(q)
+          w.id.toLowerCase().includes(q)
       );
     }
-    return list;
+    return list.slice().sort((a, b) => {
+      const idxA = OFFICIAL_ORDER.indexOf(a.id);
+      const idxB = OFFICIAL_ORDER.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.name.localeCompare(b.name);
+    });
   }, [search, selectedCategory, publishedWinks]);
 
   const handleSend = (wink: OfficialWink) => {
@@ -76,18 +85,30 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
     onClose();
   };
 
-  const categories: Array<{ id: WinkCategory | 'all'; label: string }> = [
-    { id: 'all', label: 'Todos' },
-    { id: 'humor', label: 'Humor' },
-    { id: 'reactions', label: 'Reações' },
-    { id: 'romance', label: 'Romance' },
-    { id: 'love', label: 'Amor' },
-    { id: 'fun', label: 'Diversão' },
-    { id: 'emotions', label: 'Emoções' },
-    { id: 'celebration', label: 'Festa' },
-    { id: 'troll', label: 'Troll' },
-    { id: 'drama', label: 'Drama' },
-  ];
+  const categories = useMemo(() => {
+    const cats = new Set<WinkCategory>();
+    for (const w of publishedWinks) {
+      if (w.category && OFFICIAL_ORDER.includes(w.id)) {
+        cats.add(w.category);
+      }
+    }
+    const catLabels: Record<string, string> = {
+      humor: 'Humor',
+      fun: 'Diversão',
+      reactions: 'Reações',
+      emotions: 'Emoções',
+      celebration: 'Festa',
+      romance: 'Romance',
+      love: 'Amor',
+      troll: 'Troll',
+      drama: 'Drama',
+    };
+    const list: Array<{ id: WinkCategory | 'all'; label: string }> = [{ id: 'all', label: 'Todos' }];
+    for (const cat of cats) {
+      list.push({ id: cat, label: catLabels[cat] || cat });
+    }
+    return list;
+  }, [publishedWinks]);
 
   return (
     <div
@@ -153,22 +174,24 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
           )}
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 mt-2 overflow-x-auto scrollbar-none pb-0.5">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all ${
-                selectedCategory === cat.id
-                  ? 'bg-accent-primary text-white shadow-sm'
-                  : 'bg-white/[0.04] text-txt-secondary hover:text-white hover:bg-white/[0.08]'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
+        {/* Dynamic Categories: No empty categories ever shown */}
+        {categories.length > 1 && (
+          <div className="flex items-center gap-1.5 mt-2.5 overflow-x-auto scrollbar-none pb-0.5">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-accent-primary text-white shadow-sm'
+                    : 'bg-white/[0.04] text-txt-secondary hover:text-white hover:bg-white/[0.08]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Scrollable Catalog */}
@@ -179,7 +202,7 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
             <div className="text-[11px] font-medium text-txt-tertiary uppercase tracking-wider mb-2">
               Utilizados recentemente
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {recentWinks.map((wink) => (
                 <button
                   key={`recent-${wink.id}`}
@@ -188,14 +211,23 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
                   className="group relative flex flex-col items-center p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-accent-primary/50 transition-all text-center"
                   title={`${wink.name} - Clique para enviar`}
                 >
-                  <div className="w-10 h-10 mb-1 rounded-lg overflow-hidden flex items-center justify-center bg-white/[0.04] group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 mb-1.5 rounded-lg overflow-hidden flex items-center justify-center bg-white/[0.04] group-hover:scale-105 transition-transform">
                     {wink.thumbnailUrl ? (
-                      <img src={wink.thumbnailUrl} alt={wink.name} className="w-full h-full object-cover" />
+                      <img
+                        src={wink.thumbnailUrl}
+                        alt={wink.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          if (!e.currentTarget.src.includes('/winks/')) {
+                            e.currentTarget.src = `/winks/${wink.id}_thumb.webp`;
+                          }
+                        }}
+                      />
                     ) : (
                       <span className="text-2xl">{wink.previewEmoji}</span>
                     )}
                   </div>
-                  <span className="text-[11px] text-txt-secondary group-hover:text-white truncate w-full">
+                  <span className="text-[11px] font-medium text-txt-secondary group-hover:text-white truncate w-full">
                     {wink.name}
                   </span>
                 </button>
@@ -214,32 +246,45 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
               Nenhum Wink encontrado para "{search}"
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {filteredWinks.map((wink) => (
                 <button
                   key={wink.id}
                   onClick={() => handleSend(wink)}
                   onMouseEnter={() => setPreviewWink(wink)}
-                  className="group flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-accent-primary/50 transition-all text-left"
+                  className="group flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-accent-primary/50 transition-all text-left"
                 >
-                  <div className="w-11 h-11 rounded-lg bg-white/[0.06] group-hover:bg-accent-primary/20 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-14 h-14 rounded-xl bg-black/40 border border-white/10 group-hover:border-accent-primary/40 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform shadow-inner">
                     {wink.thumbnailUrl ? (
-                      <img src={wink.thumbnailUrl} alt={wink.name} className="w-full h-full object-cover" />
+                      <img
+                        src={wink.thumbnailUrl}
+                        alt={wink.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          if (!e.currentTarget.src.includes('/winks/')) {
+                            e.currentTarget.src = `/winks/${wink.id}_thumb.webp`;
+                          }
+                        }}
+                      />
                     ) : (
-                      <span className="text-xl">{wink.previewEmoji}</span>
+                      <span className="text-2xl">{wink.previewEmoji}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-txt-primary group-hover:text-white truncate flex items-center gap-1">
+                    <div className="text-sm font-semibold text-txt-primary group-hover:text-white truncate flex items-center gap-1.5">
                       <span className="truncate">{wink.name}</span>
                       {wink.hasAlpha && (
-                        <span className="px-1 py-0.2 text-[9px] bg-purple-500/20 text-purple-300 rounded shrink-0">
-                          alfa
+                        <span className="px-1.5 py-0.2 text-[9px] bg-purple-500/20 text-purple-300 rounded border border-purple-500/30 shrink-0 font-normal">
+                          transparente
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] text-txt-tertiary truncate">
+                    <div className="text-[11px] text-txt-secondary truncate mt-0.5">
                       {wink.description}
+                    </div>
+                    <div className="text-[10px] text-txt-tertiary mt-1 flex items-center gap-2">
+                      <span>Duração: ~{Math.round((wink.durationMs || 5000) / 1000)}s</span>
+                      {wink.hasAudio && <span>• Com áudio</span>}
                     </div>
                   </div>
                 </button>
@@ -251,15 +296,15 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
 
       {/* Footer Preview Bar */}
       {previewWink && (
-        <div className="px-4 py-2 bg-black/40 border-t border-white/[0.06] flex items-center justify-between text-[11px]">
-          <div className="flex items-center gap-1.5 truncate mr-2">
-            <span className="text-sm">{previewWink.previewEmoji}</span>
+        <div className="px-4 py-2.5 bg-black/50 border-t border-white/[0.08] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 truncate mr-2">
+            <span className="text-base">{previewWink.previewEmoji}</span>
             <span className="text-white font-medium truncate">{previewWink.name}</span>
-            <span className="text-txt-tertiary text-[10px]">({Math.round(previewWink.durationMs / 1000)}s)</span>
+            <span className="text-txt-tertiary text-[11px]">({Math.round((previewWink.durationMs || 5000) / 1000)}s)</span>
           </div>
           <button
             onClick={() => handleSend(previewWink)}
-            className="px-2.5 py-1 bg-accent-primary hover:bg-accent-primary-hover text-white rounded-lg text-xs font-medium shrink-0 transition-colors shadow-sm"
+            className="px-3 py-1 bg-accent-primary hover:bg-accent-primary-hover text-white rounded-lg text-xs font-semibold shrink-0 transition-colors shadow-sm"
           >
             Enviar
           </button>

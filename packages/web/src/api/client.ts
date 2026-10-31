@@ -876,8 +876,24 @@ export class BackspaceApiClient {
       },
       sendMessage: (id: string, data: CreateDmMessageRequest) =>
         request<DmMessageWithUser>('POST', `/dm/${id}/messages`, data),
-      sendWink: (id: string, winkId: string) =>
-        request<DmMessageWithUser>('POST', `/dm/${id}/winks`, { winkId }),
+      sendWink: async (id: string, winkId: string) => {
+        try {
+          return await request<DmMessageWithUser>('POST', `/dm/${id}/winks`, { winkId });
+        } catch (err: unknown) {
+          const is404 =
+            (err instanceof HttpError && err.status === 404) ||
+            (err as any)?.status === 404 ||
+            (err as any)?.statusCode === 404;
+          if (is404) {
+            return await request<DmMessageWithUser>('POST', `/dm/${id}/messages`, {
+              content: JSON.stringify({ type: 'wink', winkId }),
+              type: 'wink',
+              winkId,
+            } as any);
+          }
+          throw err;
+        }
+      },
       updateMessage: (id: string, data: UpdateMessageRequest) =>
         request<DmMessageWithUser>('PATCH', `/dm/messages/${id}`, data),
       deleteMessage: (id: string) =>

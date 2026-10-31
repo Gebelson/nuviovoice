@@ -672,13 +672,16 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
         const client = getApiForOrigin(origin);
         const myRow = myRowForOrigin(origin);
         const senderName = myRow?.displayName || myRow?.username || 'Você';
+
+        // Confirm send with server first before playing local animation
+        await client.dm.sendWink(channelId, wink.id);
+
         useWinkStore.getState().triggerWink({
           winkId: wink.id,
           senderName,
           channelId,
           isLocalReplay: true,
         });
-        await client.dm.sendWink(channelId, wink.id);
       } catch (err: unknown) {
         addToast(describeError(err), 'warning');
       }

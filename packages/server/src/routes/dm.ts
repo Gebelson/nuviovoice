@@ -2167,6 +2167,7 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
         userId: request.userId,
         replyToId,
         content,
+        type: (check.value as { type?: string }).type || 'text',
         createdAt: now,
       }).run();
 
