@@ -6,6 +6,7 @@ import { usePortalContainer } from '../../hooks/usePortalContainer';
 import { useSoundpadStore } from '../../stores/soundpadStore';
 import { useVoiceStore } from '../../stores/voiceStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useAuthStore } from '../../stores/authStore';
 import { SoundpadAddModal } from './SoundpadAddModal';
 import type { SoundpadSound } from '@concord/shared';
 
@@ -44,12 +45,26 @@ export function SoundpadPopover({
   const playSound = useSoundpadStore((s) => s.playSound);
   const stopCurrentSound = useSoundpadStore((s) => s.stopCurrentSound);
   const toggleFavorite = useSoundpadStore((s) => s.toggleFavorite);
+  const deleteSound = useSoundpadStore((s) => s.deleteSound);
+  const user = useAuthStore((s) => s.user);
+  const addToast = useUIStore((s) => s.addToast);
 
   const soundpadVolume = useVoiceStore((s) => s.soundpadVolume);
   const setSoundpadVolume = useVoiceStore((s) => s.setSoundpadVolume);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  const handleDeleteSound = async (soundId: string) => {
+    try {
+      const ok = await deleteSound(soundId);
+      if (ok) {
+        addToast(t('voice:soundpad.soundDeleted', 'Som excluído com sucesso'), 'info', 2000);
+      }
+    } catch {
+      addToast(t('voice:soundpad.soundDeleteError', 'Erro ao excluir som'), 'warning', 3000);
+    }
+  };
 
   // Desktop floating position
   const { style } = useFloatingPosition(anchorRef, popoverRef, {
@@ -374,9 +389,11 @@ export function SoundpadPopover({
                           sound={s}
                           isPlaying={playingSoundId === s.id}
                           isFavorite={favorites.has(s.id)}
+                          canDelete={s.ownerId === user?.id}
                           onPlay={() => void playSound(s, spaceId, channelId)}
                           onStop={stopCurrentSound}
                           onToggleFavorite={() => void toggleFavorite(s.id)}
+                          onDelete={() => void handleDeleteSound(s.id)}
                         />
                       ))}
                     </div>
@@ -412,9 +429,11 @@ export function SoundpadPopover({
                           sound={s}
                           isPlaying={playingSoundId === s.id}
                           isFavorite={favorites.has(s.id)}
+                          canDelete={canManageSoundpad || s.ownerId === user?.id}
                           onPlay={() => void playSound(s, spaceId, channelId)}
                           onStop={stopCurrentSound}
                           onToggleFavorite={() => void toggleFavorite(s.id)}
+                          onDelete={() => void handleDeleteSound(s.id)}
                         />
                       ))}
                     </div>
@@ -495,18 +514,22 @@ interface SoundItemProps {
   sound: SoundpadSound;
   isPlaying: boolean;
   isFavorite: boolean;
+  canDelete?: boolean;
   onPlay: () => void;
   onStop: () => void;
   onToggleFavorite: () => void;
+  onDelete?: () => void;
 }
 
 function SoundItem({
   sound,
   isPlaying,
   isFavorite,
+  canDelete,
   onPlay,
   onStop,
   onToggleFavorite,
+  onDelete,
 }: SoundItemProps) {
   return (
     <button
@@ -529,7 +552,7 @@ function SoundItem({
       </span>
 
       {/* Details */}
-      <div className="min-w-0 flex-1 pr-4">
+      <div className="min-w-0 flex-1 pr-6">
         <span
           className={`block text-xs font-bold truncate leading-tight ${
             isPlaying ? 'text-accent-primary' : 'text-white'
@@ -543,28 +566,52 @@ function SoundItem({
         </span>
       </div>
 
-      {/* Favorite heart icon */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
+      {/* Action buttons (Delete & Favorite) */}
+      <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5">
+        {canDelete && onDelete && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                onDelete();
+              }
+            }}
+            className="w-5 h-5 flex items-center justify-center rounded-md transition-all text-[11px] text-txt-tertiary opacity-0 group-hover:opacity-100 hover:text-accent-rose hover:bg-white/10"
+            title="Excluir som"
+          >
+            🗑️
+          </div>
+        )}
+
+        {/* Favorite heart icon */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
             e.stopPropagation();
             onToggleFavorite();
-          }
-        }}
-        className={`absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-md transition-all text-[11px] ${
-          isFavorite
-            ? 'text-red-400 opacity-100'
-            : 'text-txt-tertiary opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-white/10'
-        }`}
-        title={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
-      >
-        {isFavorite ? '❤️' : '🤍'}
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+              onToggleFavorite();
+            }
+          }}
+          className={`w-5 h-5 flex items-center justify-center rounded-md transition-all text-[11px] ${
+            isFavorite
+              ? 'text-red-400 opacity-100'
+              : 'text-txt-tertiary opacity-0 group-hover:opacity-100 hover:text-red-400 hover:bg-white/10'
+          }`}
+          title={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+        >
+          {isFavorite ? '❤️' : '🤍'}
+        </div>
       </div>
     </button>
   );

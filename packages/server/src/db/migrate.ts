@@ -213,10 +213,13 @@ export function ensureDefaults(db: Database.Database): void {
   }
 
   // 6. Ensure dm_members.cleared_history_at exists
-  const dmMemberCols = db.prepare('PRAGMA table_info(dm_members)').all() as { name: string }[];
-  if (!dmMemberCols.some(c => c.name === 'cleared_history_at')) {
-    db.exec('ALTER TABLE dm_members ADD COLUMN cleared_history_at INTEGER DEFAULT 0 NOT NULL;');
-    console.log('[defaults] Added cleared_history_at column to dm_members');
+  const hasDmMembers = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='dm_members'").get();
+  if (hasDmMembers) {
+    const dmMemberCols = db.prepare('PRAGMA table_info(dm_members)').all() as { name: string }[];
+    if (!dmMemberCols.some(c => c.name === 'cleared_history_at')) {
+      db.exec('ALTER TABLE dm_members ADD COLUMN cleared_history_at INTEGER DEFAULT 0 NOT NULL;');
+      console.log('[defaults] Added cleared_history_at column to dm_members');
+    }
   }
 
   // 7. Ensure user_hidden_messages table exists
@@ -650,6 +653,49 @@ export function ensureDefaults(db: Database.Database): void {
     }
     console.log('[defaults] Seeded 16 official soundpad preset sounds');
   }
+
+  // 17. Ensure @everyone role in all spaces has USE_SOUNDPAD permission
+  migrateSoundpadEveryonePermissions(db);
+}
+
+/**
+ * Ensure the `@everyone` role of every space has the USE_SOUNDPAD permission
+ * bit set (1n << 27n = 134217728n). Idempotent — preserves all existing bits
+ * and does not touch custom roles or overrides.
+ */
+export function migrateSoundpadEveryonePermissions(db: Database.Database): number {
+  const hasRoles = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='roles'").get();
+  if (!hasRoles) return 0;
+
+  const USE_SOUNDPAD_BIT = 1n << 27n;
+  const roles = db.prepare(`
+    SELECT id, space_id, permissions
+    FROM roles
+    WHERE id = space_id OR name = '@everyone'
+  `).all() as { id: string; space_id: string; permissions: string | null }[];
+
+  const updateStmt = db.prepare('UPDATE roles SET permissions = ? WHERE id = ?');
+  let updatedCount = 0;
+
+  for (const role of roles) {
+    let perms = 0n;
+    try {
+      perms = role.permissions ? BigInt(role.permissions) : 0n;
+    } catch {
+      perms = 0n;
+    }
+
+    if ((perms & USE_SOUNDPAD_BIT) === 0n) {
+      const newPerms = (perms | USE_SOUNDPAD_BIT).toString();
+      updateStmt.run(newPerms, role.id);
+      updatedCount++;
+    }
+  }
+
+  if (updatedCount > 0) {
+    console.log(`[defaults] Added USE_SOUNDPAD to @everyone role in ${updatedCount} space(s)`);
+  }
+  return updatedCount;
 }
 
 /**

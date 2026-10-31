@@ -40,23 +40,49 @@ export function VoiceControls() {
   const isSoundpadPlaying = useSoundpadStore((s) => !!s.playingSoundId);
 
   const activeDmCall = useVoiceStore((s) => s.activeDmCall);
-  const channelPerms = useSpaceStore((s) => currentVoiceChannelId ? s.channelPermissions.get(currentVoiceChannelId) : undefined);
-
-  // In DM calls, all permissions are granted; in space channels, check SPEAK and STREAM
-  const isDmCall = !!activeDmCall;
-  const canSpeak = isDmCall || hasPermissionBit(channelPerms, PermissionBits.SPEAK);
-  const canStream = isDmCall || hasPermissionBit(channelPerms, PermissionBits.STREAM);
-  const canUseSoundpad = isDmCall || hasPermissionBit(channelPerms, PermissionBits.USE_SOUNDPAD);
-  const canManageSoundpad = isDmCall || hasPermissionBit(channelPerms, PermissionBits.MANAGE_SOUNDPAD);
-  const { isSupported: isPopOutSupported, isPoppedOut, togglePopOut } = usePopOutCall();
-
   const user = useAuthStore((s) => s.user);
   const spaceId = useSpaceStore((s) => currentVoiceChannelId ? s.channelToSpaceMap.get(currentVoiceChannelId) : null);
   const myOriginId = useSpaceStore((s) => currentVoiceChannelId ? getMyUserIdForOrigin(getChannelOrigin(currentVoiceChannelId)) : s.members.find(m => m.userId === user?.id)?.userId ?? user?.id);
+  const space = useSpaceStore((s) => spaceId ? s.spaces.find((sp) => sp.id === spaceId) : undefined);
+  const channelPerms = useSpaceStore((s) => currentVoiceChannelId ? s.channelPermissions.get(currentVoiceChannelId) : undefined);
+  const spacePermissions = useSpaceStore((s) => s.spacePermissions);
 
-  const isSpaceMuted = !!(myOriginId && spaceId && spaceMutedUserIds.has(`${spaceId}:${myOriginId}`));
-  const isSpaceDeafened = !!(myOriginId && spaceId && spaceDeafenedUserIds.has(`${spaceId}:${myOriginId}`));
-  const isPermissionMuted = !!(myOriginId && spaceId && permissionMutedUserIds.has(`${spaceId}:${myOriginId}`));
+  const isOwner = !!(space && (space.ownerId === user?.id || (myOriginId && space.ownerId === myOriginId)));
+  const isInstanceAdmin = !!user?.isAdmin;
+
+  // In DM calls, all permissions are granted.
+  const isDmCall = !!activeDmCall;
+
+  // Space owner and instance admin always have full permissions without restriction
+  const canSpeak = isDmCall || isOwner || isInstanceAdmin || hasPermissionBit(channelPerms, PermissionBits.SPEAK);
+  const canStream = isDmCall || isOwner || isInstanceAdmin || hasPermissionBit(channelPerms, PermissionBits.STREAM);
+
+  // Soundpad permissions:
+  // Owner & Instance Admin: Always granted
+  // DM Call: Always granted
+  // Space channel: check channel permissions; fallback to space permissions if channel perms not yet loaded;
+  // default to true for members (USE_SOUNDPAD is granted to @everyone by default)
+  const spacePerms = spaceId ? spacePermissions.get(spaceId) : undefined;
+  const effectiveUseSoundpad = channelPerms !== undefined
+    ? hasPermissionBit(channelPerms, PermissionBits.USE_SOUNDPAD)
+    : spacePerms !== undefined
+      ? hasPermissionBit(spacePerms, PermissionBits.USE_SOUNDPAD)
+      : true;
+
+  const effectiveManageSoundpad = channelPerms !== undefined
+    ? hasPermissionBit(channelPerms, PermissionBits.MANAGE_SOUNDPAD)
+    : spacePerms !== undefined
+      ? hasPermissionBit(spacePerms, PermissionBits.MANAGE_SOUNDPAD)
+      : false;
+
+  const canUseSoundpad = isDmCall || isOwner || isInstanceAdmin || effectiveUseSoundpad;
+  const canManageSoundpad = isDmCall || isOwner || isInstanceAdmin || effectiveManageSoundpad;
+
+  const { isSupported: isPopOutSupported, isPoppedOut, togglePopOut } = usePopOutCall();
+
+  const isSpaceMuted = !isOwner && !isInstanceAdmin && !!(myOriginId && spaceId && spaceMutedUserIds.has(`${spaceId}:${myOriginId}`));
+  const isSpaceDeafened = !isOwner && !isInstanceAdmin && !!(myOriginId && spaceId && spaceDeafenedUserIds.has(`${spaceId}:${myOriginId}`));
+  const isPermissionMuted = !isOwner && !isInstanceAdmin && !!(myOriginId && spaceId && permissionMutedUserIds.has(`${spaceId}:${myOriginId}`));
 
   const isSoundpadBlocked = isSpaceMuted || isPermissionMuted || !canUseSoundpad;
   const soundpadTooltip = !canUseSoundpad

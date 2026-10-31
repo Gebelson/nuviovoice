@@ -190,6 +190,7 @@ export interface OverrideBits {
  * them; anyone else may not switch a bit they do not hold.
  */
 function unheldBits(held: bigint): bigint {
+  if ((held & PermissionBits.ADMINISTRATOR) !== 0n) return 0n;
   return (held & ALL_PERMISSIONS) === ALL_PERMISSIONS ? 0n : ~held;
 }
 

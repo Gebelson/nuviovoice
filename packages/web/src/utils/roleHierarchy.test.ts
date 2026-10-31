@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
 import type { MemberWithUser, Role, User } from '@concord/shared';
 
 // Reached transitively via spaceStore -> chatStore -> useWebSocket -> voiceStore.
@@ -8,7 +9,7 @@ vi.mock('../audio/AudioManager', () => ({
   },
 }));
 
-import { myStandingIn, viewerCanActOn, viewerCanManageRoleAt, viewerCanEditMemberRoles } from './roleHierarchy';
+import { myStandingIn, viewerCanActOn, viewerCanManageRoleAt, viewerCanEditMemberRoles, viewerHeldPermissions, useViewerHeldPermissions, viewerCanSwitchBit } from './roleHierarchy';
 import { useSpaceStore, type TaggedSpace } from '../stores/spaceStore';
 import { PermissionBits, permissionsToString, ALL_PERMISSIONS } from './permissions';
 import { useAuthStore } from '../stores/authStore';
@@ -133,5 +134,60 @@ describe('viewerCanEditMemberRoles', () => {
     useAuthStore.getState().recordMyRow(orbit, 'me-local');
     expect(viewerCanEditMemberRoles(remote, members, roles, MANAGE, members[1]!)).toBe(false);
     expect(viewerCanEditMemberRoles(remote, members, roles, MANAGE, members[2]!)).toBe(true);
+  });
+});
+
+
+describe('viewerHeldPermissions and useViewerHeldPermissions', () => {
+  it('gives space owner ALL_PERMISSIONS unconditionally without unheld locks', () => {
+    useAuthStore.setState({ user: user('owner') });
+    useSpaceStore.setState({
+      spaces: [{ ...SPACE, ownerId: 'owner' }],
+      spacePermissions: new Map([['space-1', '0']]),
+    });
+
+    const held = renderHook(() => useViewerHeldPermissions('space-1')).result.current;
+    expect(held).toBe(ALL_PERMISSIONS);
+    expect(viewerCanSwitchBit(held, PermissionBits.USE_SOUNDPAD)).toBe(true);
+    expect(viewerCanSwitchBit(held, PermissionBits.MANAGE_SOUNDPAD)).toBe(true);
+  });
+
+  it('gives instance admin ALL_PERMISSIONS unconditionally', () => {
+    useAuthStore.setState({ user: { ...user('admin-user'), isAdmin: true } });
+    useSpaceStore.setState({
+      spaces: [{ ...SPACE, ownerId: 'someone-else' }],
+      spacePermissions: new Map([['space-1', '0']]),
+    });
+
+    const held = renderHook(() => useViewerHeldPermissions('space-1')).result.current;
+    expect(held).toBe(ALL_PERMISSIONS);
+    expect(viewerCanSwitchBit(held, PermissionBits.USE_SOUNDPAD)).toBe(true);
+    expect(viewerCanSwitchBit(held, PermissionBits.MANAGE_SOUNDPAD)).toBe(true);
+  });
+
+  it('treats ADMINISTRATOR holder as holding ALL_PERMISSIONS', () => {
+    useAuthStore.setState({ user: user('mod-user') });
+    useSpaceStore.setState({
+      spaces: [{ ...SPACE, ownerId: 'someone-else' }],
+      spacePermissions: new Map([['space-1', permissionsToString(PermissionBits.ADMINISTRATOR)]]),
+    });
+
+    const held = renderHook(() => useViewerHeldPermissions('space-1')).result.current;
+    expect(held).toBe(ALL_PERMISSIONS);
+    expect(viewerCanSwitchBit(held, PermissionBits.USE_SOUNDPAD)).toBe(true);
+    expect(viewerCanSwitchBit(held, PermissionBits.MANAGE_SOUNDPAD)).toBe(true);
+  });
+
+  it('regular member holding USE_SOUNDPAD can switch USE_SOUNDPAD but not MANAGE_SOUNDPAD', () => {
+    useAuthStore.setState({ user: user('regular-user') });
+    useSpaceStore.setState({
+      spaces: [{ ...SPACE, ownerId: 'someone-else' }],
+      spacePermissions: new Map([['space-1', permissionsToString(PermissionBits.USE_SOUNDPAD)]]),
+    });
+
+    const held = renderHook(() => useViewerHeldPermissions('space-1')).result.current;
+    expect(held).toBe(PermissionBits.USE_SOUNDPAD);
+    expect(viewerCanSwitchBit(held, PermissionBits.USE_SOUNDPAD)).toBe(true);
+    expect(viewerCanSwitchBit(held, PermissionBits.MANAGE_SOUNDPAD)).toBe(false);
   });
 });

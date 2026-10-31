@@ -4,6 +4,7 @@ import i18n from 'i18next';
 import { VoiceControls } from './VoiceControls';
 import { useVoiceStore } from '../../stores/voiceStore';
 import { useSpaceStore } from '../../stores/spaceStore';
+import { useAuthStore } from '../../stores/authStore';
 import { PermissionBits } from '../../utils/permissions';
 
 vi.mock('../../audio/AudioManager', () => ({
@@ -105,5 +106,55 @@ describe('VoiceControls Soundpad Button', () => {
     fireEvent.click(soundpadBtn);
     expect(soundpadBtn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByTestId('soundpad-popover')).not.toBeInTheDocument();
+  });
+
+  it('keeps Soundpad button enabled for space owner even if channel perms is 0n', () => {
+    useAuthStore.setState({ user: { id: 'owner-id', isAdmin: false } as any });
+    useSpaceStore.setState({
+      spaces: [{ id: 'space-1', ownerId: 'owner-id' } as any],
+      channelToSpaceMap: new Map([['voice-1', 'space-1']]),
+      channelPermissions: new Map([['voice-1', 0n]]),
+    });
+
+    render(<VoiceControls />);
+
+    const soundpadBtn = screen.getByTitle('Soundpad');
+    expect(soundpadBtn).toBeInTheDocument();
+    expect(soundpadBtn).not.toBeDisabled();
+  });
+
+  it('keeps Soundpad button enabled for space owner even if permissionMutedUserIds contains them', () => {
+    useAuthStore.setState({ user: { id: 'owner-id', isAdmin: false } as any });
+    useSpaceStore.setState({
+      spaces: [{ id: 'space-1', ownerId: 'owner-id' } as any],
+      channelToSpaceMap: new Map([['voice-1', 'space-1']]),
+      channelPermissions: new Map([['voice-1', 0n]]),
+    });
+    useVoiceStore.setState({
+      permissionMutedUserIds: new Set(['space-1:owner-id']),
+      spaceMutedUserIds: new Set(['space-1:owner-id']),
+    });
+
+    render(<VoiceControls />);
+
+    const soundpadBtn = screen.getByTitle('Soundpad');
+    expect(soundpadBtn).toBeInTheDocument();
+    expect(soundpadBtn).not.toBeDisabled();
+  });
+
+  it('enables Soundpad by default for regular members when channel permissions are empty', () => {
+    useAuthStore.setState({ user: { id: 'regular-user', isAdmin: false } as any });
+    useSpaceStore.setState({
+      spaces: [{ id: 'space-1', ownerId: 'other-owner' } as any],
+      channelToSpaceMap: new Map([['voice-1', 'space-1']]),
+      channelPermissions: new Map(), // empty/loading
+      spacePermissions: new Map(),
+    });
+
+    render(<VoiceControls />);
+
+    const soundpadBtn = screen.getByTitle('Soundpad');
+    expect(soundpadBtn).toBeInTheDocument();
+    expect(soundpadBtn).not.toBeDisabled();
   });
 });

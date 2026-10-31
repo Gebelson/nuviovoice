@@ -85,6 +85,12 @@ describe('roleBitsChangeRefusal', () => {
     expect(roleBitsChangeRefusal(ALL_PERMISSIONS, UNUSED_BIT, 0n)).toBeNull();
   });
 
+  it('lets an ADMINISTRATOR holder switch any bit without having to hold all individual bits', () => {
+    expect(roleBitsChangeRefusal(PermissionBits.ADMINISTRATOR, 0n, PermissionBits.USE_SOUNDPAD)).toBeNull();
+    expect(roleBitsChangeRefusal(PermissionBits.ADMINISTRATOR, 0n, PermissionBits.MANAGE_SOUNDPAD)).toBeNull();
+    expect(roleBitsChangeRefusal(PermissionBits.ADMINISTRATOR, PermissionBits.USE_SOUNDPAD, 0n)).toBeNull();
+  });
+
   it('refuses anyone else a bit no permission uses', () => {
     expect(roleBitsChangeRefusal(HELD, 0n, UNUSED_BIT)).toBe('cannot_grant_unowned_permissions');
   });

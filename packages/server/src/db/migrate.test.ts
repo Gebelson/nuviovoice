@@ -1,11 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import Database from 'better-sqlite3';
-import { ensureDefaults } from './migrate.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { ensureDefaults, migrateSoundpadEveryonePermissions } from './migrate.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function applyMigrations(db: Database.Database): void {
+  const dir = path.resolve(__dirname, '../../drizzle');
+  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
+    for (const stmt of fs.readFileSync(path.join(dir, f), 'utf8').split(/-->\s*statement-breakpoint/)) {
+      const clean = stmt.trim();
+      if (clean) db.exec(clean);
+    }
+  }
+}
 
 function freshDb(): Database.Database {
   const db = new Database(':memory:');
-  db.exec(`CREATE TABLE instance_settings (id integer PRIMARY KEY, worker_id integer, instance_id text, max_bitrate_kbps integer, min_bitrate_kbps integer, bitrate_step_kbps integer, allowed_resolutions text, allowed_framerates text, max_resolution integer, max_framerate integer, installed_at integer, updated_at integer);
-    CREATE TABLE users (id text PRIMARY KEY, is_admin integer DEFAULT 0, home_instance text, is_deleted integer DEFAULT 0, created_at integer);`);
+  applyMigrations(db);
   return db;
 }
 
@@ -26,5 +40,45 @@ describe('ensureDefaults instance epoch', () => {
     const idA = (a.prepare('SELECT instance_id FROM instance_settings WHERE id = 1').get() as { instance_id: string }).instance_id;
     const idB = (b.prepare('SELECT instance_id FROM instance_settings WHERE id = 1').get() as { instance_id: string }).instance_id;
     expect(idA).not.toBe(idB);
+  });
+});
+
+describe('migrateSoundpadEveryonePermissions', () => {
+  it('adds USE_SOUNDPAD bit to @everyone role in existing spaces without altering other bits', () => {
+    const db = new Database(':memory:');
+    db.exec(`
+      CREATE TABLE roles (
+        id TEXT PRIMARY KEY,
+        space_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        permissions TEXT NOT NULL
+      );
+    `);
+
+    const OLD_PERMS = (1n << 1n) | (1n << 10n); // VIEW_CHANNEL | SEND_MESSAGES
+    const CUSTOM_PERMS = (1n << 2n); // MANAGE_CHANNELS
+    db.prepare('INSERT INTO roles (id, space_id, name, permissions) VALUES (?, ?, ?, ?)').run(
+      'space-1', 'space-1', '@everyone', OLD_PERMS.toString()
+    );
+    db.prepare('INSERT INTO roles (id, space_id, name, permissions) VALUES (?, ?, ?, ?)').run(
+      'custom-role', 'space-1', 'Moderator', CUSTOM_PERMS.toString()
+    );
+
+    const updated = migrateSoundpadEveryonePermissions(db);
+    expect(updated).toBe(1);
+
+    const everyoneRow = db.prepare('SELECT permissions FROM roles WHERE id = ?').get('space-1') as { permissions: string };
+    const everyonePerms = BigInt(everyoneRow.permissions);
+    const USE_SOUNDPAD = 1n << 27n;
+    expect((everyonePerms & USE_SOUNDPAD) === USE_SOUNDPAD).toBe(true);
+    expect((everyonePerms & OLD_PERMS) === OLD_PERMS).toBe(true);
+
+    // Custom role must NOT be altered
+    const customRow = db.prepare('SELECT permissions FROM roles WHERE id = ?').get('custom-role') as { permissions: string };
+    expect(customRow.permissions).toBe(CUSTOM_PERMS.toString());
+
+    // Idempotent: running again updates 0 rows
+    const rerun = migrateSoundpadEveryonePermissions(db);
+    expect(rerun).toBe(0);
   });
 });

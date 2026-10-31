@@ -3,6 +3,7 @@ import {
   canActOnMember,
   canManageRoleAt,
   hasPermissionBit,
+  ALL_PERMISSIONS,
   PermissionBits,
   topRolePosition,
   roleBitsChangeRefusal,
@@ -12,6 +13,7 @@ import {
   type OverrideBits,
 } from '@concord/shared/src/permissions';
 import { useSpaceStore, getMyUserIdForOrigin, type TaggedSpace } from '../stores/spaceStore';
+import { useAuthStore } from '../stores/authStore';
 import { canReorderRoles, rolesInRankOrder } from './roleOrder';
 
 // Client gating for the role hierarchy and the held-bits rule
@@ -153,13 +155,31 @@ export function viewerHeldPermissions(
   spaceId: string,
 ): bigint | null {
   const value = spacePermissions.get(spaceId);
-  return value === undefined ? null : stringToPermissions(value);
+  if (value === undefined) return null;
+  const perms = stringToPermissions(value);
+  if ((perms & PermissionBits.ADMINISTRATOR) !== 0n) return ALL_PERMISSIONS;
+  return perms;
 }
 
 /** Hook form of `viewerHeldPermissions` over the space store. */
 export function useViewerHeldPermissions(spaceId: string): bigint | null {
-  const value = useSpaceStore((s) => s.spacePermissions.get(spaceId));
-  return value === undefined ? null : stringToPermissions(value);
+  const space = useSpaceStore((s) => s.spaces.find((sp) => sp.id === spaceId));
+  const user = useAuthStore((s) => s.user);
+  const myId = space ? myUserIdInSpace(space) : user?.id;
+  const isOwner = !!(space && (space.ownerId === myId || (user?.id && space.ownerId === user.id)));
+  const spacePermsValue = useSpaceStore((s) => s.spacePermissions.get(spaceId));
+
+  // The space owner and instance admins always hold ALL permissions
+  if (isOwner || user?.isAdmin) {
+    return ALL_PERMISSIONS;
+  }
+  if (spacePermsValue === undefined) return null;
+  const perms = stringToPermissions(spacePermsValue);
+  // ADMINISTRATOR holders hold all permissions
+  if ((perms & PermissionBits.ADMINISTRATOR) !== 0n) {
+    return ALL_PERMISSIONS;
+  }
+  return perms;
 }
 
 /**
