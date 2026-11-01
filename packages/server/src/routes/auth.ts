@@ -216,6 +216,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       homeInstance: homeInstance || null,
       homeUserId: (homeInstance && homeUserId && typeof homeUserId === 'string') ? homeUserId : null,
       avatarColor,
+      friendDiscoveryVisibility: 'mutual_friends',
+      receiveWinks: 1,
       createdAt: now,
     };
 

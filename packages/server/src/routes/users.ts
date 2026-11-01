@@ -218,7 +218,7 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.patch<{ Body: UpdateUserRequest }>('/api/users/@me', { preHandler: authenticate }, async (request, reply) => {
-    const { displayName, avatar, banner, accentColor, avatarColor, bio, customStatus, status, replicatedInstances, homeUserId, profileUpdatedAt, discoverable, showActivity } = request.body;
+    const { displayName, avatar, banner, accentColor, avatarColor, bio, customStatus, status, replicatedInstances, homeUserId, profileUpdatedAt, discoverable, showActivity, friendDiscoveryVisibility, receiveWinks } = request.body;
     const db = getDb();
 
     const updateData: Record<string, string | null | undefined> = {};
@@ -461,12 +461,27 @@ export async function userRoutes(app: FastifyInstance): Promise<void> {
       (updateData as Record<string, unknown>).showActivity = showActivity ? 1 : 0;
     }
 
+    if (friendDiscoveryVisibility !== undefined) {
+      if (typeof friendDiscoveryVisibility !== 'string' || !['everyone', 'mutual_friends', 'nobody'].includes(friendDiscoveryVisibility)) {
+        return sendError(reply, 400, 'validation_failed', { field: 'friendDiscoveryVisibility', reason: 'must be one of: everyone, mutual_friends, nobody' });
+      }
+      (updateData as Record<string, unknown>).friendDiscoveryVisibility = friendDiscoveryVisibility;
+      (updateData as Record<string, unknown>).discoverable = friendDiscoveryVisibility === 'nobody' ? 0 : 1;
+    }
+
+    if (receiveWinks !== undefined) {
+      if (typeof receiveWinks !== 'boolean') {
+        return sendError(reply, 400, 'validation_failed', { field: 'receiveWinks', reason: 'must be a boolean' });
+      }
+      (updateData as Record<string, unknown>).receiveWinks = receiveWinks ? 1 : 0;
+    }
+
     if (Object.keys(updateData).length === 0 && chosenStatus === undefined) {
       return sendError(reply, 400, 'no_fields_to_update');
     }
 
     // Detect profile changes and stamp timestamp
-    const hasProfileChange = ['displayName', 'avatar', 'banner', 'accentColor', 'avatarColor', 'bio', 'customStatus'].some(f => f in updateData);
+    const hasProfileChange = ['displayName', 'avatar', 'banner', 'accentColor', 'avatarColor', 'bio', 'customStatus', 'friendDiscoveryVisibility', 'receiveWinks'].some(f => f in updateData);
     const hasDurableChange = DURABLE_PROFILE_FIELDS.some(f => f in updateData);
     if (hasDurableChange) {
       (updateData as Record<string, unknown>).profileUpdatedAt = Date.now();
