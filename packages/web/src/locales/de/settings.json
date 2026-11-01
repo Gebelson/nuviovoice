@@ -305,9 +305,15 @@
   "privacy": {
     "title": "Privatsphäre",
     "discovery": {
-      "sectionTitle": "Entdecken",
-      "label": "Andere dürfen mein Profil finden",
-      "description": "Wenn aktiviert, erscheint dein Profil unter „Leute entdecken“. Über den genauen Benutzernamen kann dich jeder hinzufügen."
+      "sectionTitle": "Personensuche",
+      "label": "Wer kann mich unter Freunde hinzufügen finden?",
+      "description": "Wählen Sie, wer Ihr Profil in der Personensuche finden kann.",
+      "everyoneLabel": "Jeder",
+      "everyoneDesc": "Jeder kann Ihr Profil bei Suchanfragen und Empfehlungen finden.",
+      "mutualFriendsLabel": "Freunde von Freunden",
+      "mutualFriendsDesc": "Nur Personen, die mindestens einen gemeinsamen Freund mit Ihnen haben.",
+      "nobodyLabel": "Niemand",
+      "nobodyDesc": "Ihr Profil ist bei Suchanfragen und Empfehlungen vollständig ausgeblendet."
     },
     "activity": {
       "sectionTitle": "Aktivitätsstatus",
@@ -322,6 +328,15 @@
       "soundDescription": "Spielt einen dezenten Ton ab, wenn eine neue Freundschaftsanfrage eingeht.",
       "screenShareLabel": "Während der Bildschirmfreigabe ausblenden",
       "screenShareDescription": "Schwebende Benachrichtigungen werden nicht angezeigt, während du deinen Bildschirm teilst."
+    },
+    "winks": {
+      "sectionTitle": "Winks",
+      "label": "Winks empfangen",
+      "description": "Erlauben Sie anderen, Ihnen spezielle Animationen in privaten Nachrichten zu senden."
+    },
+    "feedback": {
+      "success": "Datenschutzeinstellungen aktualisiert.",
+      "error": "Ihre Einstellungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
     }
   },
   "connections": {

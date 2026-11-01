@@ -305,9 +305,15 @@
   "privacy": {
     "title": "Privacy",
     "discovery": {
-      "sectionTitle": "Discovery",
-      "label": "Allow others to find my profile",
-      "description": "When enabled, your profile appears in Discover People. Others can always add you by exact username."
+      "sectionTitle": "People discovery",
+      "label": "Who can find me in Add Friends?",
+      "description": "Choose who can find your profile in people discovery.",
+      "everyoneLabel": "Everyone",
+      "everyoneDesc": "Anyone can find your profile in searches and recommendations.",
+      "mutualFriendsLabel": "Friends of friends",
+      "mutualFriendsDesc": "Only people who share at least one mutual friend with you.",
+      "nobodyLabel": "Nobody",
+      "nobodyDesc": "Your profile is completely hidden from searches, suggestions, and recommendations."
     },
     "activity": {
       "sectionTitle": "Activity Status",
@@ -322,6 +328,15 @@
       "soundDescription": "Play a discreet sound when receiving a new friend request.",
       "screenShareLabel": "Hide during screen sharing",
       "screenShareDescription": "Do not show floating notifications while sharing your screen."
+    },
+    "winks": {
+      "sectionTitle": "Winks",
+      "label": "Receive Winks",
+      "description": "Allow others to send special animations to you in direct messages."
+    },
+    "feedback": {
+      "success": "Privacy preferences updated.",
+      "error": "Could not save your preferences. Please try again."
     }
   },
   "connections": {

@@ -306,9 +306,15 @@
   "privacy": {
     "title": "Privacidade",
     "discovery": {
-      "sectionTitle": "Descoberta",
-      "label": "Permitir que outras pessoas encontrem meu perfil",
-      "description": "Quando ativado, seu perfil aparece em Descobrir pessoas. Outras pessoas sempre podem adicionar você pelo nome de usuário exato."
+      "sectionTitle": "Descoberta de pessoas",
+      "label": "Quem pode me encontrar em Adicionar amigos?",
+      "description": "Escolha quem pode encontrar seu perfil na descoberta de pessoas.",
+      "everyoneLabel": "Todos",
+      "everyoneDesc": "Qualquer usuário poderá encontrar seu perfil em buscas e recomendações.",
+      "mutualFriendsLabel": "Amigos de amigos",
+      "mutualFriendsDesc": "Apenas pessoas que compartilham pelo menos um amigo em comum com você.",
+      "nobodyLabel": "Ninguém",
+      "nobodyDesc": "Seu perfil fica totalmente oculto de buscas, sugestões e recomendações."
     },
     "activity": {
       "sectionTitle": "Status de atividade",
@@ -323,6 +329,15 @@
       "soundDescription": "Reproduz um som discreto ao receber uma nova solicitação de amizade.",
       "screenShareLabel": "Ocultar durante compartilhamento de tela",
       "screenShareDescription": "Não exibe notificações flutuantes na tela enquanto você estiver transmitindo ou compartilhando sua tela."
+    },
+    "winks": {
+      "sectionTitle": "Winks",
+      "label": "Receber Winks",
+      "description": "Permitir que outras pessoas enviem animações especiais para você nas mensagens privadas."
+    },
+    "feedback": {
+      "success": "Preferências de privacidade atualizadas.",
+      "error": "Não foi possível salvar suas preferências. Tente novamente."
     }
   },
   "connections": {
