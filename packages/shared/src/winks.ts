@@ -31,6 +31,8 @@ export interface OfficialWink {
   webmUrl?: string | null;
   mp4Path?: string | null;
   mp4Url?: string | null;
+  alphaMp4Url?: string | null;
+  contentBounds?: { minX: number; maxX: number; minY: number; maxY: number; width: number; height: number };
   thumbnailPath?: string | null;
   thumbnailUrl?: string | null;
   hasAlpha?: boolean;
@@ -87,6 +89,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAlpha: true,
     webmUrl: '/winks/diabravinho.webm',
     mp4Url: '/winks/diabravinho.mp4',
+    alphaMp4Url: '/winks/diabravinho_alpha.mp4',
+    contentBounds: { minX: 450, maxX: 1490, minY: 0, maxY: 1040, width: 1040, height: 1040 },
     thumbnailUrl: '/winks/diabravinho_thumb.webp',
     width: 1920,
     height: 1080,
@@ -106,6 +110,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAlpha: true,
     webmUrl: '/winks/bolsogado.webm',
     mp4Url: '/winks/bolsogado.mp4',
+    alphaMp4Url: '/winks/bolsogado_alpha.mp4',
+    contentBounds: { minX: 410, maxX: 1410, minY: 0, maxY: 1080, width: 1000, height: 1080 },
     thumbnailUrl: '/winks/bolsogado_thumb.webp',
     width: 1920,
     height: 1080,
@@ -125,6 +131,8 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAlpha: true,
     webmUrl: '/winks/nikole.webm',
     mp4Url: '/winks/nikole.mp4',
+    alphaMp4Url: '/winks/nikole_alpha.mp4',
+    contentBounds: { minX: 410, maxX: 1520, minY: 0, maxY: 1080, width: 1110, height: 1080 },
     thumbnailUrl: '/winks/nikole_thumb.webp',
     width: 1920,
     height: 1080,
@@ -146,6 +154,7 @@ export function getOfficialWink(id: string): OfficialWink | undefined {
 export interface ResolvedWinkMediaUrls {
   webmUrl: string;
   mp4Url: string;
+  alphaMp4Url?: string;
   thumbnailUrl: string;
 }
 
@@ -165,12 +174,14 @@ export function resolveWinkMediaUrls(wink: {
     return {
       webmUrl: `/winks/${wink.id}.webm`,
       mp4Url: `/winks/${wink.id}.mp4`,
+      alphaMp4Url: `/winks/${wink.id}_alpha.mp4`,
       thumbnailUrl: `/winks/${wink.id}_thumb.webp`,
     };
   }
   return {
     webmUrl: wink.webmUrl || `/winks/${wink.id}.webm`,
     mp4Url: wink.mp4Url || `/winks/${wink.id}.mp4`,
+    alphaMp4Url: `/winks/${wink.id}_alpha.mp4`,
     thumbnailUrl: wink.thumbnailUrl || `/winks/${wink.id}_thumb.webp`,
   };
 }

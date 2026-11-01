@@ -2,7 +2,7 @@ import type { DmChannel, DmMessageWithUser, MessageWithUser } from '@concord/sha
 import { isMe } from '../stores/authStore';
 import { useChatStore } from '../stores/chatStore';
 import { useSpaceStore, resolveDmChannelId } from '../stores/spaceStore';
-import { isWinkContent } from '@concord/shared/src/winks';
+import { isWinkContent, getOfficialWink } from '@concord/shared/src/winks';
 import { useWinkStore } from '../stores/winkStore';
 
 /**
@@ -85,22 +85,40 @@ function recordLastMessage(origin: string, channelId: string, message: DmMessage
  */
 
 function checkAndTriggerIncomingWink(origin: string, channelId: string, message: DmMessageWithUser): void {
+  // Do not play incoming animation for messages written by self (sender already played local replay on send)
   if (isOwnMessage(origin, message)) return;
+
   const winkInfo = isWinkContent(message.content);
   if (!winkInfo.isWink || !winkInfo.winkId) return;
 
-  const { currentChannelId } = useChatStore.getState();
-  if (channelId === currentChannelId) {
-    const winkSettings = useWinkStore.getState().settings;
-    if (!winkSettings.disableIncoming && winkSettings.autoplay) {
-      const senderName = message.user?.displayName || message.user?.username || 'Alguém';
-      useWinkStore.getState().triggerWink({
-        winkId: winkInfo.winkId,
-        senderName,
-        channelId,
-        isLocalReplay: false,
-      });
-    }
+  // Confirm that wink exists in official catalog
+  const officialWink = getOfficialWink(winkInfo.winkId);
+  if (!officialWink) return;
+
+  // Deduplicate by message ID + origin to prevent duplicate animations on reconnects or federated deliveries
+  const dedupeKey = `${origin || 'home'}:${message.id}`;
+  if (useWinkStore.getState().hasProcessedMessage(dedupeKey)) return;
+  useWinkStore.getState().markMessageProcessed(dedupeKey);
+
+  // Recency check: only automatically trigger animations for messages delivered within the last 60 seconds.
+  // Historical messages loaded during scrolling or initialization must never auto-trigger animations.
+  const now = Date.now();
+  const msgTime = message.createdAt || now;
+  if (now - msgTime > 60_000) return;
+
+  // Global trigger: Winks play over ANY active view in Nuvio (store, bots, spaces, calls, settings)
+  // without restricting to currentChannelId
+  const winkSettings = useWinkStore.getState().settings;
+  if (!winkSettings.disableIncoming && winkSettings.autoplay) {
+    const senderName = message.user?.displayName || message.user?.username || 'Alguém';
+    useWinkStore.getState().queueWink({
+      winkId: winkInfo.winkId,
+      senderName,
+      channelId,
+      isLocalReplay: false,
+      messageId: message.id,
+      origin,
+    });
   }
 }
 

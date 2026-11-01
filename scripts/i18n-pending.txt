@@ -9,9 +9,9 @@ packages/web/src/components/bots/BotEditorPage.tsx
 packages/web/src/components/bots/BotInstallModal.tsx
 packages/web/src/components/bots/DeveloperPortal.tsx
 packages/web/src/components/chat/CommandPopover.tsx
+packages/web/src/components/chat/GlobalWinkOverlay.tsx
 packages/web/src/components/chat/Message.tsx
 packages/web/src/components/chat/VoiceInviteCard.tsx
-packages/web/src/components/chat/WinkAnimationPlayer.tsx
 packages/web/src/components/chat/WinkMessageCard.tsx
 packages/web/src/components/chat/WinkPickerPopover.tsx
 packages/web/src/components/layout/ChannelSidebar.tsx

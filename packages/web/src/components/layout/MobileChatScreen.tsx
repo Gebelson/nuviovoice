@@ -7,7 +7,6 @@ import { useChatStore } from '../../stores/chatStore';
 import { useSpaceStore } from '../../stores/spaceStore';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
-import { WinkAnimationPlayer } from '../chat/WinkAnimationPlayer';
 import { TransferIndicator } from './TransferIndicator';
 import { isMine, userDisplayName } from '../../utils/identity';
 import { formatDmHeaderName, formatDmInputLabel, isDeletedPartnerDm } from '../../utils/dmFormatters';
@@ -189,7 +188,6 @@ export function MobileChatScreen({ params }: MobileChatScreenProps) {
           `absolute bottom-full` to the bubble), so we don't render it here. */}
       <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
         {channelId && <MessageList channelId={channelId} />}
-        {isDm && <WinkAnimationPlayer />}
         {channelId && (dmPartnerDeleted
           ? <DmDeletedNotice />
           : <MessageInput channelId={channelId} channelName={channelName} placeholder={inputPlaceholder} />)}

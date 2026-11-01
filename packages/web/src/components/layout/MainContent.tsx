@@ -8,7 +8,6 @@ import { useAuthStore } from '../../stores/authStore';
 import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
 import { MessageList } from '../chat/MessageList';
 import { MessageInput } from '../chat/MessageInput';
-import { WinkAnimationPlayer } from '../chat/WinkAnimationPlayer';
 import { VoiceGrid } from '../voice/VoiceGrid';
 import { VoiceControlBar } from '../voice/VoiceControlBar';
 import { VoiceChatPanel } from '../voice/VoiceChatPanel';
@@ -525,7 +524,6 @@ export function MainContent() {
           </div>
         </div>
         <MessageList channelId={currentChannelId} jumpToMessageId={jumpToMessageId} onJumpHandled={clearJumpRequest} />
-        <WinkAnimationPlayer />
         {dmPartnerDeleted
           ? <DmDeletedNotice />
           : <MessageInput channelId={currentChannelId} channelName={`@${dmName}`} placeholder={dmInputPlaceholder} />}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { OFFICIAL_WINKS, getOfficialWink, resolveWinkMediaUrls, type OfficialWink } from '@concord/shared/src/winks';
 import { api } from '../api/client';
+import { AudioManager } from '../audio/AudioManager';
 
 export interface WinkSettings {
   autoplay: boolean;
@@ -17,12 +18,17 @@ export interface ActiveWink {
   isLocalReplay?: boolean;
   channelId?: string | null;
   startedAt: number;
+  messageId?: string;
+  origin?: string;
 }
 
 interface WinkState {
   settings: WinkSettings;
   recentWinkIds: string[];
   activeWink: ActiveWink | null;
+  queue: ActiveWink[];
+  isAutoplayBlocked: boolean;
+  audioUnlocked: boolean;
   publishedWinks: OfficialWink[];
   isLoadingPublished: boolean;
 
@@ -33,9 +39,23 @@ interface WinkState {
     senderName?: string;
     isLocalReplay?: boolean;
     channelId?: string | null;
+    messageId?: string;
+    origin?: string;
+  }) => void;
+  queueWink: (params: {
+    winkId: string;
+    senderName?: string;
+    isLocalReplay?: boolean;
+    channelId?: string | null;
+    messageId?: string;
+    origin?: string;
   }) => void;
   startWinkPlaybackTimer: (durationMs?: number) => void;
   dismissActiveWink: () => void;
+  setAutoplayBlocked: (blocked: boolean) => void;
+  unlockAudio: () => void;
+  hasProcessedMessage: (dedupeKey: string) => boolean;
+  markMessageProcessed: (dedupeKey: string) => void;
   recordRecentWink: (winkId: string) => void;
   updateSettings: (settings: Partial<WinkSettings>) => void;
 }
@@ -47,6 +67,10 @@ const VALID_CATALOG_IDS = new Set(['diabravinho', 'bolsogado', 'nikole']);
 function filterValidIds(ids: string[]): string[] {
   return ids.filter((id) => VALID_CATALOG_IDS.has(id));
 }
+
+// Bounded in-memory deduplication set
+const processedMessageKeys = new Set<string>();
+const MAX_PROCESSED_KEYS = 500;
 
 export const useWinkStore = create<WinkState>()(
   persist(
@@ -60,6 +84,9 @@ export const useWinkStore = create<WinkState>()(
       },
       recentWinkIds: ['diabravinho', 'bolsogado', 'nikole'],
       activeWink: null,
+      queue: [],
+      isAutoplayBlocked: false,
+      audioUnlocked: false,
       publishedWinks: [...OFFICIAL_WINKS],
       isLoadingPublished: false,
 
@@ -75,6 +102,7 @@ export const useWinkStore = create<WinkState>()(
               ...w,
               webmUrl: resolved.webmUrl,
               mp4Url: resolved.mp4Url,
+              alphaMp4Url: resolved.alphaMp4Url,
               thumbnailUrl: resolved.thumbnailUrl,
             });
           }
@@ -86,6 +114,7 @@ export const useWinkStore = create<WinkState>()(
                 ...w,
                 webmUrl: resolved.webmUrl,
                 mp4Url: resolved.mp4Url,
+                alphaMp4Url: resolved.alphaMp4Url,
                 thumbnailUrl: resolved.thumbnailUrl,
               });
             }
@@ -102,11 +131,59 @@ export const useWinkStore = create<WinkState>()(
         return state.publishedWinks.find((w) => w.id === id) || getOfficialWink(id);
       },
 
-      triggerWink: ({ winkId, senderName, isLocalReplay = false, channelId }) => {
+      hasProcessedMessage: (dedupeKey: string) => {
+        return processedMessageKeys.has(dedupeKey);
+      },
+
+      markMessageProcessed: (dedupeKey: string) => {
+        if (processedMessageKeys.size >= MAX_PROCESSED_KEYS) {
+          // Evict oldest elements
+          const firstKey = processedMessageKeys.values().next().value;
+          if (firstKey) processedMessageKeys.delete(firstKey);
+        }
+        processedMessageKeys.add(dedupeKey);
+      },
+
+      setAutoplayBlocked: (blocked: boolean) => {
+        set({ isAutoplayBlocked: blocked });
+      },
+
+      unlockAudio: () => {
+        set({ audioUnlocked: true, isAutoplayBlocked: false });
+        try {
+          const audio = AudioManager.getInstance();
+          audio.resumeContext().catch(() => {});
+        } catch {
+          // Audio manager resume optional
+        }
+      },
+
+      queueWink: (params) => {
+        const state = get();
+        // If nothing is playing, play immediately
+        if (!state.activeWink) {
+          state.triggerWink(params);
+        } else {
+          // Otherwise enqueue (limit queue to 3 items to avoid backlog)
+          if (state.queue.length < 3) {
+            set((s) => ({
+              queue: [
+                ...s.queue,
+                {
+                  ...params,
+                  startedAt: Date.now(),
+                },
+              ],
+            }));
+          }
+        }
+      },
+
+      triggerWink: ({ winkId, senderName, isLocalReplay = false, channelId, messageId, origin }) => {
         const state = get();
         const { settings } = state;
 
-        // Honor user preferences
+        // Honor user preferences for incoming winks
         if (!isLocalReplay) {
           if (!settings.autoplay || settings.disableIncoming) {
             return;
@@ -131,10 +208,12 @@ export const useWinkStore = create<WinkState>()(
           senderName: senderName || 'Alguém',
           isLocalReplay,
           channelId,
+          messageId,
+          origin,
           startedAt: Date.now(),
         };
 
-        set({ activeWink: active });
+        set({ activeWink: active, isAutoplayBlocked: false });
 
         // Fallback safety timeout (15s): in case network drops or browser completely stalls
         // before confirming playback, ensure overlay doesn't hang indefinitely.
@@ -142,8 +221,7 @@ export const useWinkStore = create<WinkState>()(
         winkTimer = setTimeout(() => {
           const current = get().activeWink;
           if (current && current.startedAt === active.startedAt) {
-            set({ activeWink: null });
-            winkTimer = null;
+            get().dismissActiveWink();
           }
         }, 15000);
       },
@@ -158,8 +236,7 @@ export const useWinkStore = create<WinkState>()(
         // This timer gives an extra safety margin to prevent premature disappearance.
         const duration = (durationMs && durationMs > 0 ? durationMs : 5000) + 1500;
         winkTimer = setTimeout(() => {
-          set({ activeWink: null });
-          winkTimer = null;
+          get().dismissActiveWink();
         }, duration);
       },
 
@@ -168,7 +245,25 @@ export const useWinkStore = create<WinkState>()(
           clearTimeout(winkTimer);
           winkTimer = null;
         }
-        set({ activeWink: null });
+
+        const state = get();
+        if (state.queue.length > 0) {
+          const [next, ...remainingQueue] = state.queue;
+          if (next) {
+            set({ activeWink: next, queue: remainingQueue, isAutoplayBlocked: false });
+            // Start fallback timer for next wink
+            winkTimer = setTimeout(() => {
+              const current = get().activeWink;
+              if (current && current.startedAt === next.startedAt) {
+                get().dismissActiveWink();
+              }
+            }, 15000);
+          } else {
+            set({ activeWink: null, isAutoplayBlocked: false });
+          }
+        } else {
+          set({ activeWink: null, isAutoplayBlocked: false });
+        }
       },
 
       recordRecentWink: (winkId: string) => {

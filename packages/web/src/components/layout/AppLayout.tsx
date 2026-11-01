@@ -38,6 +38,7 @@ import { FriendRequestToastContainer } from '../notifications/FriendRequestToast
 import { UpdateToast } from '../ui/UpdateToast';
 import { InstanceUpdateToast } from '../ui/InstanceUpdateToast';
 import { ContextMenuRenderer } from '../ui/ContextMenuRenderer';
+import { GlobalWinkOverlay } from '../chat/GlobalWinkOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -454,6 +455,7 @@ export function AppLayout() {
         <ToastContainer />
         <FriendRequestToastContainer />
         <ContextMenuRenderer />
+        <GlobalWinkOverlay />
       </>
     );
   }
@@ -509,6 +511,7 @@ export function AppLayout() {
       <ToastContainer />
       <FriendRequestToastContainer />
       <ContextMenuRenderer />
+      <GlobalWinkOverlay />
     </div>
   );
 }

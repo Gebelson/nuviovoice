@@ -386,4 +386,91 @@ describe('Winks functionality in Direct Messages', () => {
     });
     expect(useWinkStore.getState().activeWink).toBeNull();
   });
+it('GlobalWinkOverlay renders regardless of currentChannelId (global overlay functionality)', () => {
+    // Recipient is currently viewing a different space or channel
+    useChatStore.setState({ currentChannelId: 'channel-different-999' });
+
+    useWinkStore.getState().triggerWink({
+      winkId: 'nikole',
+      senderName: 'Carlos',
+      channelId: 'dm-origin-1',
+      isLocalReplay: false,
+    });
+
+    render(<WinkAnimationPlayer />);
+
+    // Overlay MUST be rendered over the screen even though channelId differs from currentChannelId
+    expect(screen.getByTestId('wink-animation-player')).toBeInTheDocument();
+    expect(screen.getByText(/Carlos/)).toBeInTheDocument();
+    expect(screen.getByText(/Nikole/)).toBeInTheDocument();
+  });
+
+  it('queues overlapping winks and plays them sequentially', () => {
+    useWinkStore.getState().triggerWink({
+      winkId: 'diabravinho',
+      senderName: 'Alice',
+      channelId: 'dm-1',
+    });
+
+    // Queue second and third winks
+    useWinkStore.getState().queueWink({
+      winkId: 'bolsogado',
+      senderName: 'Bob',
+      channelId: 'dm-1',
+    });
+    useWinkStore.getState().queueWink({
+      winkId: 'nikole',
+      senderName: 'Charlie',
+      channelId: 'dm-1',
+    });
+
+    expect(useWinkStore.getState().activeWink?.winkId).toBe('diabravinho');
+    expect(useWinkStore.getState().queue.length).toBe(2);
+
+    // Dismiss active -> Bolsogado becomes active
+    useWinkStore.getState().dismissActiveWink();
+    expect(useWinkStore.getState().activeWink?.winkId).toBe('bolsogado');
+    expect(useWinkStore.getState().queue.length).toBe(1);
+
+    // Dismiss active -> Nikole becomes active
+    useWinkStore.getState().dismissActiveWink();
+    expect(useWinkStore.getState().activeWink?.winkId).toBe('nikole');
+    expect(useWinkStore.getState().queue.length).toBe(0);
+
+    // Dismiss active -> nothing left
+    useWinkStore.getState().dismissActiveWink();
+    expect(useWinkStore.getState().activeWink).toBeNull();
+  });
+
+  it('displays audio activation button when autoplay is blocked and unlocks audio on click', () => {
+    useWinkStore.getState().triggerWink({
+      winkId: 'diabravinho',
+      senderName: 'Alice',
+      channelId: 'dm-1',
+      isLocalReplay: true,
+    });
+
+    useWinkStore.setState({
+      isAutoplayBlocked: true,
+      audioUnlocked: false,
+    });
+
+    render(<WinkAnimationPlayer />);
+
+    const unmuteBtn = screen.getByRole('button', { name: /ativar áudio deste wink|ativar som/i });
+    expect(unmuteBtn).toBeInTheDocument();
+
+    fireEvent.click(unmuteBtn);
+    expect(useWinkStore.getState().audioUnlocked).toBe(true);
+    expect(useWinkStore.getState().isAutoplayBlocked).toBe(false);
+  });
+
+  it('deduplicates incoming winks by message ID', () => {
+    const store = useWinkStore.getState();
+    const msgId = 'msg-unique-123';
+
+    expect(store.hasProcessedMessage(msgId)).toBe(false);
+    store.markMessageProcessed(msgId);
+    expect(store.hasProcessedMessage(msgId)).toBe(true);
+  });
 });
