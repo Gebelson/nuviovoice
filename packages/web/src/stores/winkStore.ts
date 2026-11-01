@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { OFFICIAL_WINKS, getOfficialWink, type OfficialWink } from '@concord/shared/src/winks';
+import { OFFICIAL_WINKS, getOfficialWink, resolveWinkMediaUrls, type OfficialWink } from '@concord/shared/src/winks';
 import { api } from '../api/client';
 
 export interface WinkSettings {
@@ -34,6 +34,7 @@ interface WinkState {
     isLocalReplay?: boolean;
     channelId?: string | null;
   }) => void;
+  startWinkPlaybackTimer: (durationMs?: number) => void;
   dismissActiveWink: () => void;
   recordRecentWink: (winkId: string) => void;
   updateSettings: (settings: Partial<WinkSettings>) => void;
@@ -67,14 +68,26 @@ export const useWinkStore = create<WinkState>()(
         try {
           const list = await api.winks.list();
           const map = new Map<string, OfficialWink>();
-          // Base presets first
+          // Base presets first with resolved static paths
           for (const w of OFFICIAL_WINKS) {
-            map.set(w.id, w);
+            const resolved = resolveWinkMediaUrls(w);
+            map.set(w.id, {
+              ...w,
+              webmUrl: resolved.webmUrl,
+              mp4Url: resolved.mp4Url,
+              thumbnailUrl: resolved.thumbnailUrl,
+            });
           }
-          // Merge API items, strictly filtering out any legacy preset IDs
+          // Merge API items, strictly filtering out any legacy preset IDs and preserving static asset resolution
           for (const w of list) {
             if (VALID_CATALOG_IDS.has(w.id)) {
-              map.set(w.id, w);
+              const resolved = resolveWinkMediaUrls(w);
+              map.set(w.id, {
+                ...w,
+                webmUrl: resolved.webmUrl,
+                mp4Url: resolved.mp4Url,
+                thumbnailUrl: resolved.thumbnailUrl,
+              });
             }
           }
           set({ publishedWinks: Array.from(map.values()), isLoadingPublished: false });
@@ -86,9 +99,7 @@ export const useWinkStore = create<WinkState>()(
 
       getWink: (id: string) => {
         const state = get();
-        const found = state.publishedWinks.find((w) => w.id === id);
-        if (found) return found;
-        return getOfficialWink(id);
+        return state.publishedWinks.find((w) => w.id === id) || getOfficialWink(id);
       },
 
       triggerWink: ({ winkId, senderName, isLocalReplay = false, channelId }) => {
@@ -125,8 +136,27 @@ export const useWinkStore = create<WinkState>()(
 
         set({ activeWink: active });
 
-        // Auto-dismiss safety timer (video onEnded also calls dismissActiveWink)
-        const duration = (wink.durationMs || 5000) + 500;
+        // Fallback safety timeout (15s): in case network drops or browser completely stalls
+        // before confirming playback, ensure overlay doesn't hang indefinitely.
+        // Once playback actually starts, startWinkPlaybackTimer sets the definitive timer.
+        winkTimer = setTimeout(() => {
+          const current = get().activeWink;
+          if (current && current.startedAt === active.startedAt) {
+            set({ activeWink: null });
+            winkTimer = null;
+          }
+        }, 15000);
+      },
+
+      startWinkPlaybackTimer: (durationMs?: number) => {
+        if (winkTimer) {
+          clearTimeout(winkTimer);
+          winkTimer = null;
+        }
+        // Safety timeout begins ONLY after video confirmed started playing.
+        // The natural end event (onEnded) handles normal termination.
+        // This timer gives an extra safety margin to prevent premature disappearance.
+        const duration = (durationMs && durationMs > 0 ? durationMs : 5000) + 1500;
         winkTimer = setTimeout(() => {
           set({ activeWink: null });
           winkTimer = null;

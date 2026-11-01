@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { type OfficialWink, type WinkCategory } from '@concord/shared/src/winks';
 import { useWinkStore } from '../../stores/winkStore';
 import { SparklesIcon } from '../ui/icons';
+import { WinkThumbnail } from './WinkThumbnail';
 
 interface WinkPickerPopoverProps {
   onSelect: (wink: OfficialWink) => void;
@@ -212,20 +213,7 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
                   title={`${wink.name} - Clique para enviar`}
                 >
                   <div className="w-12 h-12 mb-1.5 rounded-lg overflow-hidden flex items-center justify-center bg-white/[0.04] group-hover:scale-105 transition-transform">
-                    {wink.thumbnailUrl ? (
-                      <img
-                        src={wink.thumbnailUrl}
-                        alt={wink.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          if (!e.currentTarget.src.includes('/winks/')) {
-                            e.currentTarget.src = `/winks/${wink.id}_thumb.webp`;
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span className="text-2xl">{wink.previewEmoji}</span>
-                    )}
+                    <WinkThumbnail wink={wink} className="w-full h-full object-cover" emojiClassName="text-2xl" />
                   </div>
                   <span className="text-[11px] font-medium text-txt-secondary group-hover:text-white truncate w-full">
                     {wink.name}
@@ -255,20 +243,7 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
                   className="group flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-accent-primary/50 transition-all text-left"
                 >
                   <div className="w-14 h-14 rounded-xl bg-black/40 border border-white/10 group-hover:border-accent-primary/40 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform shadow-inner">
-                    {wink.thumbnailUrl ? (
-                      <img
-                        src={wink.thumbnailUrl}
-                        alt={wink.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          if (!e.currentTarget.src.includes('/winks/')) {
-                            e.currentTarget.src = `/winks/${wink.id}_thumb.webp`;
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span className="text-2xl">{wink.previewEmoji}</span>
-                    )}
+                    <WinkThumbnail wink={wink} className="w-full h-full object-cover" emojiClassName="text-2xl" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-txt-primary group-hover:text-white truncate flex items-center gap-1.5">

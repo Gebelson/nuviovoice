@@ -1,6 +1,7 @@
 import React from 'react';
 import { useWinkStore } from '../../stores/winkStore';
 import { SparklesIcon } from '../ui/icons';
+import { WinkThumbnail } from './WinkThumbnail';
 
 interface WinkMessageCardProps {
   winkId: string;
@@ -43,20 +44,7 @@ export function WinkMessageCard({ winkId, senderName, channelId }: WinkMessageCa
       {/* Wink info */}
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl bg-accent-primary/15 border border-accent-primary/30 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          {wink.thumbnailUrl ? (
-            <img
-              src={wink.thumbnailUrl}
-              alt={wink.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                if (!e.currentTarget.src.includes('/winks/')) {
-                  e.currentTarget.src = `/winks/${wink.id}_thumb.webp`;
-                }
-              }}
-            />
-          ) : (
-            <span className="text-2xl">{wink.previewEmoji}</span>
-          )}
+          <WinkThumbnail wink={wink} className="w-full h-full object-cover" emojiClassName="text-2xl" />
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="text-sm font-semibold text-white truncate flex items-center gap-1.5">

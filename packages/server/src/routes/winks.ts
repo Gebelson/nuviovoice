@@ -93,15 +93,18 @@ export async function winksRoutes(app: FastifyInstance): Promise<void> {
     const { filename } = request.params;
     const safeFilename = path.basename(filename);
 
-    let targetPath = path.join(WINKS_PROCESSED_DIR, safeFilename);
-    if (!fs.existsSync(targetPath)) {
-      targetPath = path.join(WINKS_DIR, safeFilename);
-      if (!fs.existsSync(targetPath)) {
-        targetPath = path.join(WINKS_ORIGINAL_DIR, safeFilename);
-        if (!fs.existsSync(targetPath)) {
-          return sendError(reply, 404, 'file_not_found');
-        }
-      }
+    const candidatePaths = [
+      path.join(WINKS_PROCESSED_DIR, safeFilename),
+      path.join(WINKS_DIR, safeFilename),
+      path.join(WINKS_ORIGINAL_DIR, safeFilename),
+      path.resolve(process.cwd(), 'packages/web/public/winks', safeFilename),
+      path.resolve(process.cwd(), '../web/public/winks', safeFilename),
+      path.resolve(process.cwd(), 'public/winks', safeFilename),
+    ];
+
+    const targetPath = candidatePaths.find((p) => fs.existsSync(p));
+    if (!targetPath) {
+      return sendError(reply, 404, 'file_not_found');
     }
 
     const ext = path.extname(safeFilename).toLowerCase();

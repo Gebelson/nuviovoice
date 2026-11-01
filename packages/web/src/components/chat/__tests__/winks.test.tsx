@@ -314,4 +314,76 @@ describe('Winks functionality in Direct Messages', () => {
     expect(useWinkStore.getState().activeWink).not.toBeNull();
     expect(useWinkStore.getState().activeWink?.winkId).toBe('diabravinho');
   });
+  it('official winks have correct static /winks/... URLs and resolveWinkMediaUrls preserves them', () => {
+    const diabravinho = useWinkStore.getState().getWink('diabravinho');
+    expect(diabravinho?.webmUrl).toBe('/winks/diabravinho.webm');
+    expect(diabravinho?.mp4Url).toBe('/winks/diabravinho.mp4');
+    expect(diabravinho?.thumbnailUrl).toBe('/winks/diabravinho_thumb.webp');
+
+    const bolsogado = useWinkStore.getState().getWink('bolsogado');
+    expect(bolsogado?.webmUrl).toBe('/winks/bolsogado.webm');
+    expect(bolsogado?.mp4Url).toBe('/winks/bolsogado.mp4');
+    expect(bolsogado?.thumbnailUrl).toBe('/winks/bolsogado_thumb.webp');
+
+    const nikole = useWinkStore.getState().getWink('nikole');
+    expect(nikole?.webmUrl).toBe('/winks/nikole.webm');
+    expect(nikole?.mp4Url).toBe('/winks/nikole.mp4');
+    expect(nikole?.thumbnailUrl).toBe('/winks/nikole_thumb.webp');
+  });
+
+  it('WinkAnimationPlayer falls back from WebM to MP4 on error instead of silently dismissing', () => {
+    useWinkStore.getState().triggerWink({
+      winkId: 'diabravinho',
+      senderName: 'Bob',
+      channelId: 'dm-1',
+      isLocalReplay: true,
+    });
+
+    render(<WinkAnimationPlayer />);
+
+    const video = document.querySelector('video') as HTMLVideoElement;
+    expect(video).toBeInTheDocument();
+    expect(video.src).toContain('/winks/diabravinho.webm');
+
+    // Trigger media error on WebM
+    act(() => {
+      fireEvent.error(video);
+    });
+
+    // Wink must NOT be dismissed silently
+    expect(useWinkStore.getState().activeWink).not.toBeNull();
+    // It should have switched format to MP4
+    expect(video.src).toContain('/winks/diabravinho.mp4');
+
+    // If MP4 also errors, it displays error banner without crashing or silent unmount
+    act(() => {
+      fireEvent.error(video);
+    });
+    expect(useWinkStore.getState().activeWink).not.toBeNull();
+    expect(screen.getByText(/Não foi possível carregar a animação/)).toBeInTheDocument();
+  });
+
+  it('WinkAnimationPlayer dismisses cleanly on ended event', () => {
+    useWinkStore.getState().triggerWink({
+      winkId: 'bolsogado',
+      senderName: 'Bob',
+      channelId: 'dm-1',
+      isLocalReplay: true,
+    });
+
+    render(<WinkAnimationPlayer />);
+    const video = document.querySelector('video') as HTMLVideoElement;
+
+    // Simulate video playing
+    act(() => {
+      fireEvent.playing(video);
+    });
+    expect(useWinkStore.getState().activeWink).not.toBeNull();
+
+    // Simulate video ended naturally
+    act(() => {
+      fireEvent.ended(video);
+    });
+    expect(useWinkStore.getState().activeWink).toBeNull();
+  });
 });

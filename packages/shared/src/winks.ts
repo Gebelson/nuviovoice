@@ -85,9 +85,9 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     previewEmoji: '😈',
     hasAlpha: true,
-    webmUrl: '/api/winks/media/diabravinho.webm',
-    mp4Url: '/api/winks/media/diabravinho.mp4',
-    thumbnailUrl: '/api/winks/media/diabravinho_thumb.webp',
+    webmUrl: '/winks/diabravinho.webm',
+    mp4Url: '/winks/diabravinho.mp4',
+    thumbnailUrl: '/winks/diabravinho_thumb.webp',
     width: 1920,
     height: 1080,
     fps: 24,
@@ -104,9 +104,9 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     previewEmoji: '🐂',
     hasAlpha: true,
-    webmUrl: '/api/winks/media/bolsogado.webm',
-    mp4Url: '/api/winks/media/bolsogado.mp4',
-    thumbnailUrl: '/api/winks/media/bolsogado_thumb.webp',
+    webmUrl: '/winks/bolsogado.webm',
+    mp4Url: '/winks/bolsogado.mp4',
+    thumbnailUrl: '/winks/bolsogado_thumb.webp',
     width: 1920,
     height: 1080,
     fps: 24,
@@ -123,9 +123,9 @@ export const OFFICIAL_WINKS: readonly OfficialWink[] = [
     hasAudio: true,
     previewEmoji: '👱‍♀️',
     hasAlpha: true,
-    webmUrl: '/api/winks/media/nikole.webm',
-    mp4Url: '/api/winks/media/nikole.mp4',
-    thumbnailUrl: '/api/winks/media/nikole_thumb.webp',
+    webmUrl: '/winks/nikole.webm',
+    mp4Url: '/winks/nikole.mp4',
+    thumbnailUrl: '/winks/nikole_thumb.webp',
     width: 1920,
     height: 1080,
     fps: 24,
@@ -141,6 +141,38 @@ export const OFFICIAL_WINK_MAP = new Map<string, OfficialWink>(
 
 export function getOfficialWink(id: string): OfficialWink | undefined {
   return OFFICIAL_WINK_MAP.get(id);
+}
+
+export interface ResolvedWinkMediaUrls {
+  webmUrl: string;
+  mp4Url: string;
+  thumbnailUrl: string;
+}
+
+/**
+ * Centralized resolution of Wink media URLs.
+ * For official catalog animations, prioritizes the static published assets under /winks/
+ * avoiding reliance on dynamic or nonexistent /api/winks/media paths.
+ */
+export function resolveWinkMediaUrls(wink: {
+  id: string;
+  webmUrl?: string | null;
+  mp4Url?: string | null;
+  thumbnailUrl?: string | null;
+}): ResolvedWinkMediaUrls {
+  const isOfficial = OFFICIAL_WINK_MAP.has(wink.id);
+  if (isOfficial) {
+    return {
+      webmUrl: `/winks/${wink.id}.webm`,
+      mp4Url: `/winks/${wink.id}.mp4`,
+      thumbnailUrl: `/winks/${wink.id}_thumb.webp`,
+    };
+  }
+  return {
+    webmUrl: wink.webmUrl || `/winks/${wink.id}.webm`,
+    mp4Url: wink.mp4Url || `/winks/${wink.id}.mp4`,
+    thumbnailUrl: wink.thumbnailUrl || `/winks/${wink.id}_thumb.webp`,
+  };
 }
 
 export function isValidWinkId(id: unknown): id is string {

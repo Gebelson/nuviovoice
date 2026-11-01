@@ -33,7 +33,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/ws/, /^\/uploads/],
+        navigateFallbackDenylist: [/^\/api/, /^\/ws/, /^\/uploads/, /^\/winks/],
         // No skipWaiting: a new worker activates only on SwAutoUpdate's
         // SKIP_WAITING message. The one exception is replacing a worker from
         // before that flow, which public/sw-rollover.js handles.
