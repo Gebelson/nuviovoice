@@ -9,6 +9,8 @@ export const MAX_MESSAGE_LENGTH = 4000;
 export const AVATAR_COLORS = ['mint', 'sky', 'lavender', 'coral', 'rose', 'teal', 'amber'] as const;
 export type AvatarColor = (typeof AVATAR_COLORS)[number];
 
+export type FriendDiscoveryVisibility = 'everyone' | 'mutual_friends' | 'nobody';
+
 export interface User {
   id: string;
   username: string;
@@ -24,6 +26,8 @@ export interface User {
   isBot?: boolean;
   isDeleted?: boolean;
   discoverable?: boolean;
+  friendDiscoveryVisibility?: FriendDiscoveryVisibility;
+  receiveWinks?: boolean;
   profileUpdatedAt?: number;
   createdAt: number;
   homeInstance: string | null;
@@ -1121,6 +1125,8 @@ export interface UpdateUserRequest {
   homeUserId?: string;
   profileUpdatedAt?: number;
   discoverable?: boolean;
+  friendDiscoveryVisibility?: FriendDiscoveryVisibility;
+  receiveWinks?: boolean;
   showActivity?: boolean;
 }
 

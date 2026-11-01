@@ -82,3 +82,30 @@ describe('migrateSoundpadEveryonePermissions', () => {
     expect(rerun).toBe(0);
   });
 });
+
+describe('privacy migrations (friend_discovery_visibility & receive_winks)', () => {
+  it('adds friend_discovery_visibility and receive_winks to users table and backfills correctly', () => {
+    const db = freshDb();
+    db.exec(`
+      INSERT INTO users (id, username, password_hash, discoverable, created_at)
+      VALUES ('u1', 'alice', 'hash1', 1, 1000);
+      INSERT INTO users (id, username, password_hash, discoverable, created_at)
+      VALUES ('u2', 'bob', 'hash2', 0, 1000);
+    `);
+
+    ensureDefaults(db);
+
+    const cols = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+    expect(cols.some(c => c.name === 'friend_discovery_visibility')).toBe(true);
+    expect(cols.some(c => c.name === 'receive_winks')).toBe(true);
+
+    const alice = db.prepare('SELECT friend_discovery_visibility, receive_winks FROM users WHERE id = ?').get('u1') as any;
+    expect(alice.friend_discovery_visibility).toBe('everyone');
+    expect(alice.receive_winks).toBe(1);
+
+    const bob = db.prepare('SELECT friend_discovery_visibility, receive_winks FROM users WHERE id = ?').get('u2') as any;
+    expect(bob.friend_discovery_visibility).toBe('nobody');
+    expect(bob.receive_winks).toBe(1);
+  });
+});
+

@@ -262,6 +262,17 @@ export function ensureDefaults(db: Database.Database): void {
     console.log('[defaults] Added is_bot column to users');
   }
 
+  // 9.1 Ensure users privacy columns (friend_discovery_visibility, receive_winks) exist
+  if (!userCols.some(c => c.name === 'friend_discovery_visibility')) {
+    db.exec("ALTER TABLE users ADD COLUMN friend_discovery_visibility TEXT DEFAULT 'everyone' NOT NULL;");
+    db.exec("UPDATE users SET friend_discovery_visibility = 'nobody' WHERE discoverable = 0;");
+    console.log('[defaults] Added friend_discovery_visibility column to users');
+  }
+  if (!userCols.some(c => c.name === 'receive_winks')) {
+    db.exec('ALTER TABLE users ADD COLUMN receive_winks INTEGER DEFAULT 1 NOT NULL;');
+    console.log('[defaults] Added receive_winks column to users');
+  }
+
   // 10. Ensure Bot Library tables exist
   db.exec(`
     CREATE TABLE IF NOT EXISTS bot_categories (

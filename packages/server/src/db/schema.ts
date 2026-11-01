@@ -29,6 +29,8 @@ export const users = sqliteTable('users', {
   bio: text('bio'),
   isDeleted: integer('is_deleted').default(0),
   discoverable: integer('discoverable').default(1),
+  friendDiscoveryVisibility: text('friend_discovery_visibility').notNull().default('mutual_friends'),
+  receiveWinks: integer('receive_winks').notNull().default(1),
   profileUpdatedAt: integer('profile_updated_at'),
   passwordChangedAt: integer('password_changed_at'),
   showActivity: integer('show_activity').notNull().default(1),
