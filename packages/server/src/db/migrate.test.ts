@@ -87,6 +87,8 @@ describe('privacy migrations (friend_discovery_visibility & receive_winks)', () 
   it('adds friend_discovery_visibility and receive_winks to users table and backfills correctly', () => {
     const db = freshDb();
     db.exec(`
+      ALTER TABLE users DROP COLUMN friend_discovery_visibility;
+      ALTER TABLE users DROP COLUMN receive_winks;
       INSERT INTO users (id, username, password_hash, discoverable, created_at)
       VALUES ('u1', 'alice', 'hash1', 1, 1000);
       INSERT INTO users (id, username, password_hash, discoverable, created_at)

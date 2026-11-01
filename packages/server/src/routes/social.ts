@@ -21,6 +21,7 @@ import type {
   DiscoverUser,
 } from '@concord/shared';
 import { sanitizeUser } from '../utils/sanitize.js';
+import { getConfirmedMutualFriendUserIds, buildDiscoveryVisibilityCondition } from '../utils/friendDiscoveryRules.js';
 import { relayHandleOf } from './federation/stubName.js';
 import { sendError } from '../utils/httpErrors.js';
 
@@ -930,11 +931,15 @@ export async function socialRoutes(app: FastifyInstance): Promise<void> {
     ).all();
     const myFriendIds = new Set(myFriendRows.map(f => f.userId === myId ? f.friendId : f.userId));
 
+    // Compute mutual friend user IDs for visibility filtering
+    const mutualUserIds = getConfirmedMutualFriendUserIds(myId, myFriendIds, db);
+
     // Build WHERE clause
     const conditions = [
       eq(schema.users.discoverable, 1),
       eq(schema.users.isDeleted, 0),
       ne(schema.users.id, myId),
+      buildDiscoveryVisibilityCondition(mutualUserIds),
       // Exclude replicated federated users — each instance only surfaces its own native users.
       // Federated users are discovered through the parallel fetch across connected instances.
       sql`(${schema.users.homeInstance} IS NULL OR ${schema.users.homeInstance} = '')`,
@@ -1098,10 +1103,17 @@ export async function socialRoutes(app: FastifyInstance): Promise<void> {
 
     const pattern = `%${q}%`;
 
+    const myFriendRows = db.select().from(schema.friends).where(
+      or(eq(schema.friends.userId, request.userId), eq(schema.friends.friendId, request.userId))
+    ).all();
+    const myFriendIds = new Set(myFriendRows.map(f => f.userId === request.userId ? f.friendId : f.userId));
+    const mutualUserIds = getConfirmedMutualFriendUserIds(request.userId, myFriendIds, db);
+
     const conditions = [
       eq(schema.users.isDeleted, 0),
       eq(schema.users.discoverable, 1),
       ne(schema.users.id, request.userId),
+      buildDiscoveryVisibilityCondition(mutualUserIds),
       // Exclude replicated federated stubs: their stored username is
       // `<homeUserId>@<domain>`, so a substring of the domain would match
       // every stub from that instance. Federated users are surfaced via
