@@ -232,5 +232,7 @@
   "wink_not_ready": "O Wink ainda não está pronto para publicação.",
   "unsupported_file_format": "Formato de vídeo não suportado. Por favor, envie MOV, MP4 ou WebM.",
   "file_required": "Um arquivo de vídeo é obrigatório.",
-  "body_required": "O corpo da requisição é obrigatório."
+  "body_required": "O corpo da requisição é obrigatório.",
+  "winks_disabled_by_recipient": "Não foi possível enviar este Wink. O destinatário não está aceitando Winks.",
+  "winks_disabled_in_group": "Não foi possível enviar o Wink nesta conversa."
 }

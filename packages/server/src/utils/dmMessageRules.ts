@@ -1,5 +1,5 @@
 import { isWinkContent, isValidWinkId, formatWinkContent, OFFICIAL_WINK_MAP } from '@concord/shared/src/winks.js';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { MAX_MESSAGE_LENGTH } from '@concord/shared';
 import type { ErrorCode, ErrorDetails } from '@concord/shared/src/errors';
 import { getDb, schema } from '../db/index.js';
@@ -123,6 +123,34 @@ export function checkDmMessageCreate(
     if (!rawWinkId || !isValidWinkId(rawWinkId) || !isWinkPlayable(rawWinkId)) {
       return refuse(400, 'validation_failed');
     }
+
+    const db = getDb();
+    const channel = db.select({ id: schema.dmChannels.id, ownerId: schema.dmChannels.ownerId })
+      .from(schema.dmChannels)
+      .where(eq(schema.dmChannels.id, dmChannelId))
+      .get();
+    const isGroup = !!channel?.ownerId;
+
+    const recipients = db.select({
+      userId: schema.dmMembers.userId,
+      receiveWinks: schema.users.receiveWinks,
+    })
+      .from(schema.dmMembers)
+      .innerJoin(schema.users, eq(schema.dmMembers.userId, schema.users.id))
+      .where(and(
+        eq(schema.dmMembers.dmChannelId, dmChannelId),
+        ne(schema.dmMembers.userId, userId),
+      ))
+      .all();
+
+    const hasRefusal = recipients.some((r) => r.receiveWinks === 0);
+    if (hasRefusal) {
+      if (isGroup || recipients.length > 1) {
+        return refuse(403, 'winks_disabled_in_group');
+      }
+      return refuse(403, 'winks_disabled_by_recipient');
+    }
+
     const finalContent = formatWinkContent(rawWinkId);
     return { ok: true, value: { content: finalContent, attachmentIds: [], replyToId: null, type: 'wink', winkId: rawWinkId } as any };
   }

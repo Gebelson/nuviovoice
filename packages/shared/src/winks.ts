@@ -197,6 +197,10 @@ export function isWinkContent(content: string | null | undefined): { isWink: boo
     const id = trimmed.slice(5).trim();
     if (id.length > 0) return { isWink: true, winkId: id };
   }
+  if (trimmed.startsWith('[wink:') && trimmed.endsWith(']')) {
+    const id = trimmed.slice(6, -1).trim();
+    if (id.length > 0) return { isWink: true, winkId: id };
+  }
   try {
     const parsed = JSON.parse(trimmed);
     if (

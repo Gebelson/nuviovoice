@@ -232,5 +232,7 @@
   "wink_not_ready": "Wink 尚未准备好发布。",
   "unsupported_file_format": "不支持的视频格式。请上传 MOV、MP4 或 WebM。",
   "file_required": "需要视频文件。",
-  "body_required": "请求正文为必填项。"
+  "body_required": "请求正文为必填项。",
+  "winks_disabled_by_recipient": "无法发送此 Wink。收件人未接收 Wink。",
+  "winks_disabled_in_group": "无法在此对话中发送 Wink。"
 }

@@ -282,6 +282,8 @@ export const ERROR_CODES = [
   'unsupported_file_format',
   'file_required',
   'body_required',
+  'winks_disabled_by_recipient',
+  'winks_disabled_in_group',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

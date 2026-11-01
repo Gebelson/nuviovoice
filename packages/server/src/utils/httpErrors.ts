@@ -187,6 +187,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   unsupported_file_format: 'Unsupported file format',
   file_required: 'A video file is required',
   body_required: 'Request body is required',
+  winks_disabled_by_recipient: 'Não foi possível enviar este Wink. O destinatário não está aceitando Winks.',
+  winks_disabled_in_group: 'Não foi possível enviar o Wink nesta conversa.',
   // spaces
   space_owner_title_invalid: 'Owner titles can be 1 to {{max}} characters on one line, with at least one visible character and no control characters.',
   member_nickname_invalid: 'Nicknames can be at most {{max}} characters on one line, with at least one visible character and no control characters.',
