@@ -6,7 +6,7 @@ let nuvioConfig = {
   wsUrl: 'wss://167-234-239-100.sslip.io',
   backendHost: '167-234-239-100.sslip.io',
   isDesktop: true,
-  version: '1.13.0',
+  version: '1.14.0',
 };
 
 try {
