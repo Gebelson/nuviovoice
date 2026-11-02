@@ -22,6 +22,8 @@ type ModalType =
   | 'connectAndJoin'
   | 'memberRoles'
   | 'downloadDesktop'
+  | 'reportMessage'
+  | 'reportSpace'
   | null;
 
 /**

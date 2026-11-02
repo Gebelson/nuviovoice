@@ -256,6 +256,30 @@ export function buildMessageMenuItems(params: MessageMenuParams): ContextMenuIte
   }
 
   // ── Delete Message (author or moderator) ────────────────────────────────
+  // ── Report Message ────────────────────────────────────────────────────────
+  if (!isAuthor) {
+    items.push({ key: 'report-sep', type: 'separator' });
+    items.push({
+      key: 'report-message',
+      type: 'action',
+      label: i18n.t('chat:menu.reportMessage', 'Denunciar mensagem'),
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+        </svg>
+      ),
+      onClick: () => {
+        useUIStore.getState().openModal('reportMessage', {
+          messageId: message.id,
+          authorUsername: message.user?.username,
+          content: message.content,
+          isDm,
+        });
+      },
+      danger: true,
+    });
+  }
+
   const canDelete = isDm ? isAuthor : (isAuthor || canManageMessages);
   if (canDelete) {
     items.push({

@@ -26,6 +26,8 @@ import { UserProfileModal } from '../modals/UserProfileModal';
 import { ConnectAndJoinModal } from '../modals/ConnectAndJoinModal';
 import { MemberRolesModal } from '../modals/MemberRolesModal';
 import { DownloadDesktopModal } from '../modals/DownloadDesktopModal';
+import { ReportMessageModal } from '../modals/ReportMessageModal';
+import { ReportSpaceModal } from '../modals/ReportSpaceModal';
 import { IncomingCallModal } from '../voice/IncomingCallModal';
 import { PictureInPicture } from '../voice/PictureInPicture';
 import { PopOutCallPortal } from '../voice/PopOutCallPortal';

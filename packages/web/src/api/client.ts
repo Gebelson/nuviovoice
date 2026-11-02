@@ -98,6 +98,19 @@ import type {
   SoundScope,
   OfficialWink,
   WinkAdminMetrics,
+  SafetyReport,
+  SafetyReportCategory,
+  SafetyReportPriority,
+  SafetyReportStatus,
+  SecurityCase,
+  SecurityCaseStatus,
+  AuthorityRequest,
+  AuthorityRequestStatus,
+  EvidenceVaultItem,
+  SecurityAlert,
+  SecurityAlertStatus,
+  SecurityAuditLog,
+  SecurityOverviewMetrics,
 } from '@concord/shared';
 import type {
   Product,
@@ -572,6 +585,44 @@ export class BackspaceApiClient {
     unpublish: (id: string) => Promise<OfficialWink>;
     retry: (id: string) => Promise<OfficialWink>;
     delete: (id: string) => Promise<{ success: boolean; id: string }>;
+  };
+
+  readonly reports: {
+    reportMessage: (data: {
+      messageId: string;
+      category: SafetyReportCategory;
+      description?: string;
+      includeContext?: boolean;
+    }) => Promise<{ protocol: string; reportId: string; priority: string; status: string; evidenceCount: number }>;
+    reportSpace: (data: {
+      spaceId: string;
+      category: SafetyReportCategory;
+      description?: string;
+    }) => Promise<{ protocol: string; reportId: string; priority: string; status: string }>;
+    getMyReports: () => Promise<{ reports: any[] }>;
+  };
+
+  readonly securityAdmin: {
+    getOverview: () => Promise<{ metrics: SecurityOverviewMetrics }>;
+    getReports: (params?: { status?: string; priority?: string; category?: string }) => Promise<{ reports: SafetyReport[] }>;
+    getReport: (id: string) => Promise<{ report: SafetyReport }>;
+    updateReport: (id: string, data: { status?: SafetyReportStatus; assignedAdminId?: string; resolutionNotes?: string; justification: string }) => Promise<{ success: boolean; report: SafetyReport }>;
+    getCases: () => Promise<{ cases: SecurityCase[] }>;
+    createCase: (data: { title: string; category: string; priority?: string; reportId?: string; subjectUserId?: string; subjectUsername?: string; subjectSpaceId?: string; summary?: string; justification: string }) => Promise<{ success: boolean; caseId: string; protocol: string }>;
+    updateCase: (id: string, data: { status?: SecurityCaseStatus; summary?: string; resolution?: string; assignedTo?: string; justification: string }) => Promise<{ success: boolean; case: SecurityCase }>;
+    getAuthorities: () => Promise<{ requests: AuthorityRequest[] }>;
+    createAuthority: (data: { protocolNumber: string; requestingBody: string; authorityName: string; authorityContact?: string; requestType?: string; legalBasis: string; targetUserId?: string; targetSpaceId?: string; preservationDays?: number; notes?: string; justification: string }) => Promise<{ success: boolean; id: string; protocolNumber: string }>;
+    updateAuthority: (id: string, data: { status?: AuthorityRequestStatus; notes?: string; justification: string }) => Promise<{ success: boolean; request: AuthorityRequest }>;
+    getEvidence: () => Promise<{ evidence: EvidenceVaultItem[] }>;
+    getEvidenceItem: (id: string, justification: string) => Promise<{ evidence: EvidenceVaultItem }>;
+    depositEvidence: (data: { caseId?: string; reportId?: string; evidenceType: string; source?: string; payload: string; metadata?: string; isExtremelySensitive?: boolean; justification: string }) => Promise<{ success: boolean; id: string; hashSha256: string }>;
+    getAlerts: (status?: SecurityAlertStatus) => Promise<{ alerts: SecurityAlert[] }>;
+    updateAlert: (id: string, data: { status: SecurityAlertStatus; justification: string }) => Promise<{ success: boolean; alert: SecurityAlert }>;
+    getAuditLogs: (params?: { limit?: number; offset?: number }) => Promise<{ logs: SecurityAuditLog[]; total: number }>;
+    getSuspendedUsers: () => Promise<{ users: Array<{ id: string; username: string; displayName?: string; isDeleted: number; createdAt: number }> }>;
+    suspendUser: (id: string, data: { justification: string; caseId?: string }) => Promise<{ success: boolean; userId: string; isSuspended: boolean }>;
+    reactivateUser: (id: string, data: { justification: string }) => Promise<{ success: boolean; userId: string; isSuspended: boolean }>;
+    getReportedSpaces: () => Promise<{ spaces: Array<{ id: string; name: string; ownerId: string; type: string; reportCount: number }> }>;
   };
 
   readonly admin: {
@@ -1400,6 +1451,50 @@ export class BackspaceApiClient {
       unpublish: (id) => request<OfficialWink>('POST', `/admin/winks/${encodeURIComponent(id)}/unpublish`),
       retry: (id) => request<OfficialWink>('POST', `/admin/winks/${encodeURIComponent(id)}/retry`),
       delete: (id) => request<{ success: boolean; id: string }>('DELETE', `/admin/winks/${encodeURIComponent(id)}`),
+    };
+
+    this.reports = {
+      reportMessage: (data) => request('POST', '/reports/message', data),
+      reportSpace: (data) => request('POST', '/reports/space', data),
+      getMyReports: () => request('GET', '/reports/my'),
+    };
+
+    this.securityAdmin = {
+      getOverview: () => request('GET', '/admin/security/overview'),
+      getReports: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.priority) qs.set('priority', params.priority);
+        if (params?.category) qs.set('category', params.category);
+        const query = qs.toString();
+        return request('GET', `/admin/security/reports${query ? `?${query}` : ''}`);
+      },
+      getReport: (id) => request('GET', `/admin/security/reports/${encodeURIComponent(id)}`),
+      updateReport: (id, data) => request('PATCH', `/admin/security/reports/${encodeURIComponent(id)}`, data),
+      getCases: () => request('GET', '/admin/security/cases'),
+      createCase: (data) => request('POST', '/admin/security/cases', data),
+      updateCase: (id, data) => request('PATCH', `/admin/security/cases/${encodeURIComponent(id)}`, data),
+      getAuthorities: () => request('GET', '/admin/security/authorities'),
+      createAuthority: (data) => request('POST', '/admin/security/authorities', data),
+      updateAuthority: (id, data) => request('PATCH', `/admin/security/authorities/${encodeURIComponent(id)}`, data),
+      getEvidence: () => request('GET', '/admin/security/evidence'),
+      getEvidenceItem: (id, justification) =>
+        request('GET', `/admin/security/evidence/${encodeURIComponent(id)}?justification=${encodeURIComponent(justification)}`),
+      depositEvidence: (data) => request('POST', '/admin/security/evidence', data),
+      getAlerts: (status) =>
+        request('GET', `/admin/security/alerts${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+      updateAlert: (id, data) => request('PATCH', `/admin/security/alerts/${encodeURIComponent(id)}`, data),
+      getAuditLogs: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.limit) qs.set('limit', String(params.limit));
+        if (params?.offset) qs.set('offset', String(params.offset));
+        const query = qs.toString();
+        return request('GET', `/admin/security/audit${query ? `?${query}` : ''}`);
+      },
+      getSuspendedUsers: () => request('GET', '/admin/security/users'),
+      suspendUser: (id, data) => request('POST', `/admin/security/users/${encodeURIComponent(id)}/suspend`, data),
+      reactivateUser: (id, data) => request('POST', `/admin/security/users/${encodeURIComponent(id)}/reactivate`, data),
+      getReportedSpaces: () => request('GET', '/admin/security/spaces'),
     };
   }
 }
