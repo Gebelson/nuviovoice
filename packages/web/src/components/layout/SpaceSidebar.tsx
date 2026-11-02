@@ -18,7 +18,9 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { TransferOwnershipModal } from '../modals/TransferOwnershipModal';
 import { NotificationSettingsModal, type NotificationSettingsModalTarget } from '../notifications/NotificationSettingsModal';
 import { FolderSettingsModal } from '../modals/FolderSettingsModal';
-import { isPublicSpace, type SpaceLayoutItem, type SpaceFolder } from '@concord/shared';
+import { isPublicSpace, type SpaceLayoutItem, type SpaceFolder, type LiveStreamInfo } from '@concord/shared';
+import { useLiveStreamStore } from '../../stores/liveStreamStore';
+import { LiveStreamSidebarItem } from '../live/LiveStreamSidebarItem';
 
 import { getSpaceGradient } from '../../utils/gradients';
 import { isElectron } from '../../platform/platform';
@@ -661,6 +663,16 @@ export function SpaceSidebar() {
   const instances = useInstanceStore((s) => s.instances);
   const navigate = useNavigate();
   const location = useLocation();
+  const liveStreams = useLiveStreamStore((s) => s.liveStreams);
+  const activeStream = useLiveStreamStore((s) => s.activeStream);
+  const openStream = useLiveStreamStore((s) => s.openStream);
+
+  const handleLiveStreamClick = useCallback((stream: LiveStreamInfo) => {
+    setShowDms(false);
+    setCurrentSpace(null);
+    openStream(stream, 'main');
+    navigate(`/live/${stream.id}`);
+  }, [setShowDms, setCurrentSpace, openStream, navigate]);
 
   // Expanded folders state (persisted across reloads)
   const EXPANDED_FOLDERS_STORAGE_KEY = 'nuvio_expanded_folders';
@@ -1455,6 +1467,26 @@ export function SpaceSidebar() {
       />
 
       <div className="w-8 h-[2px] bg-white/[0.06] rounded-full mb-1.5 shrink-0" />
+
+      {/* Nuvio Ao Vivo — Active Streamers Section */}
+      {liveStreams.length > 0 && (
+        <>
+          <div className="w-full flex flex-col items-center">
+            {liveStreams.map((stream) => (
+              <LiveStreamSidebarItem
+                key={`live-${stream.id}`}
+                stream={stream}
+                active={
+                  location.pathname === `/live/${stream.id}` ||
+                  (activeStream?.id === stream.id && location.pathname.startsWith('/live/'))
+                }
+                onClick={() => handleLiveStreamClick(stream)}
+              />
+            ))}
+          </div>
+          <div className="w-8 h-[2px] bg-white/[0.06] rounded-full mb-1.5 shrink-0" />
+        </>
+      )}
 
       {/* Private spaces (above the divider and add button) */}
       {privateLayoutItems.map(renderLayoutItem)}

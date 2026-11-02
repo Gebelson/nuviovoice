@@ -1491,3 +1491,27 @@ export const verificationAuditLogs = sqliteTable('verification_audit_logs', {
   adminIdx: index('idx_verif_audit_admin').on(table.adminId),
   createdIdx: index('idx_verif_audit_created').on(table.createdAt),
 }));
+
+export const streamerChannels = sqliteTable('streamer_channels', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  platform: text('platform').notNull(),
+  channelId: text('channel_id').notNull(),
+  channelName: text('channel_name').notNull(),
+  channelUrl: text('channel_url').notNull(),
+  linkedSpaceId: text('linked_space_id').references(() => spaces.id, { onDelete: 'set null' }),
+  isLive: integer('is_live').notNull().default(0),
+  streamTitle: text('stream_title'),
+  streamGame: text('stream_game'),
+  streamThumbnail: text('stream_thumbnail'),
+  viewerCount: integer('viewer_count').notNull().default(0),
+  startedAt: integer('started_at'),
+  lastCheckedAt: integer('last_checked_at'),
+  metadata: text('metadata').default('{}'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  userIdx: index('idx_streamer_channels_user').on(table.userId),
+  isLiveIdx: index('idx_streamer_channels_live').on(table.isLive),
+  platformChannelIdx: uniqueIndex('idx_streamer_channels_platform_channel').on(table.platform, table.channelName),
+}));

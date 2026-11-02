@@ -28,6 +28,7 @@ import { useFederationStore } from '../stores/federationStore';
 import { notePendingOriginReady } from '../stores/pendingMessageRehydrate';
 import { useNotificationSettingsStore } from '../stores/notificationSettingsStore';
 import { useBotStore } from '../stores/botStore';
+import { useLiveStreamStore } from '../stores/liveStreamStore';
 import { detectClientKind } from '../platform/clientKind';
 import { ConnectionState as LiveKitConnectionState } from 'livekit-client';
 
@@ -1487,6 +1488,19 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
       // servers send no code, and those errors stay in the log.
       if (event.code) {
         useUIStore.getState().addToast(describeErrorCode(event.code, event.message, event.details), 'warning');
+      }
+      break;
+    }
+    case 'live_stream_started': {
+      useLiveStreamStore.getState().handleStreamStarted(event.stream);
+      break;
+    }
+    case 'live_stream_updated': {
+      useLiveStreamStore.getState().handleStreamUpdated(event.stream);
+      break;
+    }
+    case 'live_stream_ended': { {
+      useLiveStreamStore.getState().handleStreamEnded(event.channelId, event.userId);
       }
       break;
     }

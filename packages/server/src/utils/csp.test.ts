@@ -39,6 +39,9 @@ describe('buildCspDirectives', () => {
     const d = directivesOf({});
     expect(d['frame-src']).toEqual([
       'https://www.youtube-nocookie.com',
+      'https://www.youtube.com',
+      'https://player.twitch.tv',
+      'https://player.kick.com',
       'https://player.vimeo.com',
       'https://open.spotify.com',
     ]);

@@ -1,4 +1,5 @@
 import type { PersonalSticker } from '@concord/shared/src/stickers';
+import type { LiveStreamInfo, StreamerChannel, LinkChannelInput } from '@concord/shared';
 import { isErrorCode, type ErrorCode, type ErrorDetails } from '@concord/shared/src/errors';
 import type {
   NotificationSetting,
@@ -651,6 +652,15 @@ export class BackspaceApiClient {
     grantOfficial: (data: { targetUserId?: string; userId?: string; targetUsername?: string; notes?: string; justification?: string }) => Promise<{ success: boolean; verificationId: string }>;
     getAudit: (limit?: number) => Promise<{ logs: VerificationAuditLogEntry[] }>;
     getVerifiedEntities: (entityType?: 'user' | 'space') => Promise<{ verified: Array<Record<string, unknown>> }>;
+  };
+
+  readonly live: {
+    getStreams: () => Promise<{ streams: LiveStreamInfo[] }>;
+    getStream: (channelId: string) => Promise<{ stream: LiveStreamInfo }>;
+    getMyChannels: () => Promise<{ channels: StreamerChannel[] }>;
+    linkChannel: (data: LinkChannelInput) => Promise<{ channel: StreamerChannel }>;
+    unlinkChannel: (id: string) => Promise<{ success: boolean }>;
+    refreshChannel: (id: string) => Promise<{ channel: StreamerChannel; changed: boolean }>;
   };
 
   readonly admin: {
@@ -1648,6 +1658,15 @@ export class BackspaceApiClient {
           verified: res.verified || res.items || [],
         };
       },
+    };
+
+    this.live = {
+      getStreams: () => request<{ streams: LiveStreamInfo[] }>('GET', '/live/streams'),
+      getStream: (channelId: string) => request<{ stream: LiveStreamInfo }>('GET', `/live/streams/${encodeURIComponent(channelId)}`),
+      getMyChannels: () => request<{ channels: StreamerChannel[] }>('GET', '/live/channels/me'),
+      linkChannel: (data: LinkChannelInput) => request<{ channel: StreamerChannel }>('POST', '/live/channels/link', data),
+      unlinkChannel: (id: string) => request<{ success: boolean }>('DELETE', `/live/channels/${encodeURIComponent(id)}`),
+      refreshChannel: (id: string) => request<{ channel: StreamerChannel; changed: boolean }>('POST', `/live/channels/${encodeURIComponent(id)}/refresh`),
     };
   }
 }

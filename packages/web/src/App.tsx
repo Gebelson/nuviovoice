@@ -104,6 +104,14 @@ export function App() {
             element={<VoiceInvitePage />}
           />
           <Route
+            path="/live/:channelId"
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/explore"
             element={
               <ProtectedRoute>

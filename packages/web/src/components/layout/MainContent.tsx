@@ -13,6 +13,7 @@ import { VoiceControlBar } from '../voice/VoiceControlBar';
 import { VoiceChatPanel } from '../voice/VoiceChatPanel';
 import { FriendsPage } from '../chat/FriendsPage';
 import { ExplorePage } from '../chat/ExplorePage';
+import { DedicatedLiveStreamView } from '../live/DedicatedLiveStreamView';
 import { DownloadPage } from '../download/DownloadPage';
 import { ProjectHubPage } from '../projectHub/ProjectHubPage';
 import { StoreContainer } from '../store/StoreContainer';
@@ -84,6 +85,7 @@ export function MainContent() {
   const showDms = useUIStore((s) => s.showDms);
   const location = useLocation();
   const isExplorePage = location.pathname === '/explore';
+  const isLiveStreamPage = location.pathname.startsWith('/live/');
   const isProjectHubPage = location.pathname === '/backspace';
   const isDownloadPage = location.pathname === '/download';
   const isStorePage = location.pathname.startsWith('/store') || location.pathname.startsWith('/developers');
@@ -269,7 +271,10 @@ export function MainContent() {
   const channel = channels.find(c => c.id === currentChannelId);
   const isVoiceChannel = channel?.type === 'voice';
 
-  if (showDms || isExplorePage || isProjectHubPage || isDownloadPage || isStorePage || !currentSpaceId) {
+  if (showDms || isExplorePage || isLiveStreamPage || isProjectHubPage || isDownloadPage || isStorePage || !currentSpaceId) {
+    if (isLiveStreamPage) {
+      return <DedicatedLiveStreamView />;
+    }
     if (isDownloadPage) {
       return <DownloadPage />;
     }

@@ -28,7 +28,9 @@
     "./src/winks": "./src/winks.ts",
     "./src/winks.js": "./src/winks.ts",
     "./src/verifications": "./src/verifications.ts",
-    "./src/verifications.js": "./src/verifications.ts"
+    "./src/verifications.js": "./src/verifications.ts",
+    "./src/liveStreams": "./src/liveStreams.ts",
+    "./src/liveStreams.js": "./src/liveStreams.ts"
   },
   "scripts": {
     "build": "tsc",

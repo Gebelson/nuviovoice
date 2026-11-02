@@ -1,6 +1,8 @@
 import type { ErrorCode, ErrorDetails } from './errors.js';
 import type { VerificationInfo } from './verifications.js';
 export * from './verifications.js';
+export * from './liveStreams.js';
+import type { LiveStreamInfo } from './liveStreams.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -1027,7 +1029,10 @@ export type ServerEvent =
   // The space's roles or a member's roles changed: what the receiver may see
   // or do there, and how its roles and members look, may be different now.
   // The client refetches that space's detail (docs/systems/websocket.md).
-  | { type: 'space_access_changed'; spaceId: string };
+  | { type: 'space_access_changed'; spaceId: string }
+  | { type: 'live_stream_started'; stream: LiveStreamInfo }
+  | { type: 'live_stream_updated'; stream: LiveStreamInfo }
+  | { type: 'live_stream_ended'; channelId: string; userId: string };
 
 // ─── API Request/Response Types ─────────────────────────────────────────────
 

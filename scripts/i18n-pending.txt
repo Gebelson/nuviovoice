@@ -19,6 +19,9 @@ packages/web/src/components/layout/MainContent.tsx
 packages/web/src/components/layout/MemberSidebar.tsx
 packages/web/src/components/layout/MobileDmsScreen.tsx
 packages/web/src/components/layout/MobileMembersScreen.tsx
+packages/web/src/components/live/DedicatedLiveStreamView.tsx
+packages/web/src/components/live/LiveStreamSidebarItem.tsx
+packages/web/src/components/live/PersistentLivePlayerRoot.tsx
 packages/web/src/components/modals/ReportMessageModal.tsx
 packages/web/src/components/modals/ReportProductModal.tsx
 packages/web/src/components/modals/ReportSpaceModal.tsx
@@ -29,6 +32,7 @@ packages/web/src/components/modals/instanceSettingsPanels/VerificationsPanel.tsx
 packages/web/src/components/modals/instanceSettingsPanels/WinkPreviewModal.tsx
 packages/web/src/components/modals/instanceSettingsPanels/WinkUploadModal.tsx
 packages/web/src/components/modals/settingsPanels/ChatPanel.tsx
+packages/web/src/components/modals/settingsPanels/StreamerChannelsSection.tsx
 packages/web/src/components/modals/settingsPanels/VerificationSection.tsx
 packages/web/src/components/modals/spaceSettingsPanels/AuditLogsPanel.tsx
 packages/web/src/components/modals/spaceSettingsPanels/IntegrationsPanel.tsx

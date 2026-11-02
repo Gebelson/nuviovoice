@@ -46,6 +46,8 @@ import { winksRoutes } from './routes/winks.js';
 import { reportRoutes } from './routes/reports.js';
 import { securityAdminRoutes } from './routes/securityAdmin.js';
 import { verificationRoutes } from './routes/verifications.js';
+import { liveStreamRoutes } from './routes/liveStreams.js';
+import { startStreamPoller, stopStreamPoller } from './services/streamPoller.js';
 import { buildCspHeaderValue, CSP_REPORT_GROUP, CSP_REPORT_PATH } from './utils/csp.js';
 import { startFederationWorkers, stopFederationWorkers } from './utils/federationWorker.js';
 import { startBackupWorker, stopBackupWorker } from './utils/backupWorker.js';
@@ -266,6 +268,7 @@ async function main(): Promise<void> {
   await app.register(reportRoutes);
   await app.register(securityAdminRoutes);
   await app.register(verificationRoutes);
+  await app.register(liveStreamRoutes);
   // Registered here rather than beside the hook above so it sits behind the
   // rate limiter. The sink is unauthenticated by design and writes a log line
   // per report, and @fastify/rate-limit only covers routes registered after it.
@@ -322,6 +325,7 @@ async function main(): Promise<void> {
   // the two-instance harness disables the workers and still needs the pinger,
   // pointed at a local stub. It has its own guard, an empty DIRECTORY_ENDPOINT.
   startDirectoryPinger();
+  startStreamPoller();
 
   const shutdown = async () => {
     console.log('Shutting down...');
@@ -329,6 +333,7 @@ async function main(): Promise<void> {
     stopTelemetryReporter();
     stopDirectoryPinger();
     stopBackupWorker();
+    stopStreamPoller();
     await app.close();
     closeDatabase(); // checkpoints WAL — leaves a complete on-disk file
     process.exit(0);

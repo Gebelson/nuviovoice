@@ -31,6 +31,8 @@ import { ReportSpaceModal } from '../modals/ReportSpaceModal';
 import { IncomingCallModal } from '../voice/IncomingCallModal';
 import { PictureInPicture } from '../voice/PictureInPicture';
 import { PopOutCallPortal } from '../voice/PopOutCallPortal';
+import { PersistentLivePlayerRoot } from '../live/PersistentLivePlayerRoot';
+import { useLiveStreamStore } from '../../stores/liveStreamStore';
 import { SoundController } from '../voice/SoundController';
 import { GlobalAudioRenderer } from '../voice/GlobalAudioRenderer';
 import { NotificationController } from '../NotificationController';
@@ -296,6 +298,7 @@ export function AppLayout() {
   // Initial authoritative snapshot of joined spaces
   useEffect(() => {
     useSpaceStore.getState().loadSpaces().catch(() => {});
+    useLiveStreamStore.getState().loadLiveStreams().catch(() => {});
   }, []);
 
   // Handle route params
@@ -451,6 +454,7 @@ export function AppLayout() {
             was connected but the voice-full screen was not on the stack
             (e.g. immediately after Join, or after popping voice-full back to
             the root). */}
+        <PersistentLivePlayerRoot />
         <SoundController />
         <GlobalAudioRenderer />
         <NotificationController />
@@ -503,6 +507,7 @@ export function AppLayout() {
       <ImagePreview />
       <PictureInPicture />
       <PopOutCallPortal />
+      <PersistentLivePlayerRoot />
       <SoundController />
       <GlobalAudioRenderer />
       <NotificationController />

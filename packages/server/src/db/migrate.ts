@@ -1201,6 +1201,29 @@ export function migrateExistingSpacesSeparation(
     CREATE INDEX IF NOT EXISTS idx_verif_audit_target ON verification_audit_logs(target_type, target_id);
     CREATE INDEX IF NOT EXISTS idx_verif_audit_admin ON verification_audit_logs(admin_id);
     CREATE INDEX IF NOT EXISTS idx_verif_audit_created ON verification_audit_logs(created_at);
+
+    CREATE TABLE IF NOT EXISTS streamer_channels (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      channel_name TEXT NOT NULL,
+      channel_url TEXT NOT NULL,
+      linked_space_id TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+      is_live INTEGER NOT NULL DEFAULT 0,
+      stream_title TEXT,
+      stream_game TEXT,
+      stream_thumbnail TEXT,
+      viewer_count INTEGER NOT NULL DEFAULT 0,
+      started_at INTEGER,
+      last_checked_at INTEGER,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_streamer_channels_user ON streamer_channels(user_id);
+    CREATE INDEX IF NOT EXISTS idx_streamer_channels_live ON streamer_channels(is_live);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_streamer_channels_platform_channel ON streamer_channels(platform, channel_name);
   `);
 
 }
