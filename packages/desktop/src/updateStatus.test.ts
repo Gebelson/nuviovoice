@@ -25,6 +25,7 @@ describe('statusVersion', () => {
   it('extracts the version from every phase that carries one', () => {
     expect(statusVersion({ phase: 'available', version: '1.0.4' })).toBe('1.0.4');
     expect(statusVersion({ phase: 'ready', version: '1.0.4' })).toBe('1.0.4');
+    expect(statusVersion({ phase: 'installing', version: '1.0.4' })).toBe('1.0.4');
     expect(statusVersion({ phase: 'downloading', version: '1.0.4', percent: 5, bytesPerSecond: 1 })).toBe('1.0.4');
     expect(statusVersion({ phase: 'failed', version: '1.0.4', message: 'x' })).toBe('1.0.4');
   });
@@ -38,18 +39,18 @@ describe('statusVersion', () => {
 });
 
 describe('shouldPromptForUpdate', () => {
-  it('prompts for an available, ready, or failed update', () => {
+  it('prompts for an available, downloading, ready, or failed update', () => {
     expect(shouldPromptForUpdate(snap({ status: { phase: 'available', version: '1.0.4' } }))).toBe(true);
+    expect(shouldPromptForUpdate(snap({
+      status: { phase: 'downloading', version: '1.0.4', percent: 40, bytesPerSecond: 1 },
+    }))).toBe(true);
     expect(shouldPromptForUpdate(snap({ status: { phase: 'ready', version: '1.0.4' } }))).toBe(true);
     expect(shouldPromptForUpdate(snap({ status: { phase: 'failed', version: '1.0.4', message: 'x' } }))).toBe(true);
   });
 
-  it('stays quiet for progress phases', () => {
+  it('stays quiet for check and idle phases', () => {
     expect(shouldPromptForUpdate(snap({ status: { phase: 'idle' } }))).toBe(false);
     expect(shouldPromptForUpdate(snap({ status: { phase: 'checking' } }))).toBe(false);
-    expect(shouldPromptForUpdate(snap({
-      status: { phase: 'downloading', version: '1.0.4', percent: 40, bytesPerSecond: 1 },
-    }))).toBe(false);
     expect(shouldPromptForUpdate(snap({ status: { phase: 'up-to-date', checkedAt: 1 } }))).toBe(false);
   });
 
@@ -57,6 +58,10 @@ describe('shouldPromptForUpdate', () => {
     expect(shouldPromptForUpdate(snap({
       dismissedVersion: '1.0.4',
       status: { phase: 'available', version: '1.0.4' },
+    }))).toBe(false);
+    expect(shouldPromptForUpdate(snap({
+      dismissedVersion: '1.0.4',
+      status: { phase: 'downloading', version: '1.0.4', percent: 50, bytesPerSecond: 1 },
     }))).toBe(false);
   });
 
@@ -82,16 +87,22 @@ describe('shouldPromptForUpdate', () => {
 });
 
 describe('canInstallInPlace', () => {
-  it('is true only for a ready update on an auto-capable build', () => {
+  it('is true for a ready update on an auto-capable build', () => {
     expect(canInstallInPlace(snap({ capability: 'auto', status: { phase: 'ready', version: '1.0.4' } }))).toBe(true);
   });
 
+  it('is true for an install-stage failure on an auto-capable build where installer is staged', () => {
+    expect(canInstallInPlace(snap({
+      capability: 'auto',
+      status: { phase: 'failed', version: '1.0.4', stage: 'install', message: 'retry' },
+    }))).toBe(true);
+  });
+
   it('is false on a build that cannot install its own updates', () => {
-    // The ad-hoc signed macOS case. This is what removes the dead Restart button.
     expect(canInstallInPlace(snap({ capability: 'manual', status: { phase: 'ready', version: '1.0.4' } }))).toBe(false);
   });
 
-  it('is false for any phase other than ready', () => {
+  it('is false for non-install phases like available or idle', () => {
     expect(canInstallInPlace(snap({ capability: 'auto', status: { phase: 'available', version: '1.0.4' } }))).toBe(false);
     expect(canInstallInPlace(snap({ capability: 'auto', status: { phase: 'idle' } }))).toBe(false);
   });
@@ -108,8 +119,6 @@ describe('UpdateStatusStore', () => {
   });
 
   it('lets a later failure supersede an earlier ready state', () => {
-    // The exact defect: "Update ready" outranked "Update failed" forever because
-    // two independent flags were checked in render order.
     const store = new UpdateStatusStore('auto', null);
     store.setStatus({ phase: 'ready', version: '1.0.4' });
     store.setStatus({ phase: 'failed', version: '1.0.4', message: 'squirrel refused' });

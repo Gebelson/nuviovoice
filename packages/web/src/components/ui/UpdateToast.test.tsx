@@ -118,8 +118,6 @@ describe('UpdateToast, installable build', () => {
 
 describe('UpdateToast, latest event wins', () => {
   it('replaces a ready state with a later failure instead of hiding it behind one', async () => {
-    // The reported defect: "Update ready" masked "Update failed" until the user
-    // dismissed the card in front of it.
     installHost({
       capability: 'auto',
       dismissedVersion: null,
@@ -148,6 +146,7 @@ describe('UpdateToast, dismissal', () => {
       status: { phase: 'available', version: '1.0.4' },
     });
     render(<UpdateToast />);
+
     await userEvent.click(await screen.findByRole('button', { name: 'Later' }));
 
     expect(stubs.dismissUpdate).toHaveBeenCalledWith('1.0.4');
@@ -181,13 +180,24 @@ describe('UpdateToast, quiet phases', () => {
   it.each([
     ['idle', { phase: 'idle' }],
     ['checking', { phase: 'checking' }],
-    ['downloading', { phase: 'downloading', version: '1.0.4', percent: 40, bytesPerSecond: 1 }],
     ['up-to-date', { phase: 'up-to-date', checkedAt: 1 }],
   ])('renders nothing while %s', async (_label, status) => {
     installHost({ capability: 'auto', dismissedVersion: null, status });
     const { container } = render(<UpdateToast />);
     await waitFor(() => expect(useUpdateStore.getState().snapshot).not.toBeNull());
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('renders progress and dismiss while downloading', async () => {
+    installHost({
+      capability: 'auto',
+      dismissedVersion: null,
+      status: { phase: 'downloading', version: '1.0.4', percent: 40, bytesPerSecond: 1024 },
+    });
+    render(<UpdateToast />);
+    const matches = await screen.findAllByText(/40%/);
+    expect(matches.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Later' })).toBeInTheDocument();
   });
 
   it('renders nothing for a check failure with no version', async () => {

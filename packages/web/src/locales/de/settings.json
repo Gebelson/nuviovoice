@@ -445,7 +445,15 @@
       "download": "Herunterladen",
       "restart": "Neu starten",
       "manualNote": "Diese Version kann Updates nicht selbst installieren. Neue Versionen lädst du von GitHub herunter und ersetzt die App damit von Hand. Die Schritte für deine Plattform stehen in den Versionshinweisen.",
-      "externalNote": "Flatpak wendet Updates atomar außerhalb der App an. Nutze deine Softwareverwaltung oder den Befehl <code>flatpak update</code>, um Backspace zu aktualisieren."
+      "externalNote": "Flatpak wendet Updates atomar außerhalb der App an. Nutze deine Softwareverwaltung oder den Befehl <code>flatpak update</code>, um Backspace zu aktualisieren.",
+      "installing": "Wird neu gestartet, um das Update anzuwenden…",
+      "retryInstall": "Installation wiederholen",
+      "copyDiagnostic": "Diagnose kopieren",
+      "copyingDiagnostic": "Wird kopiert…",
+      "troubleshootingHint": "Probleme mit dem Update?",
+      "diagnosticCopied": "Update-Diagnose in die Zwischenablage kopiert!",
+      "diagnosticEmpty": "Keine aktuellen Diagnoseprotokolle verfügbar.",
+      "diagnosticFailed": "Diagnose konnte nicht kopiert werden."
     },
     "instance": {
       "current": "Aktuell verbundene Instanz",

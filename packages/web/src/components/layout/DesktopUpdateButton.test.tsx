@@ -62,7 +62,7 @@ describe('DesktopUpdateButton', () => {
     });
 
     render(<DesktopUpdateButton />);
-    const btn = screen.getByRole('button', { name: /Atualizar Nuvio/i });
+    const btn = screen.getByRole('button', { name: /(Atualizar Nuvio|Update Nuvio)/i });
     expect(btn).toBeInTheDocument();
     expect(screen.getByText('1.13.0')).toBeInTheDocument();
 
@@ -80,7 +80,7 @@ describe('DesktopUpdateButton', () => {
     });
 
     render(<DesktopUpdateButton />);
-    expect(screen.getByText(/Baixando 68%/i)).toBeInTheDocument();
+    expect(screen.getByText(/(Baixando 68%|Downloading 68%)/i)).toBeInTheDocument();
   });
 
   it('renders "Reiniciar e atualizar" and intercepts when in active call', () => {
@@ -95,7 +95,7 @@ describe('DesktopUpdateButton', () => {
 
     // Case 1: NOT in call -> installs immediately
     const { unmount } = render(<DesktopUpdateButton />);
-    const readyBtn = screen.getByRole('button', { name: /Reiniciar e atualizar/i });
+    const readyBtn = screen.getByRole('button', { name: /(Reiniciar e atualizar|Restart and update)/i });
     fireEvent.click(readyBtn);
     expect(installMock).toHaveBeenCalledTimes(1);
     unmount();
@@ -103,15 +103,15 @@ describe('DesktopUpdateButton', () => {
     // Case 2: IN ACTIVE CALL -> shows warning dialog
     useVoiceStore.setState({ currentVoiceChannelId: 'channel_voice_1' });
     render(<DesktopUpdateButton />);
-    const readyBtnInCall = screen.getByRole('button', { name: /Reiniciar e atualizar/i });
+    const readyBtnInCall = screen.getByRole('button', { name: /(Reiniciar e atualizar|Restart and update)/i });
     fireEvent.click(readyBtnInCall);
 
     // Warning dialog should appear
-    expect(screen.getByText(/Você está em uma chamada. Reiniciar o Nuvio encerrará sua conexão./i)).toBeInTheDocument();
+    expect(screen.getByText(/(Você está em uma chamada|You are currently in a call)/i)).toBeInTheDocument();
     expect(installMock).toHaveBeenCalledTimes(1); // not called again yet
 
     // Clicking confirm on dialog proceeds with restart
-    const confirmButtons = screen.getAllByRole('button', { name: /Reiniciar e atualizar/i });
+    const confirmButtons = screen.getAllByRole('button', { name: /(Reiniciar e atualizar|Restart and update)/i });
     // The dialog button is the second one
     fireEvent.click(confirmButtons[1]);
     expect(installMock).toHaveBeenCalledTimes(2);
@@ -128,7 +128,7 @@ describe('DesktopUpdateButton', () => {
     });
 
     render(<DesktopUpdateButton />);
-    const retryBtn = screen.getByRole('button', { name: /Falha na atualização • Tentar novamente/i });
+    const retryBtn = screen.getByRole('button', { name: /(Falha na atualização|Update failed)/i });
     expect(retryBtn).toBeInTheDocument();
 
     fireEvent.click(retryBtn);

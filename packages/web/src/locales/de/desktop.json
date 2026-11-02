@@ -17,6 +17,30 @@
     },
     "restartNow": "Jetzt neu starten",
     "download": "Herunterladen",
-    "later": "Später"
+    "later": "Später",
+    "downloading": {
+      "title": "Neues Update verfügbar — Nuvio {{version}}",
+      "body": "Update wird heruntergeladen ({{percent}}%). Du kannst Nuvio weiter nutzen."
+    },
+    "downloadingProgress": "Wird im Hintergrund heruntergeladen...",
+    "installFailed": {
+      "title": "Update konnte nicht installiert werden",
+      "body": "Nuvio {{version}} wurde heruntergeladen, aber die Installation ist fehlgeschlagen."
+    },
+    "button": {
+      "ready": "Neu starten und aktualisieren",
+      "downloading": "Wird heruntergeladen ({{percent}}%)",
+      "installing": "Wird installiert...",
+      "retryInstall": "Zum Installieren neu starten",
+      "failed": "Update fehlgeschlagen • Erneut versuchen",
+      "available": "Nuvio aktualisieren"
+    },
+    "rateKilobytes": "{{value}} KB/s",
+    "callWarning": {
+      "title": "Anruf läuft",
+      "description": "Du befindest dich in einem Anruf. Ein Neustart trennt die Verbindung.",
+      "confirm": "Neu starten und aktualisieren",
+      "cancel": "Später aktualisieren"
+    }
   }
 }

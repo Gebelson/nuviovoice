@@ -3,20 +3,44 @@
     "laterHint": "Você pode instalar depois em Configurações, Desktop",
     "dismiss": "Dispensar esta atualização",
     "failed": {
-      "title": "Não foi possível instalar a atualização",
-      "body": "O Nuvio {{version}} foi baixado, mas a instalação falhou. Você pode instalá-lo manualmente."
+      "title": "Não foi possível baixar a atualização",
+      "body": "O Nuvio {{version}} foi encontrado, mas o download falhou. Você pode baixá-lo manualmente."
     },
+    "installFailed": {
+      "title": "Não foi possível instalar a atualização",
+      "body": "O Nuvio {{version}} foi baixado, mas não pôde ser instalado automaticamente. Você pode tentar reiniciar novamente ou instalá-lo manualmente."
+    },
+    "downloading": {
+      "title": "Nova atualização disponível — Nuvio {{version}}",
+      "body": "Baixando atualização ({{percent}}%). O Nuvio continuará funcionando normalmente."
+    },
+    "downloadingProgress": "Baixando nos bastidores...",
     "ready": {
-      "title": "Atualização pronta para instalar.",
+      "title": "Atualização pronta para instalar",
       "body": "Uma nova versão do Nuvio ({{version}}) foi baixada com melhorias e novidades. Reinicie para aplicar."
     },
     "available": {
-      "title": "Uma nova versão do Nuvio ({{version}}) está disponível!",
+      "title": "Nova atualização disponível — Nuvio {{version}}",
       "body": "Esta atualização traz melhorias de estabilidade e novos recursos. Baixe a nova versão para continuar.",
       "bodyWithCurrent": "Você está na versão {{currentVersion}}. Uma nova versão do Nuvio está disponível para download."
     },
-    "restartNow": "Atualizar agora",
-    "download": "Atualizar agora",
-    "later": "Mais tarde"
+    "restartNow": "Reiniciar e atualizar",
+    "download": "Baixar atualização",
+    "later": "Mais tarde",
+    "button": {
+      "ready": "Reiniciar e atualizar",
+      "downloading": "Baixando {{percent}}%",
+      "installing": "Instalando...",
+      "retryInstall": "Reiniciar para instalar",
+      "failed": "Falha na atualização • Tentar novamente",
+      "available": "Atualizar Nuvio"
+    },
+    "callWarning": {
+      "title": "Chamada em andamento",
+      "description": "Você está em uma chamada. Reiniciar o Nuvio encerrará sua conexão.",
+      "confirm": "Reiniciar e atualizar",
+      "cancel": "Atualizar depois"
+    },
+    "rateKilobytes": "{{value}} KB/s"
   }
 }

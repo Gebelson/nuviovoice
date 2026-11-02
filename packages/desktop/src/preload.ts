@@ -6,7 +6,7 @@ let nuvioConfig = {
   wsUrl: 'wss://167-234-239-100.sslip.io',
   backendHost: '167-234-239-100.sslip.io',
   isDesktop: true,
-  version: '1.14.0',
+  version: '1.14.1',
 };
 
 try {
@@ -119,6 +119,8 @@ const desktopApi = {
   openReleasePage: (): void => {
     ipcRenderer.send('open-release-page');
   },
+  getUpdaterDiagnostic: (): Promise<string> => ipcRenderer.invoke('get-updater-diagnostic'),
+  copyUpdaterDiagnostic: (): Promise<boolean> => ipcRenderer.invoke('copy-updater-diagnostic'),
 
   // Window focus
   onWindowFocusChange: (callback: (focused: boolean) => void) => {

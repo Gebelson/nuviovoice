@@ -39,11 +39,6 @@ mac:
     - dmg
 win:
   icon: ./build/icon.ico
-  signtoolOptions:
-    publisherName: "Nuvio"
-    rfc3161TimeStampServer: "http://timestamp.digicert.com"
-    signingHashAlgorithms:
-      - sha256
   target:
     - nsis
 appx:

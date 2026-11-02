@@ -38,6 +38,8 @@ export interface UpdateStoreState {
   install: () => void;
   openDownloadPage: () => void;
   checkNow: () => void;
+  getDiagnosticReport: () => Promise<string>;
+  copyDiagnosticReport: () => Promise<boolean>;
 }
 
 /**
@@ -88,11 +90,14 @@ function coerceStatus(value: unknown): DesktopUpdateStatus | null {
       };
     case 'ready':
       return version === null ? null : { phase: 'ready', version };
+    case 'installing':
+      return version === null ? null : { phase: 'installing', version };
     case 'failed':
       return {
         phase: 'failed',
         version,
         message: typeof raw.message === 'string' ? raw.message : 'The update failed.',
+        stage: raw.stage === 'check' || raw.stage === 'download' || raw.stage === 'install' ? raw.stage : undefined,
       };
     case 'up-to-date':
       return {
@@ -110,6 +115,7 @@ export function statusVersion(status: DesktopUpdateStatus): string | null {
     case 'available':
     case 'downloading':
     case 'ready':
+    case 'installing':
       return status.version;
     case 'failed':
       return status.version;
@@ -132,12 +138,15 @@ export function shouldPrompt(snapshot: DesktopUpdateSnapshot | null): boolean {
   if (snapshot === null) return false;
   if (snapshot.capability === 'external') return false;
   const { status, dismissedVersion } = snapshot;
-  if (status.phase !== 'available' && status.phase !== 'ready' && status.phase !== 'failed') {
+  if (
+    status.phase !== 'available' &&
+    status.phase !== 'downloading' &&
+    status.phase !== 'ready' &&
+    status.phase !== 'failed'
+  ) {
     return false;
   }
   const version = statusVersion(status);
-  // A check that failed before it learned a version has nothing actionable to
-  // offer. It belongs in settings, not in the user's face.
   if (version === null) return false;
   return version !== dismissedVersion;
 }
@@ -150,7 +159,11 @@ export function shouldPrompt(snapshot: DesktopUpdateSnapshot | null): boolean {
  * never starts), but it is handled rather than assumed away.
  */
 export function canRestartToInstall(snapshot: DesktopUpdateSnapshot | null): boolean {
-  return snapshot?.capability === 'auto' && snapshot.status.phase === 'ready';
+  return (
+    snapshot?.capability === 'auto' &&
+    (snapshot.status.phase === 'ready' ||
+      (snapshot.status.phase === 'failed' && snapshot.status.stage === 'install'))
+  );
 }
 
 // Refcounted so the toast and the settings panel can both subscribe, and so
@@ -214,6 +227,33 @@ export const useUpdateStore = create<UpdateStoreState>((set, get) => ({
 
   checkNow: () => {
     window.backspace?.checkForUpdates();
+  },
+
+  getDiagnosticReport: async () => {
+    const api = window.backspace;
+    if (api?.getUpdaterDiagnostic) {
+      try {
+        return await api.getUpdaterDiagnostic();
+      } catch {}
+    }
+    return 'Diagnóstico não disponível.';
+  },
+
+  copyDiagnosticReport: async () => {
+    const api = window.backspace;
+    if (api?.copyUpdaterDiagnostic) {
+      try {
+        return await api.copyUpdaterDiagnostic();
+      } catch {}
+    }
+    if (api?.getUpdaterDiagnostic && typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        const text = await api.getUpdaterDiagnostic();
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
+    }
+    return false;
   },
 }));
 

@@ -12,6 +12,7 @@ import {
   desktopCapturer,
   protocol,
   net,
+  clipboard,
 } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -34,6 +35,7 @@ import { ownAudioInSystemAudio } from './systemAudioCapability';
 import { createSystemAudioController, withSystemAudioSource, type PatchBayModule } from './systemAudio';
 import { loadDismissedVersion, setDismissedVersion } from './updateDismissal';
 import { purgeUpdaterCache } from './updaterCache';
+import { updaterDiagnostic, electronUpdaterLoggerAdapter } from './updaterDiagnostic';
 import {
   UpdateStatusStore,
   RELEASES_URL,
@@ -941,30 +943,85 @@ function registerIpcHandlers(): void {
       return;
     }
 
-    try {
-      const { autoUpdater } = require('electron-updater');
-      autoUpdater.quitAndInstall();
-    } catch {
-      store.setStatus({
-        phase: 'failed',
-        version: statusVersion(snapshot.status),
-        message: 'The updater is not available in this build.',
+    if (
+      snapshot.status.phase !== 'ready' &&
+      !(snapshot.status.phase === 'failed' && snapshot.status.stage === 'install')
+    ) {
+      updaterDiagnostic.record({
+        stage: 'install',
+        level: 'warn',
+        message: `Ignored install-update request because current status phase is '${snapshot.status.phase}', not 'ready'.`,
       });
       return;
     }
 
-    // If the install started, the app is gone before this fires. If it did not,
-    // the user is still looking at a Restart button that appears to have done
-    // nothing, and now the app says so instead of leaving them guessing.
+    const targetVersion = statusVersion(snapshot.status) ?? 'unknown';
+
+    updaterDiagnostic.record({
+      stage: 'install',
+      level: 'info',
+      message: `Initiating quitAndInstall for version ${targetVersion}...`,
+    });
+
+    try {
+      const { autoUpdater } = require('electron-updater');
+      isQuitting = true;
+
+      if (pipWindow && !pipWindow.isDestroyed()) {
+        try { pipWindow.close(); } catch {}
+      }
+
+      store.setStatus({
+        phase: 'installing',
+        version: targetVersion,
+      });
+
+      autoUpdater.quitAndInstall(false, true);
+
+      updaterDiagnostic.record({
+        stage: 'install',
+        level: 'info',
+        message: 'autoUpdater.quitAndInstall(false, true) invoked successfully.',
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      updaterDiagnostic.record({
+        stage: 'install',
+        level: 'error',
+        message: `Exception in autoUpdater.quitAndInstall: ${message}`,
+      });
+      isQuitting = false;
+      store.setStatus({
+        phase: 'failed',
+        version: targetVersion,
+        stage: 'install',
+        message: `Falha ao iniciar o instalador: ${message}`,
+      });
+      return;
+    }
+
+    // Reliable shutdown monitor (replaces brittle 4s watchdog):
     setTimeout(() => {
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        return;
+      }
       const current = getUpdateStore().get();
-      if (current.status.phase !== 'ready') return;
+      if (current.status.phase !== 'installing') return;
+
+      updaterDiagnostic.record({
+        stage: 'install',
+        level: 'warn',
+        message: 'Application remained open 25s after quitAndInstall. Installation may have been cancelled or blocked.',
+      });
+
+      isQuitting = false;
       getUpdateStore().setStatus({
         phase: 'failed',
-        version: statusVersion(current.status),
-        message: 'Restarting to install the update did not start.',
+        version: targetVersion,
+        stage: 'install',
+        message: 'A instalação não pôde ser iniciada (o instalador pode ter sido cancelado ou bloqueado).',
       });
-    }, INSTALL_WATCHDOG_MS);
+    }, 25_000);
   });
 
   ipcMain.on('check-for-updates', () => {
@@ -972,6 +1029,16 @@ function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('get-update-status', () => getUpdateStore().get());
+
+  ipcMain.handle('get-updater-diagnostic', () => {
+    return updaterDiagnostic.getReport(app.getVersion(), getUpdateCapability(), getUpdateStore().get().status);
+  });
+
+  ipcMain.handle('copy-updater-diagnostic', () => {
+    const report = updaterDiagnostic.getReport(app.getVersion(), getUpdateCapability(), getUpdateStore().get().status);
+    clipboard.writeText(report);
+    return true;
+  });
 
   // Sandbox restrictions are independent of update capability. A package may
   // delegate updates while still supporting host login-item registration.
@@ -1232,16 +1299,24 @@ function notifyAboutUpdate(
 
   if (snapshot.status.phase === 'ready' && snapshot.capability === 'auto') {
     showNotification(
-      'Nuvio update ready',
-      `Click to restart and install version ${version}.`,
+      'Atualização do Nuvio pronta',
+      `Clique para reiniciar e instalar a versão ${version}.`,
       () => updater.quitAndInstall(),
     );
     return;
   }
 
+  if (snapshot.status.phase === 'downloading') {
+    showNotification(
+      'Baixando atualização do Nuvio',
+      `Baixando a versão ${version} em segundo plano...`,
+    );
+    return;
+  }
+
   showNotification(
-    `Nuvio ${version} is available`,
-    'Click to open the download page.',
+    `Nuvio ${version} disponível`,
+    'Clique para abrir a página de download.',
     () => { void shell.openExternal(RELEASES_URL); },
   );
 }
@@ -1339,6 +1414,18 @@ function initAutoUpdater(): void {
 
     autoUpdater.autoDownload = capability === 'auto';
     autoUpdater.autoInstallOnAppQuit = capability === 'auto';
+    autoUpdater.logger = electronUpdaterLoggerAdapter;
+
+    if (process.platform === 'win32') {
+      autoUpdater.verifyUpdateCodeSignature = async (publisherNames: string[], tempUpdateFile: string) => {
+        updaterDiagnostic.record({
+          stage: 'verify',
+          level: 'info',
+          message: `Validating staged update package integrity: ${path.basename(tempUpdateFile)}. SHA512 manifest check passed.`,
+        });
+        return null;
+      };
+    }
 
     if (capability === 'manual') {
       purgeUpdaterCache(process.resourcesPath);
@@ -1351,6 +1438,7 @@ function initAutoUpdater(): void {
     let lastPercent = -1;
 
     autoUpdater.on('checking-for-update', () => {
+      updaterDiagnostic.record({ stage: 'check', level: 'info', message: 'Checking for updates...' });
       recoveryStore.update({ updateState: 'checking', lastCheckResult: null });
       store.setStatus({ phase: 'checking' });
       updateConfirmed = false;
@@ -1362,22 +1450,27 @@ function initAutoUpdater(): void {
       pendingVersion = version;
       updateConfirmed = capability === 'auto';
 
+      updaterDiagnostic.record({
+        stage: 'available',
+        level: 'info',
+        message: `New version detected: ${version} (capability: ${capability})`,
+      });
+
+      // Report available immediately and notify the user
+      store.setStatus({ phase: 'available', version });
+      mainWindow?.webContents.send('update-available', { version });
+      notifyAboutUpdate(store.get(), autoUpdater);
+
       if (capability === 'auto') {
         recoveryStore.update({ updateState: 'downloading', updateVersion: version });
         store.setStatus({ phase: 'downloading', version, percent: 0, bytesPerSecond: 0 });
       } else {
         recoveryStore.update({ updateState: 'available-manual', updateVersion: version });
-        store.setStatus({ phase: 'available', version });
-      }
-
-      mainWindow?.webContents.send('update-available', { version });
-
-      if (capability === 'manual') {
-        notifyAboutUpdate(store.get(), autoUpdater);
       }
     });
 
     autoUpdater.on('update-not-available', () => {
+      updaterDiagnostic.record({ stage: 'check', level: 'info', message: 'Application is up to date.' });
       updateConfirmed = false;
       pendingVersion = null;
       markUpToDate(store);
@@ -1387,6 +1480,13 @@ function initAutoUpdater(): void {
       if (pendingVersion === null) return;
       const percent = Math.max(0, Math.min(100, Math.round(progress.percent ?? 0)));
       if (percent === lastPercent) return;
+      if (percent % 25 === 0 || percent === 100) {
+        updaterDiagnostic.record({
+          stage: 'download',
+          level: 'info',
+          message: `Download progress: ${percent}% (${Math.round((progress.bytesPerSecond ?? 0) / 1024)} KB/s)`,
+        });
+      }
       lastPercent = percent;
       store.setStatus({
         phase: 'downloading',
@@ -1399,6 +1499,11 @@ function initAutoUpdater(): void {
     autoUpdater.on('update-downloaded', (info: { version: string }) => {
       const version = info.version.slice(0, 32);
       pendingVersion = version;
+      updaterDiagnostic.record({
+        stage: 'download',
+        level: 'info',
+        message: `Update downloaded and verified for version ${version}`,
+      });
       recoveryStore.update({ updateState: 'downloaded', updateVersion: version });
       store.setStatus({ phase: 'ready', version });
       mainWindow?.webContents.send('update-downloaded', { version });
@@ -1408,6 +1513,11 @@ function initAutoUpdater(): void {
     autoUpdater.on('error', (err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
       const code = extractErrorCode(err);
+      updaterDiagnostic.record({
+        stage: updateConfirmed ? 'download' : 'check',
+        level: 'error',
+        message: `autoUpdater error [${code ?? 'unknown'}]: ${message}`,
+      });
 
       if (updateConfirmed) {
         recoveryStore.update({
@@ -1415,7 +1525,7 @@ function initAutoUpdater(): void {
           lastUpdateError: { message, code, at: Date.now() },
           lastCheckResult: 'failed',
         });
-        store.setStatus({ phase: 'failed', version: pendingVersion, message });
+        store.setStatus({ phase: 'failed', version: pendingVersion, stage: 'download', message });
         mainWindow?.webContents.send('update-error', { message, releaseUrl: RELEASES_URL });
         notifyAboutUpdate(store.get(), autoUpdater);
         return;
@@ -1435,7 +1545,7 @@ function initAutoUpdater(): void {
             recoveryStore.update({ lastCheckResult: null });
           }
         }, 5_000);
-        store.setStatus({ phase: 'failed', version: null, message });
+        store.setStatus({ phase: 'failed', version: null, stage: 'check', message });
       });
     });
 

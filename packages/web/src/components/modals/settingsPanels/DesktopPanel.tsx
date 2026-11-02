@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next';
 import { Toggle } from '../../ui/Toggle';
 import { useUpdateStore } from '../../../stores/updateStore';
 import { useVoiceStore } from '../../../stores/voiceStore';
+import { useUIStore } from '../../../stores/uiStore';
 import { CallActiveUpdateModal } from '../CallActiveUpdateModal';
 import { useFormatters, type Formatters } from '../../../i18n/formatters';
 
@@ -94,10 +95,7 @@ function formatRate(t: TFunction<'settings'>, formatters: Formatters, bytesPerSe
  * the place a dismissed update stays reachable, which is the thing that makes
  * "Later" safe to offer in the toast at all.
  *
- * Every state here comes from a real updater event. The previous version faked
- * a "Checking..." state with a five second timer and a comment claiming
- * electron-updater has no no-update callback. It emits `update-not-available`
- * and `download-progress`; both are now wired.
+ * Every state here comes from a real updater event.
  */
 function UpdateSettings() {
   const { t } = useTranslation('settings');
@@ -108,14 +106,34 @@ function UpdateSettings() {
   const checkNow = useUpdateStore((s) => s.checkNow);
   const install = useUpdateStore((s) => s.install);
   const openDownloadPage = useUpdateStore((s) => s.openDownloadPage);
+  const copyDiagnosticReport = useUpdateStore((s) => s.copyDiagnosticReport);
+  const addToast = useUIStore((s) => s.addToast);
   const inActiveCall = useVoiceStore((s) => Boolean(s.currentVoiceChannelId || s.activeDmCall));
   const [showCallWarning, setShowCallWarning] = useState(false);
+  const [copyingDiagnostic, setCopyingDiagnostic] = useState(false);
 
   useEffect(() => initialize(), [initialize]);
 
   const status = snapshot?.status ?? { phase: 'idle' as const };
   const capability = snapshot?.capability ?? 'auto';
-  const busy = status.phase === 'checking' || status.phase === 'downloading';
+  const busy = status.phase === 'checking' || status.phase === 'downloading' || status.phase === 'installing';
+
+  const handleCopyDiagnostic = async () => {
+    if (copyingDiagnostic) return;
+    setCopyingDiagnostic(true);
+    try {
+      const report = await copyDiagnosticReport();
+      if (report) {
+        addToast(t('desktop.updates.diagnosticCopied', 'Diagnóstico da atualização copiado para a área de transferência!'), 'success', 4000);
+      } else {
+        addToast(t('desktop.updates.diagnosticEmpty', 'Nenhum log de diagnóstico recente disponível.'), 'info', 4000);
+      }
+    } catch {
+      addToast(t('desktop.updates.diagnosticFailed', 'Erro ao copiar diagnóstico.'), 'warning', 4000);
+    } finally {
+      setCopyingDiagnostic(false);
+    }
+  };
 
   let detail: string;
   let tone = 'text-txt-tertiary';
@@ -147,17 +165,48 @@ function UpdateSettings() {
     case 'ready':
       if (capability === 'auto') {
         detail = t('desktop.updates.readyToInstall', { version: status.version });
-        action = { label: t('desktop.updates.restart'), onClick: () => { if (inActiveCall) { setShowCallWarning(true); } else { install(); } } };
+        action = {
+          label: t('desktop.updates.restart'),
+          onClick: () => {
+            if (inActiveCall) {
+              setShowCallWarning(true);
+            } else {
+              install();
+            }
+          },
+        };
       } else {
         detail = t('desktop.updates.available', { version: status.version });
         action = { label: t('desktop.updates.download'), onClick: openDownloadPage };
       }
       break;
+    case 'installing':
+      detail = t('desktop.updates.installing', 'Reiniciando para aplicar a atualização…');
+      tone = 'text-accent-primary';
+      break;
     case 'failed':
       if (status.version) {
-        detail = t('desktop.updates.installFailed', { version: status.version });
-        tone = 'text-accent-rose';
-        action = { label: t('desktop.updates.download'), onClick: openDownloadPage };
+        if ('stage' in status && status.stage === 'install') {
+          detail = t('desktop.updates.installFailed', { version: status.version });
+          tone = 'text-accent-rose';
+          action = {
+            label: t('desktop.updates.retryInstall', 'Tentar instalar novamente'),
+            onClick: () => {
+              if (inActiveCall) {
+                setShowCallWarning(true);
+              } else {
+                install();
+              }
+            },
+          };
+        } else {
+          detail = t('desktop.updates.downloadFailed', {
+            version: status.version,
+            defaultValue: t('desktop.updates.installFailed', { version: status.version }),
+          });
+          tone = 'text-accent-rose';
+          action = { label: t('desktop.updates.download'), onClick: openDownloadPage };
+        }
       } else {
         detail = t('desktop.updates.checkFailed');
         tone = 'text-accent-rose';
@@ -240,6 +289,21 @@ function UpdateSettings() {
           <Trans t={t} i18nKey="desktop.updates.externalNote" components={{ code: <code /> }} />
         </p>
       )}
+
+      <div className="pt-1 flex items-center justify-between text-xs text-txt-tertiary">
+        <span>{t('desktop.updates.troubleshootingHint', 'Problemas com a atualização?')}</span>
+        <button
+          type="button"
+          onClick={handleCopyDiagnostic}
+          disabled={copyingDiagnostic}
+          className="text-xs text-accent-primary hover:underline hover:text-accent-primary/80 transition-colors disabled:opacity-50"
+        >
+          {copyingDiagnostic
+            ? t('desktop.updates.copyingDiagnostic', 'Copiando...')
+            : t('desktop.updates.copyDiagnostic', 'Copiar diagnóstico')}
+        </button>
+      </div>
+
       <CallActiveUpdateModal
         isOpen={showCallWarning}
         onClose={() => setShowCallWarning(false)}
@@ -261,8 +325,6 @@ export function DesktopPanel() {
   useEffect(() => {
     const probe = window.backspace?.isSandboxed;
     if (!probe) {
-      // Older desktop builds predate sandbox support and are ordinary native
-      // packages, so preserving the existing controls is the compatible path.
       setSandboxed(false);
       return;
     }

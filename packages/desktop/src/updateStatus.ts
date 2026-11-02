@@ -23,7 +23,8 @@ export type UpdateStatus =
   | { phase: 'available'; version: string }
   | { phase: 'downloading'; version: string; percent: number; bytesPerSecond: number }
   | { phase: 'ready'; version: string }
-  | { phase: 'failed'; version: string | null; message: string }
+  | { phase: 'installing'; version: string }
+  | { phase: 'failed'; version: string | null; message: string; stage?: 'check' | 'download' | 'install' }
   | { phase: 'up-to-date'; checkedAt: number };
 
 /**
@@ -54,6 +55,7 @@ export function statusVersion(status: UpdateStatus): string | null {
     case 'available':
     case 'downloading':
     case 'ready':
+    case 'installing':
       return status.version;
     case 'failed':
       return status.version;
@@ -68,14 +70,19 @@ export function statusVersion(status: UpdateStatus): string | null {
  * Both the in-app toast and the native notification ask this exact function, so
  * the two cannot disagree about whether the user has already said "later".
  *
- * `checking`, `downloading` and `up-to-date` are settings-panel states. They are
- * progress, not news, and a chat client has no business throwing a card over the
- * message list to report them.
+ * 'available', 'downloading', 'ready', and 'failed' are actionable update states.
+ * Notifies the user immediately upon discovery and during download, while allowing
+ * them to dismiss the initial notice without removing the permanent sidebar button.
  */
 export function shouldPromptForUpdate(snapshot: UpdateSnapshot): boolean {
   if (snapshot.capability === 'external') return false;
   const { status } = snapshot;
-  if (status.phase !== 'available' && status.phase !== 'ready' && status.phase !== 'failed') {
+  if (
+    status.phase !== 'available' &&
+    status.phase !== 'downloading' &&
+    status.phase !== 'ready' &&
+    status.phase !== 'failed'
+  ) {
     return false;
   }
   const version = statusVersion(status);
@@ -88,13 +95,17 @@ export function shouldPromptForUpdate(snapshot: UpdateSnapshot): boolean {
 }
 
 /**
- * Whether the renderer should offer a Restart button for this snapshot.
+ * Whether the renderer should offer a Restart / Install button for this snapshot.
  *
- * The renderer never reasons about code signing. It asks this, and this asks the
- * capability the main process measured.
+ * Returns true if auto-capable and the update is staged ready to install,
+ * or failed at the install step while the file remains staged.
  */
 export function canInstallInPlace(snapshot: UpdateSnapshot): boolean {
-  return snapshot.capability === 'auto' && snapshot.status.phase === 'ready';
+  return (
+    snapshot.capability === 'auto' &&
+    (snapshot.status.phase === 'ready' ||
+      (snapshot.status.phase === 'failed' && snapshot.status.stage === 'install'))
+  );
 }
 
 export class UpdateStatusStore {

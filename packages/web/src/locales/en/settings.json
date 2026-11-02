@@ -445,7 +445,15 @@
       "download": "Download",
       "restart": "Restart",
       "manualNote": "This build cannot install updates itself, so new versions are downloaded from GitHub and replace the app by hand. See the release notes for the steps on your platform.",
-      "externalNote": "Flatpak applies updates atomically outside the app. Use your software manager or the <code>flatpak update</code> command to update Backspace."
+      "externalNote": "Flatpak applies updates atomically outside the app. Use your software manager or the <code>flatpak update</code> command to update Backspace.",
+      "installing": "Restarting to apply update…",
+      "retryInstall": "Retry install",
+      "copyDiagnostic": "Copy diagnostic",
+      "copyingDiagnostic": "Copying…",
+      "troubleshootingHint": "Update issues?",
+      "diagnosticCopied": "Update diagnostic copied to clipboard!",
+      "diagnosticEmpty": "No recent diagnostic logs available.",
+      "diagnosticFailed": "Failed to copy diagnostic."
     },
     "instance": {
       "current": "Currently connected instance",

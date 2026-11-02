@@ -62,7 +62,8 @@ type DesktopUpdateStatus =
   | { phase: 'available'; version: string }
   | { phase: 'downloading'; version: string; percent: number; bytesPerSecond: number }
   | { phase: 'ready'; version: string }
-  | { phase: 'failed'; version: string | null; message: string }
+  | { phase: 'installing'; version: string }
+  | { phase: 'failed'; version: string | null; message: string; stage?: 'check' | 'download' | 'install' }
   | { phase: 'up-to-date'; checkedAt: number };
 
 /**
@@ -112,6 +113,8 @@ interface BackspaceElectronAPI {
   onUpdateStatusChanged?: (callback: (snapshot: unknown) => void) => (() => void);
   dismissUpdate?: (version: string) => void;
   openReleasePage?: () => void;
+  getUpdaterDiagnostic?: () => Promise<string>;
+  copyUpdaterDiagnostic?: () => Promise<boolean>;
 
   // Window focus (Task 2.2)
   onWindowFocusChange: (callback: (focused: boolean) => void) => void;

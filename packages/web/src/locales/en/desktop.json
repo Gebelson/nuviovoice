@@ -6,6 +6,15 @@
       "title": "Update could not be installed",
       "body": "Backspace {{version}} downloaded, but installing it failed. You can install it by hand instead."
     },
+    "installFailed": {
+      "title": "Update could not be installed",
+      "body": "Backspace {{version}} downloaded, but installing it failed. You can install it by hand instead."
+    },
+    "downloading": {
+      "title": "Downloading update — Backspace {{version}}",
+      "body": "Downloading update ({{percent}}%). You can continue using Backspace normally."
+    },
+    "downloadingProgress": "Downloading in background...",
     "ready": {
       "title": "Update ready",
       "body": "Backspace {{version}} is downloaded and ready to install."
@@ -17,6 +26,21 @@
     },
     "restartNow": "Restart now",
     "download": "Download",
-    "later": "Later"
+    "later": "Later",
+    "button": {
+      "ready": "Restart and update",
+      "downloading": "Downloading {{percent}}%",
+      "installing": "Installing...",
+      "retryInstall": "Restart to install",
+      "failed": "Update failed • Try again",
+      "available": "Update Nuvio"
+    },
+    "callWarning": {
+      "title": "Call in progress",
+      "description": "You are currently in a call. Restarting Nuvio will disconnect you.",
+      "confirm": "Restart and update",
+      "cancel": "Update later"
+    },
+    "rateKilobytes": "{{value}} KB/s"
   }
 }

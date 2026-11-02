@@ -17,6 +17,30 @@
     },
     "restartNow": "立即重启",
     "download": "下载",
-    "later": "稍后"
+    "later": "稍后",
+    "downloading": {
+      "title": "有新版本可用 — Nuvio {{version}}",
+      "body": "正在下载更新（{{percent}}%）。您可以继续正常使用 Nuvio。"
+    },
+    "downloadingProgress": "后台下载中...",
+    "installFailed": {
+      "title": "无法安装更新",
+      "body": "Nuvio {{version}} 已下载，但自动安装失败。"
+    },
+    "button": {
+      "ready": "重启并更新",
+      "downloading": "正在下载 {{percent}}%",
+      "installing": "正在安装...",
+      "retryInstall": "重启以安装",
+      "failed": "更新失败 • 重试",
+      "available": "更新 Nuvio"
+    },
+    "rateKilobytes": "{{value}} KB/s",
+    "callWarning": {
+      "title": "正在通话中",
+      "description": "您当前正在通话中。重启 Nuvio 将断开连接。",
+      "confirm": "重启并更新",
+      "cancel": "稍后更新"
+    }
   }
 }

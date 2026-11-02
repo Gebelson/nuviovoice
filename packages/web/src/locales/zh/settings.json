@@ -444,7 +444,15 @@
       "download": "下载",
       "restart": "重启",
       "manualNote": "当前构建版本无法自动安装更新，因此需要从 GitHub 下载新版本并手动替换应用。请查阅发布说明以获取适用于您平台的步骤。",
-      "externalNote": "Flatpak 在应用外部以原子方式应用更新。请使用您的软件管理器或运行 <code>flatpak update</code> 命令来更新 Backspace。"
+      "externalNote": "Flatpak 在应用外部以原子方式应用更新。请使用您的软件管理器或运行 <code>flatpak update</code> 命令来更新 Backspace。",
+      "installing": "正在重启以应用更新…",
+      "retryInstall": "重试安装",
+      "copyDiagnostic": "复制诊断信息",
+      "copyingDiagnostic": "正在复制…",
+      "troubleshootingHint": "更新遇到问题？",
+      "diagnosticCopied": "更新诊断信息已复制到剪贴板！",
+      "diagnosticEmpty": "没有可用的近期诊断日志。",
+      "diagnosticFailed": "复制诊断信息失败。"
     },
     "instance": {
       "current": "当前连接的实例",

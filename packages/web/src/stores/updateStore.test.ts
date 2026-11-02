@@ -15,16 +15,16 @@ describe('coerceSnapshot', () => {
     const value = {
       capability: 'manual',
       dismissedVersion: null,
-      status: { phase: 'available', version: '1.0.4' },
+      status: { phase: 'available' as const, version: '1.0.4' },
     };
     expect(coerceSnapshot(value)).toEqual(value);
   });
 
   it('accepts the externally-managed capability', () => {
     const value = {
-      capability: 'external',
+      capability: 'external' as const,
       dismissedVersion: null,
-      status: { phase: 'idle' },
+      status: { phase: 'idle' as const },
     };
     expect(coerceSnapshot(value)).toEqual(value);
   });
@@ -36,7 +36,8 @@ describe('coerceSnapshot', () => {
       { phase: 'available', version: '1.0.4' },
       { phase: 'downloading', version: '1.0.4', percent: 42, bytesPerSecond: 1000 },
       { phase: 'ready', version: '1.0.4' },
-      { phase: 'failed', version: '1.0.4', message: 'nope' },
+      { phase: 'installing', version: '1.0.4' },
+      { phase: 'failed', version: '1.0.4', message: 'nope', stage: 'install' },
       { phase: 'failed', version: null, message: 'check failed' },
       { phase: 'up-to-date', checkedAt: 1 },
     ];
@@ -68,7 +69,7 @@ describe('coerceSnapshot', () => {
   });
 
   it('rejects a versioned phase that carries no version', () => {
-    for (const phase of ['available', 'ready', 'downloading']) {
+    for (const phase of ['available', 'ready', 'downloading', 'installing']) {
       expect(coerceSnapshot({ capability: 'auto', dismissedVersion: null, status: { phase } }))
         .toBeNull();
     }
@@ -101,6 +102,7 @@ describe('statusVersion', () => {
     expect(statusVersion({ phase: 'ready', version: '1.0.4' })).toBe('1.0.4');
     expect(statusVersion({ phase: 'failed', version: '1.0.4', message: 'x' })).toBe('1.0.4');
     expect(statusVersion({ phase: 'downloading', version: '1.0.4', percent: 1, bytesPerSecond: 1 })).toBe('1.0.4');
+    expect(statusVersion({ phase: 'installing', version: '1.0.4' })).toBe('1.0.4');
   });
 
   it('returns null where none exists', () => {
@@ -112,19 +114,18 @@ describe('statusVersion', () => {
 });
 
 describe('shouldPrompt', () => {
-  it('prompts for available, ready, and failed', () => {
+  it('prompts for available, downloading, ready, and failed', () => {
     expect(shouldPrompt(snap({ status: { phase: 'available', version: '1.0.4' } }))).toBe(true);
+    expect(shouldPrompt(snap({ status: { phase: 'downloading', version: '1.0.4', percent: 10, bytesPerSecond: 1 } }))).toBe(true);
     expect(shouldPrompt(snap({ status: { phase: 'ready', version: '1.0.4' } }))).toBe(true);
     expect(shouldPrompt(snap({ status: { phase: 'failed', version: '1.0.4', message: 'x' } }))).toBe(true);
   });
 
-  it('stays quiet for progress phases, which are not news', () => {
+  it('stays quiet for non-actionable background phases', () => {
     expect(shouldPrompt(snap({ status: { phase: 'idle' } }))).toBe(false);
     expect(shouldPrompt(snap({ status: { phase: 'checking' } }))).toBe(false);
     expect(shouldPrompt(snap({ status: { phase: 'up-to-date', checkedAt: 1 } }))).toBe(false);
-    expect(shouldPrompt(snap({
-      status: { phase: 'downloading', version: '1.0.4', percent: 10, bytesPerSecond: 1 },
-    }))).toBe(false);
+    expect(shouldPrompt(snap({ status: { phase: 'installing', version: '1.0.4' } }))).toBe(false);
   });
 
   it('stays quiet before any snapshot arrives, and in a browser', () => {
@@ -155,8 +156,9 @@ describe('shouldPrompt', () => {
 });
 
 describe('canRestartToInstall', () => {
-  it('is true only for a staged update on an auto-capable build', () => {
+  it('is true for a staged update or install-stage retry on an auto-capable build', () => {
     expect(canRestartToInstall(snap({ capability: 'auto', status: { phase: 'ready', version: '1.0.4' } }))).toBe(true);
+    expect(canRestartToInstall(snap({ capability: 'auto', status: { phase: 'failed', version: '1.0.4', stage: 'install' } }))).toBe(true);
   });
 
   it('is false on an ad-hoc signed build, which is what removes the dead button', () => {
@@ -165,6 +167,7 @@ describe('canRestartToInstall', () => {
 
   it('is false for any other phase, and before a snapshot exists', () => {
     expect(canRestartToInstall(snap({ status: { phase: 'available', version: '1.0.4' } }))).toBe(false);
+    expect(canRestartToInstall(snap({ status: { phase: 'failed', version: '1.0.4', stage: 'download' } }))).toBe(false);
     expect(canRestartToInstall(null)).toBe(false);
   });
 });

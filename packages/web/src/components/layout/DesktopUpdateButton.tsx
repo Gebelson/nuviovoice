@@ -31,12 +31,20 @@ export function DesktopUpdateButton() {
   const phase = status.phase;
 
   // Only show when there is an active actionable update state
-  if (phase !== 'available' && phase !== 'downloading' && phase !== 'ready' && phase !== 'failed') {
+  if (
+    phase !== 'available' &&
+    phase !== 'downloading' &&
+    phase !== 'ready' &&
+    phase !== 'failed' &&
+    phase !== 'installing'
+  ) {
     return null;
   }
 
+  const isInstallFailed = phase === 'failed' && 'stage' in status && status.stage === 'install';
+
   const handleAction = () => {
-    if (phase === 'ready') {
+    if (phase === 'ready' || isInstallFailed) {
       if (inActiveCall) {
         setShowCallWarning(true);
         return;
@@ -53,8 +61,36 @@ export function DesktopUpdateButton() {
     }
   };
 
-  const percent = phase === 'downloading' && 'percent' in status ? Math.max(0, Math.min(100, Math.round(status.percent))) : 0;
-  const version = ('version' in status && status.version) ? status.version : undefined;
+  const percent =
+    phase === 'downloading' && 'percent' in status
+      ? Math.max(0, Math.min(100, Math.round(status.percent)))
+      : 0;
+  const version = 'version' in status && status.version ? status.version : undefined;
+
+  const isDisabled = phase === 'downloading' || phase === 'installing';
+
+  let label: string;
+  let colorClasses: string;
+
+  if (phase === 'ready') {
+    label = t('desktop:update.button.ready', 'Reiniciar e atualizar');
+    colorClasses = 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-300';
+  } else if (phase === 'downloading') {
+    label = t('desktop:update.button.downloading', 'Baixando {{percent}}%', { percent });
+    colorClasses = 'bg-sky-500/10 border-sky-500/25 text-sky-300 cursor-default';
+  } else if (phase === 'installing') {
+    label = t('desktop:update.button.installing', 'Instalando...');
+    colorClasses = 'bg-accent-primary/20 border-accent-primary/30 text-accent-primary cursor-wait';
+  } else if (isInstallFailed) {
+    label = t('desktop:update.button.retryInstall', 'Reiniciar para instalar');
+    colorClasses = 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-300';
+  } else if (phase === 'failed') {
+    label = t('desktop:update.button.failed', 'Falha na atualização • Tentar novamente');
+    colorClasses = 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-300';
+  } else {
+    label = t('desktop:update.button.available', 'Atualizar Nuvio');
+    colorClasses = 'bg-accent-primary/20 hover:bg-accent-primary/30 border-accent-primary/30 text-white';
+  }
 
   return (
     <>
@@ -62,17 +98,9 @@ export function DesktopUpdateButton() {
         <button
           type="button"
           onClick={handleAction}
-          disabled={phase === 'downloading'}
+          disabled={isDisabled}
           title={version}
-          className={`w-full relative overflow-hidden py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition-all shadow-sm group ${
-            phase === 'ready'
-              ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-300'
-              : phase === 'downloading'
-              ? 'bg-sky-500/10 border-sky-500/25 text-sky-300 cursor-default'
-              : phase === 'failed'
-              ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-300'
-              : 'bg-accent-primary/20 hover:bg-accent-primary/30 border-accent-primary/30 text-white'
-          }`}
+          className={`w-full relative overflow-hidden py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition-all shadow-sm group ${colorClasses}`}
         >
           {/* Progress fill bar for downloading */}
           {phase === 'downloading' && (
@@ -83,7 +111,7 @@ export function DesktopUpdateButton() {
           )}
 
           <div className="relative z-10 flex items-center gap-2 truncate">
-            {phase === 'ready' ? (
+            {phase === 'ready' || isInstallFailed ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-emerald-400">
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19" />
               </svg>
@@ -92,6 +120,11 @@ export function DesktopUpdateButton() {
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            ) : phase === 'installing' ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0 animate-spin text-accent-primary">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
             ) : phase === 'failed' ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-rose-400">
@@ -107,15 +140,7 @@ export function DesktopUpdateButton() {
               </svg>
             )}
 
-            <span className="truncate">
-              {phase === 'ready'
-                ? t('desktop:update.button.ready', 'Reiniciar e atualizar')
-                : phase === 'downloading'
-                ? t('desktop:update.button.downloading', 'Baixando {{percent}}%', { percent })
-                : phase === 'failed'
-                ? t('desktop:update.button.failed', 'Falha na atualização • Tentar novamente')
-                : t('desktop:update.button.available', 'Atualizar Nuvio')}
-            </span>
+            <span className="truncate">{label}</span>
           </div>
 
           {version && (
