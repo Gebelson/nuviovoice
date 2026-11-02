@@ -52,10 +52,11 @@ jobs:
         working-directory: packages/desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node scripts/copy-web.js
           pnpm exec tsc
-          pnpm exec electron-builder --win --x64
+          pnpm exec electron-builder --win --x64 --publish never
 
       - name: Verify build artifacts and signatures
         shell: powershell
