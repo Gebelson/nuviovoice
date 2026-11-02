@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "e2e:identity-deletion": "playwright test e2e/identity-deletion.spec.ts"
+    "e2e:identity-deletion": "playwright test e2e/identity-deletion.spec.ts",
+    "smoke": "node ../../scripts/smoke-web-browser.mjs"
   },
   "dependencies": {
     "@concord/shared": "workspace:*",

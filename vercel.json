@@ -1,12 +1,32 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(sw\\.js|sw-rollover\\.js|manifest\\.webmanifest|index\\.html|boot-watchdog\\.js)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "https://167-234-239-100.sslip.io/api/:path*"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|assets/|icons/|fonts/|wasm/|worklets/|winks/|sw\\.js|sw-rollover\\.js|manifest\\.webmanifest|boot-watchdog\\.js|favicon\\.svg|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/index.html"
     }
   ]

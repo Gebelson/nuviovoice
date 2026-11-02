@@ -32,6 +32,9 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    if (typeof (window as any).__nuvioMarkBooted === 'function') {
+      (window as any).__nuvioMarkBooted();
+    }
     console.error('[ErrorBoundary]', error, errorInfo.componentStack);
     // Renderer is alive enough to show the fallback UI — disarm the boot timer.
     // Without this, the timer fires 20s after a caught render error and
@@ -137,6 +140,9 @@ function render(): void {
       </ErrorBoundary>
     </React.StrictMode>
   );
+  if (typeof (window as any).__nuvioMarkBooted === 'function') {
+    (window as any).__nuvioMarkBooted();
+  }
 }
 
 // The selected language's catalogs are loaded before the first paint, so

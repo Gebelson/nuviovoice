@@ -15,6 +15,24 @@
   </head>
   <body class="bg-surface-base text-txt-primary">
     <div id="root"></div>
+    <div id="nuvio-boot-fallback" style="display:none;position:fixed;inset:0;background-color:#0b0b10;color:#efefef;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;align-items:center;justify-content:center;flex-direction:column;padding:24px;z-index:999999;text-align:center;">
+      <div style="max-width:440px;width:100%;background:#14161d;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:32px 24px;box-shadow:0 16px 32px rgba(0,0,0,0.4);display:flex;flex-direction:column;align-items:center;">
+        <img src="/icons/nuvio_logo.svg" alt="Nuvio" style="width:56px;height:56px;margin-bottom:16px;" />
+        <h2 style="font-size:20px;font-weight:bold;margin-bottom:8px;">Recuperação do Nuvio</h2>
+        <p id="nuvio-fallback-msg" style="color:#9da3af;font-size:14px;line-height:1.5;margin-bottom:24px;">
+          Detectamos uma lentidão ou falha ao inicializar os arquivos da aplicação no navegador.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+          <button id="nuvio-btn-reload" style="padding:10px 24px;border-radius:9999px;font-size:14px;font-weight:600;cursor:pointer;border:none;background-color:#5b55f6;color:#ffffff;">
+            Recarregar Nuvio
+          </button>
+          <button id="nuvio-btn-update" style="padding:10px 24px;border-radius:9999px;font-size:14px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.08);color:#a0a0aa;border:1px solid rgba(255,255,255,0.1);">
+            Atualizar Versão e Cache
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="/boot-watchdog.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

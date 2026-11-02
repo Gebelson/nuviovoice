@@ -438,6 +438,8 @@ export function AppLayout() {
         <UserProfileModal />
         <ConnectAndJoinModal />
         <DownloadDesktopModal />
+        <ReportMessageModal />
+        <ReportSpaceModal />
         {/* MemberRolesModal is desktop-only: it opens from the profile card's
             Edit Roles, and its two-pane layout has no mobile form. */}
         <IncomingCallModal />
@@ -495,6 +497,8 @@ export function AppLayout() {
       <ConnectAndJoinModal />
       <MemberRolesModal />
       <DownloadDesktopModal />
+      <ReportMessageModal />
+      <ReportSpaceModal />
       <IncomingCallModal />
       <ImagePreview />
       <PictureInPicture />
