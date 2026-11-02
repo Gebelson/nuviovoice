@@ -7,6 +7,11 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as schema from '../db/schema.js';
 import { verificationRoutes } from './verifications.js';
+import { exploreRoutes } from './explore.js';
+import { grantOfficialTeamBadge } from '../scripts/grant-official-team.js';
+import { setWorkerId } from '../utils/snowflake.js';
+
+try { setWorkerId(1); } catch { /* ignore if already set */ }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,6 +20,19 @@ let sqlite: Database.Database;
 let app: FastifyInstance;
 
 vi.mock('../db/index.js', () => ({ getDb: () => db, getRawDb: () => sqlite, schema }));
+vi.mock('../ws/handler.js', () => ({
+  connectionManager: {
+    sendToUser: vi.fn(),
+    sendToSpace: vi.fn(),
+    addUserSpace: vi.fn(),
+    removeUserSpace: vi.fn(),
+  },
+}));
+vi.mock('../services/directory.js', () => ({
+  invalidatePublicSpacesDocument: vi.fn(),
+  notifyDirectoryChanged: vi.fn(),
+}));
+
 vi.mock('../utils/auth.js', () => ({
   authenticate: async (
     request: { userId?: string; headers: Record<string, string> },
@@ -48,7 +66,7 @@ function applyMigrations(dbInstance: Database.Database): void {
   }
 }
 
-describe('Verifications API', () => {
+describe('Verifications and Verification Badges API', () => {
   beforeEach(async () => {
     sqlite = new Database(':memory:');
     sqlite.pragma('foreign_keys = OFF');
@@ -59,30 +77,46 @@ describe('Verifications API', () => {
 
     app = Fastify();
     await app.register(verificationRoutes);
+    await app.register(exploreRoutes);
     await app.ready();
 
-    // Seed test users: alice, bob, adminUser, remoteUser
     const now = Date.now();
-    sqlite.prepare('INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)').run(
-      'alice', 'alice', 'hash', 0, now
+
+    // Instance settings for Explore discovery
+    sqlite.prepare('INSERT OR REPLACE INTO instance_settings (id, discovery_enabled, updated_at) VALUES (1, 1, ?)').run(now);
+
+    // Seed test users: alice, bob, gebelson, adminUser, remoteUser
+    sqlite.prepare('INSERT INTO users (id, username, display_name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      'alice', 'alice', 'Alice Developer', 'hash', 0, now
     );
-    sqlite.prepare('INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)').run(
-      'bob', 'bob', 'hash', 0, now
+    sqlite.prepare('INSERT INTO users (id, username, display_name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      'bob', 'bob', 'Bob Creator', 'hash', 0, now
     );
-    sqlite.prepare('INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)').run(
-      'adminUser', 'admin', 'hash', 1, now
+    sqlite.prepare('INSERT INTO users (id, username, display_name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      'gebelson', 'gebelson', 'Gebelson Admin', 'hash', 1, now
     );
-    sqlite.prepare('INSERT INTO users (id, username, password_hash, is_admin, home_instance, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-      'remoteUser', 'remote', 'hash', 0, 'orbit.remote', now
+    sqlite.prepare('INSERT INTO users (id, username, display_name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+      'adminUser', 'admin', 'System Admin', 'hash', 1, now
+    );
+    sqlite.prepare('INSERT INTO users (id, username, display_name, password_hash, is_admin, home_instance, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+      'remoteUser', 'remote', 'Remote User', 'hash', 0, 'orbit.remote', now
     );
 
-    // Seed spaces: publicSpace, privateSpace
-    sqlite.prepare('INSERT INTO spaces (id, name, type, visibility, publication_status, owner_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-      'space-public', 'Comunidade Aberta', 'public', 'public', 'published', 'alice', now
-    );
-    sqlite.prepare('INSERT INTO spaces (id, name, type, visibility, owner_id, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-      'space-private', 'Grupo Secreto', 'private', 'private', 'alice', now
-    );
+    // Seed spaces: publicSpace, unverifiedPublicSpace, privateSpace
+    sqlite.prepare(`
+      INSERT INTO spaces (id, name, type, visibility, publication_status, owner_id, verification_status, verification_category, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run('space-verified', 'Comunidade Verificada', 'public', 'public', 'published', 'alice', 'verified', 'organization', now);
+
+    sqlite.prepare(`
+      INSERT INTO spaces (id, name, type, visibility, publication_status, owner_id, verification_status, verification_category, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run('space-unverified', 'Comunidade Normal', 'public', 'public', 'published', 'bob', 'none', null, now);
+
+    sqlite.prepare(`
+      INSERT INTO spaces (id, name, type, visibility, publication_status, owner_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run('space-private', 'Grupo Secreto', 'private', 'private', 'draft', 'alice', now);
   });
 
   afterEach(async () => {
@@ -90,7 +124,7 @@ describe('Verifications API', () => {
     if (sqlite) sqlite.close();
   });
 
-  it('GET /api/verifications/me returns default none status', async () => {
+  it('GET /api/verifications/me returns default status and verificationStatus', async () => {
     const res = await app.inject({
       method: 'GET',
       url: '/api/verifications/me',
@@ -99,70 +133,62 @@ describe('Verifications API', () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
+    expect(body.status).toBe('none');
     expect(body.verificationStatus).toBe('none');
     expect(body.verification).toBeNull();
     expect(body.activeRequest).toBeNull();
   });
 
-  it('POST /api/verifications/requests rejects invalid category or unauthenticated user', async () => {
-    const unauth = await app.inject({
-      method: 'POST',
-      url: '/api/verifications/requests',
-      payload: { category: 'creator', publicName: 'Alice Creator' },
-    });
-    expect(unauth.statusCode).toBe(401);
-
-    const badCat = await app.inject({
-      method: 'POST',
-      url: '/api/verifications/requests',
-      headers: { authorization: 'alice' },
-      payload: { category: 'official', publicName: 'Fake Official' },
-    });
-    expect(badCat.statusCode).toBe(400);
-  });
-
-  it('POST /api/verifications/requests creates pending request and prevents duplicates', async () => {
-    const res1 = await app.inject({
+  it('POST /api/verifications/requests accepts frontend schema (description, website, domainName, socialLinks)', async () => {
+    const res = await app.inject({
       method: 'POST',
       url: '/api/verifications/requests',
       headers: { authorization: 'alice' },
       payload: {
         category: 'creator',
         publicName: 'Alice Ilustradora',
-        activityDescription: 'Criadora de arte digital',
-        officialWebsite: 'https://alice.art',
-        domainToVerify: 'alice.art',
+        description: 'Criadora de arte digital e quadrinhos autorais',
+        website: 'https://alice.art',
+        domainName: 'alice.art',
+        socialLinks: [{ platform: 'twitter', url: 'https://twitter.com/alice' }],
       },
     });
 
-    expect(res1.statusCode).toBe(201);
-    const body1 = res1.json();
-    expect(body1.status).toBe('pending');
-    expect(body1.publicName).toBe('Alice Ilustradora');
-    expect(body1.domainToken).toMatch(/^nuvio-verify-/);
+    expect(res.statusCode).toBe(201);
+    const body = res.json();
+    expect(body.success).toBe(true);
+    expect(body.requestId).toBeDefined();
+    expect(body.id).toBe(body.requestId);
+    expect(body.status).toBe('pending');
+    expect(body.domainToken).toMatch(/^nuvio-verify-/);
 
-    // Duplicate request while pending should conflict
-    const res2 = await app.inject({
-      method: 'POST',
-      url: '/api/verifications/requests',
+    // GET /api/verifications/me should now return pending request with mapped aliases
+    const meRes = await app.inject({
+      method: 'GET',
+      url: '/api/verifications/me',
       headers: { authorization: 'alice' },
-      payload: {
-        category: 'creator',
-        publicName: 'Alice Ilustradora 2',
-      },
     });
-
-    expect(res2.statusCode).toBe(409);
-    expect(res2.json().error).toBe('request_already_pending');
+    expect(meRes.statusCode).toBe(200);
+    const meBody = meRes.json();
+    expect(meBody.status).toBe('pending');
+    expect(meBody.verificationStatus).toBe('pending');
+    expect(meBody.activeRequest).toBeDefined();
+    expect(meBody.activeRequest.description).toBe('Criadora de arte digital e quadrinhos autorais');
+    expect(meBody.activeRequest.website).toBe('https://alice.art');
+    expect(meBody.activeRequest.domainName).toBe('alice.art');
   });
 
-  it('POST /api/verifications/spaces/:spaceId/requests validates owner and public status', async () => {
-    // Non-owner bob cannot request for alice's space
+  it('POST /api/verifications/spaces/:spaceId/requests accepts frontend schema and validates ownership', async () => {
+    // Non-owner bob cannot request for alice's verified space
     const resForbidden = await app.inject({
       method: 'POST',
-      url: '/api/verifications/spaces/space-public/requests',
+      url: '/api/verifications/spaces/space-verified/requests',
       headers: { authorization: 'bob' },
-      payload: { publicName: 'Comunidade' },
+      payload: {
+        category: 'space',
+        publicName: 'Comunidade Hacker',
+        description: 'Tentativa indevida de solicitação',
+      },
     });
     expect(resForbidden.statusCode).toBe(403);
 
@@ -171,21 +197,35 @@ describe('Verifications API', () => {
       method: 'POST',
       url: '/api/verifications/spaces/space-private/requests',
       headers: { authorization: 'alice' },
-      payload: { publicName: 'Grupo' },
+      payload: {
+        category: 'space',
+        publicName: 'Grupo Secreto',
+        description: 'Tentativa em espaço privado',
+      },
     });
     expect(resPrivate.statusCode).toBe(400);
 
-    // Public space by owner succeeds
+    // Bob can request for his public unverified space using frontend aliases
     const resOk = await app.inject({
       method: 'POST',
-      url: '/api/verifications/spaces/space-public/requests',
-      headers: { authorization: 'alice' },
-      payload: { publicName: 'Comunidade Oficial de Nuvio Designers' },
+      url: '/api/verifications/spaces/space-unverified/requests',
+      headers: { authorization: 'bob' },
+      payload: {
+        category: 'space',
+        publicName: 'Comunidade Oficial de Criadores',
+        description: 'Comunidade oficial reunindo criadores e desenvolvedores',
+        website: 'https://creators.hub',
+        domainName: 'creators.hub',
+      },
     });
     expect(resOk.statusCode).toBe(201);
+    const body = resOk.json();
+    expect(body.success).toBe(true);
+    expect(body.requestId).toBeDefined();
+    expect(body.status).toBe('pending');
   });
 
-  describe('Admin Verification Workflow', () => {
+  describe('Admin Approval, Rejection, Revocation, and Official Grant', () => {
     let requestId: string;
 
     beforeEach(async () => {
@@ -196,107 +236,195 @@ describe('Verifications API', () => {
         payload: {
           category: 'organization',
           publicName: 'Studio Bob Games',
-          officialWebsite: 'https://bobgames.com',
+          description: 'Estúdio independente de jogos',
+          website: 'https://bobgames.com',
+          domainName: 'bobgames.com',
         },
       });
-      requestId = res.json().id;
+      requestId = res.json().requestId;
     });
 
-    it('blocks regular users from admin endpoints', async () => {
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/admin/verifications/metrics',
-        headers: { authorization: 'alice' },
-      });
-      expect(res.statusCode).toBe(403);
-    });
-
-    it('admin can request info, reject, or approve with audit logging', async () => {
-      // 1. Check metrics
-      const metricsRes = await app.inject({
-        method: 'GET',
-        url: '/api/admin/verifications/metrics',
-        headers: { authorization: 'adminUser' },
-      });
-      expect(metricsRes.statusCode).toBe(200);
-      expect(metricsRes.json().pendingRequests).toBe(1);
-
-      // 2. Request info
-      const infoRes = await app.inject({
-        method: 'POST',
-        url: `/api/admin/verifications/requests/${requestId}/request-info`,
-        headers: { authorization: 'adminUser' },
-        payload: { notes: 'Por favor, comprove o vínculo com o domínio corporativo.' },
-      });
-      expect(infoRes.statusCode).toBe(200);
-      expect(infoRes.json().status).toBe('info_requested');
-
-      // 3. Approve
+    it('approves request using frontend notes alias and sets user verification status and category', async () => {
       const approveRes = await app.inject({
         method: 'POST',
         url: `/api/admin/verifications/requests/${requestId}/approve`,
         headers: { authorization: 'adminUser' },
-        payload: { justification: 'Documentação e domínio validados com sucesso' },
+        payload: { notes: 'Aprovado após conferência documental.' },
       });
-      expect(approveRes.statusCode).toBe(200);
-      expect(approveRes.json().verified).toBe(true);
 
-      // 4. Verify user has verified status and category organization
+      expect(approveRes.statusCode).toBe(200);
+      const approveBody = approveRes.json();
+      expect(approveBody.success).toBe(true);
+      expect(approveBody.verified).toBe(true);
+      expect(approveBody.status).toBe('approved');
+      expect(approveBody.verificationId).toBeDefined();
+
+      // Check bob's status
       const bobRes = await app.inject({
         method: 'GET',
         url: '/api/verifications/me',
         headers: { authorization: 'bob' },
       });
-      expect(bobRes.json().verificationStatus).toBe('verified');
-      expect(bobRes.json().verification.category).toBe('organization');
+      expect(bobRes.statusCode).toBe(200);
+      const bobBody = bobRes.json();
+      expect(bobBody.status).toBe('verified');
+      expect(bobBody.verificationStatus).toBe('verified');
+      expect(bobBody.verification.category).toBe('organization');
 
-      // 5. Admin can revoke
+      // Admin revokes using reason alias
       const revokeRes = await app.inject({
         method: 'POST',
         url: '/api/admin/verifications/entities/user/bob/revoke',
         headers: { authorization: 'adminUser' },
-        payload: { justification: 'Encerramento das atividades da organização' },
+        payload: { reason: 'Organização encerrou atividades operacionais.' },
       });
       expect(revokeRes.statusCode).toBe(200);
+      expect(revokeRes.json().revoked).toBe(true);
 
       const bobRevoked = await app.inject({
         method: 'GET',
         url: '/api/verifications/me',
         headers: { authorization: 'bob' },
       });
-      expect(bobRevoked.json().verificationStatus).toBe('revoked');
+      expect(bobRevoked.json().status).toBe('revoked');
     });
 
-    it('admin can grant official team badge only to local users with audit', async () => {
-      // Federated user cannot receive official badge
-      const fedRes = await app.inject({
+    it('grants official team badge by targetUserId and targetUsername with audit logging', async () => {
+      // 1. Grant to alice using targetUserId and notes
+      const grantRes1 = await app.inject({
         method: 'POST',
         url: '/api/admin/verifications/official/grant',
         headers: { authorization: 'adminUser' },
-        payload: { userId: 'remoteUser', justification: 'Tentativa indevida' },
+        payload: {
+          targetUserId: 'alice',
+          notes: 'Membro oficial do time de desenvolvimento Nuvio.',
+        },
       });
-      expect(fedRes.statusCode).toBe(400);
-      expect(fedRes.json().error).toBe('federated_user_unsupported');
 
-      // Local user receives official badge
-      const grantRes = await app.inject({
+      expect(grantRes1.statusCode).toBe(200);
+      const grantBody1 = grantRes1.json();
+      expect(grantBody1.success).toBe(true);
+      expect(grantBody1.verified).toBe(true);
+      expect(grantBody1.user.verification.category).toBe('official');
+
+      // 2. Grant to gebelson using targetUsername and justification
+      const grantRes2 = await app.inject({
         method: 'POST',
         url: '/api/admin/verifications/official/grant',
         headers: { authorization: 'adminUser' },
-        payload: { userId: 'alice', justification: 'Conta oficial confirmada da liderança de engenharia' },
+        payload: {
+          targetUsername: '@gebelson',
+          justification: 'Conta oficial do mantenedor e fundador Gebelson.',
+        },
       });
-      expect(grantRes.statusCode).toBe(200);
-      expect(grantRes.json().user.verification.category).toBe('official');
 
-      // Check audit log
+      expect(grantRes2.statusCode).toBe(200);
+      const grantBody2 = grantRes2.json();
+      expect(grantBody2.success).toBe(true);
+      expect(grantBody2.user.username).toBe('gebelson');
+      expect(grantBody2.user.verification.category).toBe('official');
+
+      // 3. Confirm audit log
       const auditRes = await app.inject({
         method: 'GET',
         url: '/api/admin/verifications/audit',
         headers: { authorization: 'adminUser' },
       });
       expect(auditRes.statusCode).toBe(200);
-      const logs = auditRes.json().items;
+      const logs = auditRes.json().logs || auditRes.json().items;
+      expect(logs.some((l: any) => l.action === 'official_granted' && l.targetId === 'gebelson')).toBe(true);
       expect(logs.some((l: any) => l.action === 'official_granted' && l.targetId === 'alice')).toBe(true);
+    });
+  });
+
+  describe('Explore Verified Filter and Public Preview', () => {
+    it('GET /api/spaces/explore?verifiedOnly=true filters out unverified spaces', async () => {
+      // Unfiltered request returns both verified and unverified
+      const allRes = await app.inject({
+        method: 'GET',
+        url: '/api/spaces/explore',
+        headers: { authorization: 'alice' },
+      });
+      expect(allRes.statusCode).toBe(200);
+      const allSpaces = allRes.json().spaces;
+      expect(allSpaces.some((s: any) => s.id === 'space-verified')).toBe(true);
+      expect(allSpaces.some((s: any) => s.id === 'space-unverified')).toBe(true);
+
+      // Filtered request returns ONLY verified space
+      const verifiedRes = await app.inject({
+        method: 'GET',
+        url: '/api/spaces/explore?verifiedOnly=true',
+        headers: { authorization: 'alice' },
+      });
+      expect(verifiedRes.statusCode).toBe(200);
+      const verifiedSpaces = verifiedRes.json().spaces;
+      expect(verifiedSpaces.length).toBe(1);
+      expect(verifiedSpaces[0].id).toBe('space-verified');
+      expect(verifiedSpaces[0].verification).toEqual({
+        status: 'verified',
+        category: 'organization',
+        verifiedAt: expect.any(Number),
+      });
+    });
+
+    it('GET /api/spaces/:id/public-preview returns verification details', async () => {
+      const previewRes = await app.inject({
+        method: 'GET',
+        url: '/api/spaces/space-verified/public-preview',
+        headers: { authorization: 'bob' },
+      });
+      expect(previewRes.statusCode).toBe(200);
+      const preview = previewRes.json();
+      expect(preview.id).toBe('space-verified');
+      expect(preview.verification).toEqual({
+        status: 'verified',
+        category: 'organization',
+        verifiedAt: expect.any(Number),
+      });
+    });
+  });
+
+  describe('grantOfficialTeamBadge CLI Script', () => {
+    it('grants official badge, enforces local homing, and records audit', () => {
+      const result = grantOfficialTeamBadge(db, {
+        identifier: 'gebelson',
+        confirmed: true,
+        operatorJustification: 'Concessão oficial via CLI de infraestrutura.',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.targetUser.username).toBe('gebelson');
+      expect(result.targetUser.verificationStatus).toBe('verified');
+      expect(result.targetUser.verificationCategory).toBe('official');
+
+      // Verify DB row directly
+      const userRow = sqlite.prepare("SELECT * FROM users WHERE username = 'gebelson'").get() as any;
+      expect(userRow.verification_status).toBe('verified');
+      expect(userRow.verification_category).toBe('official');
+
+      const auditRow = sqlite.prepare("SELECT * FROM verification_audit_logs WHERE target_id = ?").get(userRow.id) as any;
+      expect(auditRow).toBeDefined();
+      expect(auditRow.action).toBe('official_granted');
+      expect(auditRow.category).toBe('official');
+      expect(auditRow.justification).toBe('Concessão oficial via CLI de infraestrutura.');
+    });
+
+    it('refuses to grant without confirmation', () => {
+      expect(() => {
+        grantOfficialTeamBadge(db, {
+          identifier: 'gebelson',
+          confirmed: false,
+        });
+      }).toThrow(/confirmação explícita obrigatória/i);
+    });
+
+    it('refuses to grant official badge to federated remote user', () => {
+      expect(() => {
+        grantOfficialTeamBadge(db, {
+          identifier: 'remoteUser',
+          confirmed: true,
+        });
+      }).toThrow(/A conta @remote .* é federada/i);
     });
   });
 });

@@ -75,7 +75,7 @@ export function SpaceVerificationSection({ spaceId }: { spaceId: string }) {
     setCheckingDomain(true);
     setDomainCheckResult(null);
     try {
-      const res = await api.verifications.verifyDomain({ domain: domainName, method: 'dns_txt' });
+      const res = await api.verifications.verifyDomain({ domain: domainName, method: 'dns_txt', requestId: activeRequest?.id });
       setDomainCheckResult({ verified: res.verified, message: res.message });
     } catch (err: any) {
       setDomainCheckResult({ verified: false, message: err?.message || 'Erro ao consultar domínio.' });

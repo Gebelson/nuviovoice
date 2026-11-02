@@ -42,10 +42,13 @@ export interface VerificationRequestData {
   status: VerificationStatus;
   publicName: string;
   activityDescription?: string | null;
+  description?: string | null;
   officialWebsite?: string | null;
-  socialLinks?: string[];
+  website?: string | null;
+  socialLinks?: Array<string | { platform: string; url: string }>;
   professionalLinks?: string[];
   domainToVerify?: string | null;
+  domainName?: string | null;
   domainToken?: string | null;
   domainVerified?: boolean;
   evidenceNotes?: string | null;

@@ -637,18 +637,18 @@ export class BackspaceApiClient {
     createRequest: (data: { category: VerificationCategory; entityType?: 'user'; publicName: string; description: string; website?: string; socialLinks?: { platform: string; url: string }[]; domainName?: string }) => Promise<{ success: boolean; requestId: string }>;
     getSpaceVerification: (spaceId: string) => Promise<{ status: VerificationStatus; verification: VerificationInfo | null; activeRequest: VerificationRequestData | null }>;
     createSpaceRequest: (spaceId: string, data: { category: 'organization' | 'space'; publicName: string; description: string; website?: string; socialLinks?: { platform: string; url: string }[]; domainName?: string }) => Promise<{ success: boolean; requestId: string }>;
-    verifyDomain: (data: { domain: string; method?: 'dns_txt' | 'http_token' }) => Promise<{ success: boolean; method: string; token: string; verified: boolean; message: string }>;
+    verifyDomain: (data: { domain: string; method?: 'dns_txt' | 'http_token'; requestId?: string }) => Promise<{ success: boolean; method: string; token: string; verified: boolean; message: string }>;
   };
 
   readonly adminVerifications: {
     getMetrics: () => Promise<VerificationMetrics>;
     getRequests: (params?: { status?: string; entityType?: string; category?: string }) => Promise<{ requests: VerificationRequestData[] }>;
     getRequest: (id: string) => Promise<{ request: VerificationRequestData }>;
-    approveRequest: (id: string, data?: { notes?: string }) => Promise<{ success: boolean; verificationId: string }>;
-    rejectRequest: (id: string, data: { reason: string; notes?: string }) => Promise<{ success: boolean }>;
-    requestInfo: (id: string, data: { requestedInfo: string }) => Promise<{ success: boolean }>;
-    revoke: (targetType: 'user' | 'space', targetId: string, data: { reason: string }) => Promise<{ success: boolean }>;
-    grantOfficial: (data: { targetUserId: string; targetUsername?: string; notes?: string }) => Promise<{ success: boolean; verificationId: string }>;
+    approveRequest: (id: string, data?: { notes?: string; justification?: string }) => Promise<{ success: boolean; verificationId: string }>;
+    rejectRequest: (id: string, data: { reason?: string; notes?: string; justification?: string }) => Promise<{ success: boolean }>;
+    requestInfo: (id: string, data: { requestedInfo?: string; notes?: string }) => Promise<{ success: boolean }>;
+    revoke: (targetType: 'user' | 'space', targetId: string, data: { reason?: string; justification?: string }) => Promise<{ success: boolean }>;
+    grantOfficial: (data: { targetUserId?: string; userId?: string; targetUsername?: string; notes?: string; justification?: string }) => Promise<{ success: boolean; verificationId: string }>;
     getAudit: (limit?: number) => Promise<{ logs: VerificationAuditLogEntry[] }>;
     getVerifiedEntities: (entityType?: 'user' | 'space') => Promise<{ verified: Array<Record<string, unknown>> }>;
   };
@@ -1527,34 +1527,127 @@ export class BackspaceApiClient {
     };
 
     this.verifications = {
-      getMyVerification: () => request('GET', '/verifications/me'),
-      createRequest: (data) => request('POST', '/verifications/requests', data),
-      getSpaceVerification: (spaceId) => request('GET', `/verifications/spaces/${encodeURIComponent(spaceId)}`),
-      createSpaceRequest: (spaceId, data) => request('POST', `/verifications/spaces/${encodeURIComponent(spaceId)}/requests`, data),
+      getMyVerification: async () => {
+        const res = await request<any>('GET', '/verifications/me');
+        return {
+          status: (res.status || res.verificationStatus || 'none') as VerificationStatus,
+          verification: res.verification ?? null,
+          activeRequest: res.activeRequest ?? null,
+        };
+      },
+      createRequest: async (data) => {
+        const res = await request<any>('POST', '/verifications/requests', {
+          ...data,
+          activityDescription: data.description,
+          officialWebsite: data.website,
+          domainToVerify: data.domainName,
+        });
+        return {
+          success: res.success ?? true,
+          requestId: res.requestId || res.id,
+        };
+      },
+      getSpaceVerification: async (spaceId) => {
+        const res = await request<any>('GET', `/verifications/spaces/${encodeURIComponent(spaceId)}`);
+        return {
+          status: (res.status || res.verificationStatus || 'none') as VerificationStatus,
+          verification: res.verification ?? null,
+          activeRequest: res.activeRequest ?? null,
+        };
+      },
+      createSpaceRequest: async (spaceId, data) => {
+        const res = await request<any>('POST', `/verifications/spaces/${encodeURIComponent(spaceId)}/requests`, {
+          ...data,
+          activityDescription: data.description,
+          officialWebsite: data.website,
+          domainToVerify: data.domainName,
+        });
+        return {
+          success: res.success ?? true,
+          requestId: res.requestId || res.id,
+        };
+      },
       verifyDomain: (data) => request('POST', '/verifications/verify-domain', data),
     };
 
     this.adminVerifications = {
       getMetrics: () => request('GET', '/admin/verifications/metrics'),
-      getRequests: (params) => {
+      getRequests: async (params) => {
         const qs = new URLSearchParams();
         if (params?.status) qs.set('status', params.status);
         if (params?.entityType) qs.set('entityType', params.entityType);
         if (params?.category) qs.set('category', params.category);
         const query = qs.toString();
-        return request('GET', `/admin/verifications/requests${query ? `?${query}` : ''}`);
+        const res = await request<any>('GET', `/admin/verifications/requests${query ? `?${query}` : ''}`);
+        return {
+          requests: res.requests || res.items || [],
+        };
       },
-      getRequest: (id) => request('GET', `/admin/verifications/requests/${encodeURIComponent(id)}`),
-      approveRequest: (id, data) => request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/approve`, data),
-      rejectRequest: (id, data) => request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/reject`, data),
-      requestInfo: (id, data) => request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/request-info`, data),
-      revoke: (targetType, targetId, data) =>
-        request('POST', `/admin/verifications/entities/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}/revoke`, data),
-      grantOfficial: (data) => request('POST', '/admin/verifications/official/grant', data),
-      getAudit: (limit) =>
-        request('GET', `/admin/verifications/audit${limit ? `?limit=${encodeURIComponent(limit)}` : ''}`),
-      getVerifiedEntities: (entityType) =>
-        request('GET', `/admin/verifications/verified${entityType ? `?entityType=${encodeURIComponent(entityType)}` : ''}`),
+      getRequest: async (id) => {
+        const res = await request<any>('GET', `/admin/verifications/requests/${encodeURIComponent(id)}`);
+        return {
+          request: res.request || res,
+        };
+      },
+      approveRequest: async (id, data) => {
+        const payload = {
+          justification: data?.notes || (data as any)?.justification || 'Approved by administrator',
+          notes: data?.notes || (data as any)?.justification || 'Approved by administrator',
+        };
+        const res = await request<any>('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/approve`, payload);
+        return {
+          success: res.success ?? true,
+          verificationId: res.verificationId || res.id || '',
+        };
+      },
+      rejectRequest: (id, data) => {
+        const payload = {
+          reason: data.reason || data.notes || (data as any)?.justification || 'Rejected',
+          notes: data.notes || data.reason,
+          justification: data.notes || data.reason,
+        };
+        return request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/reject`, payload);
+      },
+      requestInfo: (id, data) => {
+        const payload = {
+          notes: data.requestedInfo || data.notes || '',
+          requestedInfo: data.requestedInfo || data.notes || '',
+        };
+        return request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/request-info`, payload);
+      },
+      revoke: (targetType, targetId, data) => {
+        const payload = {
+          justification: data.reason || (data as any)?.justification || 'Revoked by administrator',
+          reason: data.reason || (data as any)?.justification || 'Revoked by administrator',
+        };
+        return request('POST', `/admin/verifications/entities/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}/revoke`, payload);
+      },
+      grantOfficial: async (data) => {
+        const payload = {
+          targetUserId: data.targetUserId || data.userId,
+          userId: data.userId || data.targetUserId,
+          targetUsername: data.targetUsername,
+          justification: data.notes || data.justification || 'Official team grant',
+          notes: data.notes || data.justification || 'Official team grant',
+        };
+        const res = await request<any>('POST', '/admin/verifications/official/grant', payload);
+        return {
+          success: res.success ?? true,
+          verificationId: res.verificationId || res.id || '',
+        };
+      },
+      getAudit: async (limit) => {
+        const res = await request<any>('GET', `/admin/verifications/audit${limit ? `?limit=${encodeURIComponent(limit)}` : ''}`);
+        return {
+          logs: res.logs || res.items || [],
+        };
+      },
+      getVerifiedEntities: async (entityType) => {
+        const res = await request<any>('GET', `/admin/verifications/verified${entityType ? `?entityType=${encodeURIComponent(entityType)}` : ''}`);
+        return {
+          verified: res.verified || res.items || [],
+        };
+      },
     };
   }
 }

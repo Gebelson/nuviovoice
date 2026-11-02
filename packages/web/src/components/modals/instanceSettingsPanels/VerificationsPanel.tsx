@@ -533,18 +533,22 @@ export function VerificationsPanel() {
                     )}
                     {req.socialLinks && req.socialLinks.length > 0 && (
                       <span className="flex items-center gap-1">
-                        Links públicos: {req.socialLinks.map((url, i) => (
-                          <a
-                            key={i}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="text-sky-400 hover:underline inline-flex items-center gap-0.5 ml-1"
-                          >
-                            Link {i + 1}
-                            <ExternalLinkIcon size={9} />
-                          </a>
-                        ))}
+                        Links públicos: {req.socialLinks.map((link, i) => {
+                          const href = typeof link === 'string' ? link : link.url;
+                          const label = typeof link === 'object' && link.platform ? link.platform : `Link ${i + 1}`;
+                          return (
+                            <a
+                              key={i}
+                              href={href}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="text-sky-400 hover:underline inline-flex items-center gap-0.5 ml-1"
+                            >
+                              {label}
+                              <ExternalLinkIcon size={9} />
+                            </a>
+                          );
+                        })}
                       </span>
                     )}
                   </div>

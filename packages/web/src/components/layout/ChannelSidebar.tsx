@@ -37,6 +37,7 @@ import { ChannelMutedIndicator } from '../notifications/ChannelMutedIndicator';
 import { isElectron } from '../../platform/platform';
 import { useUpdateStore } from '../../stores/updateStore';
 import { VoiceInvitePopover } from '../voice/VoiceInvitePopover';
+import { VerificationBadge } from '../ui/VerificationBadge';
 
 export function ChannelSidebar() {
   const { t } = useTranslation(['spaces', 'common', 'project']);
@@ -720,8 +721,14 @@ export function ChannelSidebar() {
               className="flex-1 flex items-center justify-between min-w-0 hover:opacity-95 transition-opacity text-left mr-1 focus:outline-none"
             >
               <div className="min-w-0 pr-1.5">
-                <span className="font-bold text-[15px] tracking-[-0.02em] text-white truncate leading-tight block drop-shadow-md">
-                  {space.name}
+                <span className="font-bold text-[15px] tracking-[-0.02em] text-white truncate leading-tight flex items-center gap-1.5 drop-shadow-md">
+                  <span className="truncate">{space.name}</span>
+                  {space.verification?.status === 'verified' && (
+                    <VerificationBadge
+                      category={space.verification.category}
+                      size="xs"
+                    />
+                  )}
                 </span>
                 {instanceLabel && (
                   <span className="text-[10px] text-white/80 font-medium truncate block leading-tight drop-shadow">
@@ -755,7 +762,15 @@ export function ChannelSidebar() {
             className="flex-1 h-full px-4 flex items-center justify-between hover:bg-interactive-hover transition-colors min-w-0"
           >
             <div className="min-w-0">
-              <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary truncate leading-tight block">{space.name}</span>
+              <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary truncate leading-tight flex items-center gap-1.5">
+                <span className="truncate">{space.name}</span>
+                {space.verification?.status === 'verified' && (
+                  <VerificationBadge
+                    category={space.verification.category}
+                    size="xs"
+                  />
+                )}
+              </span>
               {instanceLabel && (
                 <span className="text-[10px] text-txt-tertiary font-medium truncate block leading-tight">
                   {instanceLabel}

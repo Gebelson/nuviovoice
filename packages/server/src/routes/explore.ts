@@ -188,6 +188,13 @@ function buildFullSpace(spaceId: string, forUserId: string): SpaceWithChannelsAn
     members,
     roles: rolesForViewer(roles, spacePerms),
     myPermissions: permissionsToString(spacePerms),
+    verification: space.verificationStatus === 'verified'
+      ? {
+          status: 'verified' as const,
+          category: (space.verificationCategory as any) || 'space',
+          verifiedAt: space.publishedAt ?? space.createdAt,
+        }
+      : null,
   };
 }
 
@@ -256,6 +263,11 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
       querySql += ` AND s.category = ?`;
       countSql += ` AND s.category = ?`;
       filterParams.push(category);
+    }
+
+    if (verifiedOnly) {
+      querySql += ` AND s.verification_status = 'verified'`;
+      countSql += ` AND s.verification_status = 'verified'`;
     }
 
     if (q) {
@@ -391,6 +403,13 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
       createdAt: space.createdAt,
       joined,
       channels,
+      verification: space.verificationStatus === 'verified'
+        ? {
+            status: 'verified',
+            category: (space.verificationCategory as any) || 'space',
+            verifiedAt: space.publishedAt ?? space.createdAt,
+          }
+        : null,
     });
   });
 

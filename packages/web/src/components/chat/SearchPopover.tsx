@@ -11,6 +11,7 @@ import { messageTextForPreview } from '../../utils/stickerMessages';
 import { useEmojiShortcodeNames } from '../../utils/emojiShortcodes';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import type { MessageWithUser, DmMessageWithUser, User } from '@concord/shared';
+import { VerificationBadge } from '../ui/VerificationBadge';
 
 type AnyMessage = MessageWithUser | DmMessageWithUser;
 
@@ -69,10 +70,13 @@ function SearchResultRow({
         />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[13px] font-semibold text-txt-primary truncate">
             {displayName}
           </span>
+          {canonical.verification?.status === 'verified' && (
+            <VerificationBadge category={canonical.verification.category} size="xs" />
+          )}
           <span className="text-[10px] text-txt-tertiary flex-shrink-0">
             {formatTime(msg.createdAt)}
           </span>

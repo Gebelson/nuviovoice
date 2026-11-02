@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useSpaceJoin } from '../../hooks/useSpaceJoin';
 import { getSpaceGradient } from '../../utils/gradients';
 import type { TaggedExploreSpace } from '../../stores/exploreStore';
+import { VerificationBadge } from '../ui/VerificationBadge';
 
 export function ExploreSpacePreviewCard({
   space,
@@ -55,7 +56,15 @@ export function ExploreSpacePreviewCard({
 
         {/* Name + meta */}
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-txt-primary truncate">{space.name}</div>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-sm font-semibold text-txt-primary truncate">{space.name}</span>
+            {space.verification?.status === 'verified' && (
+              <VerificationBadge
+                category={space.verification.category}
+                size="xs"
+              />
+            )}
+          </div>
           <div className="flex items-center gap-2 text-[12px] text-txt-tertiary">
             <span>{t('spaces:explore.memberCount', { count: space.memberCount })}</span>
             {originLabel && <span className="truncate text-txt-tertiary/70">· {originLabel}</span>}

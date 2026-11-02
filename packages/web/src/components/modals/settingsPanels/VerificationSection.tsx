@@ -78,7 +78,7 @@ export function VerificationSection() {
     setCheckingDomain(true);
     setDomainCheckResult(null);
     try {
-      const res = await api.verifications.verifyDomain({ domain: domainName, method: 'dns_txt' });
+      const res = await api.verifications.verifyDomain({ domain: domainName, method: 'dns_txt', requestId: activeRequest?.id });
       setDomainCheckResult({ verified: res.verified, message: res.message, token: res.token });
     } catch (err: any) {
       setDomainCheckResult({ verified: false, message: err?.message || 'Erro ao consultar domínio.', token: '' });

@@ -16,7 +16,8 @@
     "test:federation-e2e": "vitest run federation-e2e",
     "test:watch": "vitest",
     "promote-admin": "tsx src/scripts/promote-admin.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "grant-official-team": "tsx src/scripts/grant-official-team.ts"
   },
   "dependencies": {
     "@concord/shared": "workspace:*",

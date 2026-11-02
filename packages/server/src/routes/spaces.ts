@@ -91,6 +91,13 @@ function rowToSpace(row: typeof schema.spaces.$inferSelect): Space {
     rules: row.rules ?? null,
     publicationStatus: (row.publicationStatus as Space['publicationStatus']) ?? (effectiveType === 'public' ? 'published' : 'draft'),
     publishedAt: row.publishedAt ?? null,
+    verification: row.verificationStatus === 'verified'
+      ? {
+          status: 'verified',
+          category: (row.verificationCategory as any) || 'space',
+          verifiedAt: row.publishedAt ?? row.createdAt,
+        }
+      : null,
     createdAt: row.createdAt,
   };
 }

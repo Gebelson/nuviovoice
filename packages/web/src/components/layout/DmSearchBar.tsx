@@ -13,6 +13,7 @@ import { isMine, parseFederatedUsername, userKey } from '../../utils/identity';
 import { openDirectMessage } from '../../utils/openDirectMessage';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import { useFloatingPosition } from '../../hooks/useFloatingPosition';
+import { VerificationBadge } from '../ui/VerificationBadge';
 
 /**
  * Single slot in the group-avatar stack for the DM search bar dropdown.
@@ -70,6 +71,9 @@ function DmSearchUserRow({ user, isSelected, selectedRef, onClick }: {
         <span className="text-[14px] text-txt-primary truncate">
           {displayName}
         </span>
+        {canonical.verification?.status === 'verified' && (
+          <VerificationBadge category={canonical.verification.category} size="xs" />
+        )}
         {canonical.displayName && (
           <span className="text-[12px] text-txt-tertiary truncate">
             @{canonical.username}
@@ -125,6 +129,9 @@ function DmSearchDmRow({ item, isSelected, selectedRef, onClick }: {
         />
       )}
       <span className="text-[14px] text-txt-primary truncate">{item.displayName}</span>
+      {!item.isGroup && partner?.verification?.status === 'verified' && (
+        <VerificationBadge category={partner.verification.category} size="xs" />
+      )}
     </div>
   );
 }
