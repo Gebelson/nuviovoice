@@ -9,7 +9,7 @@ import {
   generateReportProtocol,
   determineReportPriority,
 } from '../utils/evidenceHasher.js';
-import type { SafetyReportCategory } from '@concord/shared/src/types.js';
+import type { SafetyReportCategory } from '@concord/shared';
 
 function nextId(): string {
   try {
@@ -47,10 +47,10 @@ interface ReportSpaceBody {
 
 export async function reportRoutes(app: FastifyInstance): Promise<void> {
   // ─── Report Message ────────────────────────────────────────────────────────
-  app.post(
+  app.post<{ Body: ReportMessageBody }>(
     '/api/reports/message',
     { preHandler: [authenticate] },
-    async (request: FastifyRequest<{ Body: ReportMessageBody }>, reply: FastifyReply) => {
+    async (request, reply) => {
       const { messageId, category, description, includeContext } = request.body || {};
 
       if (!messageId || typeof messageId !== 'string') {
@@ -304,10 +304,10 @@ export async function reportRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // ─── Report Space ──────────────────────────────────────────────────────────
-  app.post(
+  app.post<{ Body: ReportSpaceBody }>(
     '/api/reports/space',
     { preHandler: [authenticate] },
-    async (request: FastifyRequest<{ Body: ReportSpaceBody }>, reply: FastifyReply) => {
+    async (request, reply) => {
       const { spaceId, category, description } = request.body || {};
 
       if (!spaceId || typeof spaceId !== 'string') {

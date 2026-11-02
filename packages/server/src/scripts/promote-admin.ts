@@ -1,9 +1,25 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { eq, or } from 'drizzle-orm';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
 import * as schema from '../db/schema.js';
-import { config } from '../config.js';
+import { ensureDefaults } from '../db/migrate.js';
+
+function resolveDefaultDbPath(): string {
+  if (process.env.DATABASE_PATH) return process.env.DATABASE_PATH;
+  const candidates = [
+    path.resolve(process.cwd(), 'data/concord.db'),
+    path.resolve(process.cwd(), '../../data/concord.db'),
+    path.resolve(import.meta.dirname ?? '.', '../../../data/concord.db'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c) && fs.statSync(c).size > 0) return c;
+  }
+  return candidates[0]!;
+}
 
 export interface PromoteAdminOptions {
   identifier: string; // username or userId
@@ -110,26 +126,33 @@ async function runCli() {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--username' && args[i + 1]) {
-      identifier = args[++i];
+      identifier = args[++i]!;
     } else if (arg === '--user-id' && args[i + 1]) {
-      identifier = args[++i];
+      identifier = args[++i]!;
     } else if (arg === '--confirm-owner' || arg === '--yes' || arg === '-y') {
       confirmed = true;
     } else if (arg === '--justification' && args[i + 1]) {
-      justification = args[++i];
+      justification = args[++i]!;
     }
   }
 
   console.log('====================================================');
   console.log(' NUVIO — Promoção Administrativa Segura por CLI');
   console.log('====================================================');
+  const dbPath = resolveDefaultDbPath();
   console.log(`Identificador alvo: ${identifier}`);
-  console.log(`Caminho do Banco:   ${config.dbPath}`);
+  console.log(`Caminho do Banco:   ${dbPath}`);
   console.log('----------------------------------------------------');
 
   try {
-    const sqlite = new Database(config.dbPath);
+    const sqlite = new Database(dbPath);
     const db = drizzle(sqlite, { schema });
+
+    const migrationsFolder = path.resolve(import.meta.dirname ?? '.', '../../drizzle');
+    if (fs.existsSync(migrationsFolder)) {
+      migrate(db, { migrationsFolder });
+      ensureDefaults(sqlite);
+    }
 
     const result = promoteAdminAccount(db, {
       identifier,

@@ -19,9 +19,12 @@ packages/web/src/components/layout/MainContent.tsx
 packages/web/src/components/layout/MemberSidebar.tsx
 packages/web/src/components/layout/MobileDmsScreen.tsx
 packages/web/src/components/layout/MobileMembersScreen.tsx
+packages/web/src/components/modals/ReportMessageModal.tsx
 packages/web/src/components/modals/ReportProductModal.tsx
+packages/web/src/components/modals/ReportSpaceModal.tsx
 packages/web/src/components/modals/SellerApplyModal.tsx
 packages/web/src/components/modals/instanceSettingsPanels/AdminWinksPanel.tsx
+packages/web/src/components/modals/instanceSettingsPanels/SecurityPanel.tsx
 packages/web/src/components/modals/instanceSettingsPanels/WinkPreviewModal.tsx
 packages/web/src/components/modals/instanceSettingsPanels/WinkUploadModal.tsx
 packages/web/src/components/modals/settingsPanels/ChatPanel.tsx

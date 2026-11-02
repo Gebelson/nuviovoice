@@ -93,8 +93,8 @@ describe('promoteAdminAccount CLI tool', () => {
     // Verify audit log
     const auditLogs = db.select().from(schema.securityAuditLogs).all();
     expect(auditLogs.length).toBe(1);
-    expect(auditLogs[0].action).toBe('admin_promotion');
-    expect(auditLogs[0].resourceId).toBe('usr_gebelson_123');
+    expect(auditLogs[0]!.action).toBe('admin_promotion');
+    expect(auditLogs[0]!.resourceId).toBe('usr_gebelson_123');
   });
 
   it('is idempotent if the user is already an admin', () => {

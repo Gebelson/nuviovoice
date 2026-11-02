@@ -2473,6 +2473,22 @@ export interface SafetyReportEvidence {
   createdAt: number;
 }
 
+export interface EvidenceVaultItem {
+  id: string;
+  caseId?: string | null;
+  reportId?: string | null;
+  evidenceType: string;
+  collectedBy?: string;
+  source?: string;
+  hashSha256: string;
+  payloadEncrypted?: string;
+  metadata?: string;
+  isExtremelySensitive: boolean | number;
+  custodyLog?: string | any[];
+  restrictedNotice?: string;
+  createdAt: number;
+}
+
 export interface SafetyReport {
   id: string;
   protocol: string;
@@ -2494,6 +2510,17 @@ export interface SafetyReport {
   updatedAt: number;
 }
 
+export type SecurityCaseStatus =
+  | 'received'
+  | 'triaged'
+  | 'in_analysis'
+  | 'under_investigation'
+  | 'awaiting_info'
+  | 'pending_info'
+  | 'forwarded_authorities'
+  | 'resolved'
+  | 'archived';
+
 export interface SecurityCase {
   id: string;
   protocol: string;
@@ -2501,7 +2528,7 @@ export interface SecurityCase {
   title: string;
   category: string;
   priority: SafetyReportPriority;
-  status: 'received' | 'triaged' | 'in_analysis' | 'awaiting_info' | 'forwarded_authorities' | 'resolved' | 'archived';
+  status: SecurityCaseStatus;
   subjectUserId?: string | null;
   subjectUsername?: string | null;
   subjectSpaceId?: string | null;
@@ -2590,4 +2617,12 @@ export interface SecurityOverviewMetrics {
   activeAlerts: number;
   authorityRequests: number;
   preservationOrders: number;
+  pendingReportsCount?: number;
+  openCasesCount?: number;
+  activeAlertsCount?: number;
+  authorityRequestsCount?: number;
+  suspendedUsersCount?: number;
+  totalEvidenceItems?: number;
+  recentAuditCount?: number;
+  lastIncidentTimestamp?: number | null;
 }

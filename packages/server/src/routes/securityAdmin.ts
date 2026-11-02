@@ -12,7 +12,7 @@ import type {
   AuthorityRequestStatus,
   SecurityAlertStatus,
   SecurityOverviewMetrics,
-} from '@concord/shared/src/types.js';
+} from '@concord/shared';
 
 function nextId(): string {
   try {
@@ -72,7 +72,28 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
         .where(sql`${schema.securityAuditLogs.createdAt} >= ${oneDayAgo}`)
         .get();
 
+      const urgentReportsRow = db
+        .select({ count: sql<number>`count(*)` })
+        .from(schema.safetyReports)
+        .where(eq(schema.safetyReports.priority, 'urgent'))
+        .get();
+
+      const reportedSpacesRow = db
+        .select({ count: sql<number>`count(distinct ${schema.safetyReports.spaceId})` })
+        .from(schema.safetyReports)
+        .where(sql`${schema.safetyReports.spaceId} IS NOT NULL`)
+        .get();
+
       const metrics: SecurityOverviewMetrics = {
+        pendingReports: pendingReportsRow?.count ?? 0,
+        urgentReports: urgentReportsRow?.count ?? 0,
+        activeCases: openCasesRow?.count ?? 0,
+        completedCases: 0,
+        suspendedAccounts: suspendedUsersRow?.count ?? 0,
+        reportedSpaces: reportedSpacesRow?.count ?? 0,
+        activeAlerts: activeAlertsRow?.count ?? 0,
+        authorityRequests: authorityReqsRow?.count ?? 0,
+        preservationOrders: authorityReqsRow?.count ?? 0,
         pendingReportsCount: pendingReportsRow?.count ?? 0,
         openCasesCount: openCasesRow?.count ?? 0,
         activeAlertsCount: activeAlertsRow?.count ?? 0,
@@ -88,15 +109,12 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // ─── Reports ───────────────────────────────────────────────────────────────
-  app.get(
+  app.get<{
+    Querystring: { status?: SafetyReportStatus; priority?: string; category?: string };
+  }>(
     '/api/admin/security/reports',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Querystring: { status?: SafetyReportStatus; priority?: string; category?: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const db = getDb();
       const { status, priority, category } = request.query || {};
 
@@ -115,10 +133,10 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.get(
+  app.get<{ Params: { id: string } }>(
     '/api/admin/security/reports/:id',
     { preHandler: [authenticate, requireAdmin] },
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request, reply) => {
       const db = getDb();
       const report = db
         .select()
@@ -142,21 +160,18 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.patch(
+  app.patch<{
+    Params: { id: string };
+    Body: {
+      status?: SafetyReportStatus;
+      assignedAdminId?: string;
+      resolutionNotes?: string;
+      justification: string;
+    };
+  }>(
     '/api/admin/security/reports/:id',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          status?: SafetyReportStatus;
-          assignedAdminId?: string;
-          resolutionNotes?: string;
-          justification: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { status, assignedAdminId, resolutionNotes, justification } = request.body || {};
 
       if (!justification || justification.trim().length < 5) {
@@ -223,25 +238,22 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post(
+  app.post<{
+    Body: {
+      title: string;
+      category: string;
+      priority?: string;
+      reportId?: string;
+      subjectUserId?: string;
+      subjectUsername?: string;
+      subjectSpaceId?: string;
+      summary?: string;
+      justification: string;
+    };
+  }>(
     '/api/admin/security/cases',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Body: {
-          title: string;
-          category: string;
-          priority?: string;
-          reportId?: string;
-          subjectUserId?: string;
-          subjectUsername?: string;
-          subjectSpaceId?: string;
-          summary?: string;
-          justification: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const {
         title,
         category,
@@ -303,22 +315,19 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.patch(
+  app.patch<{
+    Params: { id: string };
+    Body: {
+      status?: SecurityCaseStatus;
+      summary?: string;
+      resolution?: string;
+      assignedTo?: string;
+      justification: string;
+    };
+  }>(
     '/api/admin/security/cases/:id',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          status?: SecurityCaseStatus;
-          summary?: string;
-          resolution?: string;
-          assignedTo?: string;
-          justification: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { status, summary, resolution, assignedTo, justification } = request.body || {};
 
       if (!justification) {
@@ -382,27 +391,24 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post(
+  app.post<{
+    Body: {
+      protocolNumber: string;
+      requestingBody: string;
+      authorityName: string;
+      authorityContact: string;
+      requestType: string;
+      legalBasis: string;
+      targetUserId?: string;
+      targetSpaceId?: string;
+      preservationDays?: number;
+      notes?: string;
+      justification: string;
+    };
+  }>(
     '/api/admin/security/authorities',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Body: {
-          protocolNumber: string;
-          requestingBody: string;
-          authorityName: string;
-          authorityContact: string;
-          requestType: string;
-          legalBasis: string;
-          targetUserId?: string;
-          targetSpaceId?: string;
-          preservationDays?: number;
-          notes?: string;
-          justification: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const {
         protocolNumber,
         requestingBody,
@@ -466,20 +472,17 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.patch(
+  app.patch<{
+    Params: { id: string };
+    Body: {
+      status?: AuthorityRequestStatus;
+      notes?: string;
+      justification: string;
+    };
+  }>(
     '/api/admin/security/authorities/:id',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          status?: AuthorityRequestStatus;
-          notes?: string;
-          justification: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { status, notes, justification } = request.body || {};
       if (!justification) {
         return reply.code(400).send({ error: 'Justification is required', code: 'validation_failed', statusCode: 400 });
@@ -547,24 +550,21 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post(
+  app.post<{
+    Body: {
+      caseId?: string;
+      reportId?: string;
+      evidenceType: string;
+      source: string;
+      payload: string;
+      metadata: string;
+      isExtremelySensitive?: boolean;
+      justification: string;
+    };
+  }>(
     '/api/admin/security/evidence',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Body: {
-          caseId?: string;
-          reportId?: string;
-          evidenceType: string;
-          source: string;
-          payload: string;
-          metadata: string;
-          isExtremelySensitive?: boolean;
-          justification: string;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const {
         caseId,
         reportId,
@@ -629,16 +629,13 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.get(
+  app.get<{
+    Params: { id: string };
+    Querystring: { justification?: string };
+  }>(
     '/api/admin/security/evidence/:id',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Querystring: { justification?: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { justification } = request.query || {};
       if (!justification || justification.trim().length < 5) {
         return reply.code(400).send({
@@ -718,13 +715,10 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // ─── Behavioral Security Alerts ───────────────────────────────────────────
-  app.get(
+  app.get<{ Querystring: { status?: SecurityAlertStatus } }>(
     '/api/admin/security/alerts',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{ Querystring: { status?: SecurityAlertStatus } }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const db = getDb();
       const { status } = request.query || {};
 
@@ -737,16 +731,13 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.patch(
+  app.patch<{
+    Params: { id: string };
+    Body: { status: SecurityAlertStatus; justification: string };
+  }>(
     '/api/admin/security/alerts/:id',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { status: SecurityAlertStatus; justification: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { status, justification } = request.body || {};
       if (!status || !justification) {
         return reply.code(400).send({
@@ -787,13 +778,10 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // ─── Security Audit Log Query ──────────────────────────────────────────────
-  app.get(
+  app.get<{ Querystring: { limit?: string; offset?: string } }>(
     '/api/admin/security/audit',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const db = getDb();
       const limit = Math.min(Number(request.query?.limit) || 50, 200);
       const offset = Number(request.query?.offset) || 0;
@@ -838,16 +826,13 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post(
+  app.post<{
+    Params: { id: string };
+    Body: { justification: string; caseId?: string };
+  }>(
     '/api/admin/security/users/:id/suspend',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { justification: string; caseId?: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { justification, caseId } = request.body || {};
       if (!justification || justification.trim().length < 5) {
         return reply.code(400).send({
@@ -891,16 +876,13 @@ export async function securityAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  app.post(
+  app.post<{
+    Params: { id: string };
+    Body: { justification: string };
+  }>(
     '/api/admin/security/users/:id/reactivate',
     { preHandler: [authenticate, requireAdmin] },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: { justification: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request, reply) => {
       const { justification } = request.body || {};
       if (!justification) {
         return reply.code(400).send({

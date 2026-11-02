@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../../api';
+import { useFormatters } from '../../../i18n/formatters';
 import type {
   SecurityOverviewMetrics,
   SafetyReport,
@@ -24,6 +25,7 @@ type SecurityTab =
   | 'policies';
 
 export function SecurityPanel() {
+  const { formatDateTime, formatMediumDate } = useFormatters();
   const [activeTab, setActiveTab] = useState<SecurityTab>('overview');
   const [metrics, setMetrics] = useState<SecurityOverviewMetrics | null>(null);
   const [loading, setLoading] = useState(false);
@@ -592,7 +594,7 @@ export function SecurityPanel() {
                         {al.severity.toUpperCase()}
                       </span>
                       <span className="text-[10px] text-txt-tertiary">
-                        {new Date(al.createdAt).toLocaleString()}
+                        {formatDateTime(al.createdAt)}
                       </span>
                     </div>
                     <div className="text-xs text-txt-secondary">
@@ -755,7 +757,7 @@ export function SecurityPanel() {
                   </div>
                   {req.preservationUntil && (
                     <div className="text-[11px] text-amber-300">
-                      Guarda legal obrigatória até: {new Date(req.preservationUntil).toLocaleDateString()}
+                      Guarda legal obrigatória até: {formatMediumDate(req.preservationUntil)}
                     </div>
                   )}
                   {req.notes && <div className="text-txt-tertiary italic">Notas: {req.notes}</div>}
@@ -893,7 +895,7 @@ export function SecurityPanel() {
                   </div>
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-[11px] text-txt-tertiary">
-                      Depositado em {new Date(item.createdAt).toLocaleString()}
+                      Depositado em {formatDateTime(item.createdAt)}
                     </span>
                     <button
                       onClick={() =>
@@ -966,7 +968,7 @@ export function SecurityPanel() {
                 >
                   <div className="flex items-center justify-between text-txt-tertiary">
                     <span>
-                      {new Date(log.createdAt).toLocaleString()} • @{log.adminUsername || log.adminId}
+                      {formatDateTime(log.createdAt)} • @{log.adminUsername || log.adminId}
                     </span>
                     <span className="text-accent-mint">{log.action}</span>
                   </div>
