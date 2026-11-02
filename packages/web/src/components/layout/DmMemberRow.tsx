@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { User } from '@concord/shared';
 import { ProfileAvatar } from '../ui/ProfileAvatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { Tooltip } from '../ui/Tooltip';
 import { parseFederatedUsername, isFederationGlobeApplicable } from '../../utils/identity';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
@@ -206,6 +207,13 @@ export function DmMemberRow({
           >
             {displayName}
           </span>
+          {canonical.verification?.status === 'verified' && (
+            <VerificationBadge
+              category={canonical.verification.category}
+              status={canonical.verification.status}
+              size="xs"
+            />
+          )}
           {showGlobe && (
             <Tooltip content={canonical.username} position="top">
               <span data-federation-globe className="inline-flex">

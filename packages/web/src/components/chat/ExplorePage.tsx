@@ -21,6 +21,7 @@ import { SpaceCard } from './SpaceCard';
 import { OuterSpaceSection } from './OuterSpaceSection';
 import { ConnectionChips } from './ConnectionChips';
 import { InstanceDiscoveryHint } from './InstanceDiscoveryHint';
+import { CheckCircleIcon } from '../ui/VerificationIcons';
 
 type ExploreSortOption = 'popular' | 'relevant' | 'recent';
 
@@ -54,6 +55,8 @@ export function ExplorePage() {
   const setSearchQuery = useExploreStore((s) => s.setSearchQuery);
   const setSelectedCategory = useExploreStore((s) => s.setSelectedCategory);
   const setSortBy = useExploreStore((s) => s.setSortBy);
+  const verifiedOnly = useExploreStore((s) => s.verifiedOnly);
+  const setVerifiedOnly = useExploreStore((s) => s.setVerifiedOnly);
   const fetchSpaces = useExploreStore((s) => s.fetchSpaces);
   const fetchMyRequests = useExploreStore((s) => s.fetchMyRequests);
   const joinPublicSpace = useExploreStore((s) => s.publicJoin);
@@ -352,6 +355,20 @@ export function ExplorePage() {
                   {t(`spaces:explore.categories.${cat}`)}
                 </button>
               ))}
+              <div className="h-4 w-px bg-white/10 mx-1 shrink-0" />
+              <button
+                type="button"
+                onClick={() => setVerifiedOnly(!verifiedOnly)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${
+                  verifiedOnly
+                    ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
+                    : 'bg-surface-elevated border-transparent text-txt-secondary hover:text-txt-primary'
+                }`}
+                aria-pressed={verifiedOnly}
+              >
+                <CheckCircleIcon size={12} className={verifiedOnly ? 'text-sky-400' : 'text-txt-tertiary'} />
+                {t('spaces:explore.filterVerified', { defaultValue: 'Apenas verificados' })}
+              </button>
             </div>
 
             {/* Connections that are out, with the way back in; nothing when all are healthy */}

@@ -201,6 +201,7 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
       sort?: 'popular' | 'relevant' | 'recent';
       limit?: string;
       offset?: string;
+      verifiedOnly?: string;
     };
   }>('/api/spaces/explore', {
     preHandler: authenticate,
@@ -218,6 +219,7 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
     const sort = request.query.sort ?? 'popular';
     const limit = Math.min(Math.max(parseInt(request.query.limit ?? '50', 10) || 50, 1), 100);
     const offset = Math.max(parseInt(request.query.offset ?? '0', 10) || 0, 0);
+    const verifiedOnly = request.query.verifiedOnly === 'true' || request.query.verifiedOnly === '1';
 
     const myMemberships = db.select({ spaceId: schema.spaceMembers.spaceId })
       .from(schema.spaceMembers)
@@ -241,6 +243,7 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
       SELECT s.id, s.name, s.type, s.slug, s.icon, s.banner, s.avatar_color,
              s.description, s.full_description, s.category, s.tags, s.rules,
              s.publication_status, s.published_at, s.visibility, s.created_at,
+             s.verification_status, s.verification_category,
              COUNT(sm.user_id) as member_count
       FROM spaces s
       LEFT JOIN space_members sm ON sm.space_id = s.id
@@ -292,6 +295,8 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
       visibility: string;
       created_at: number;
       member_count: number;
+      verification_status?: string | null;
+      verification_category?: string | null;
     }[];
 
     const spaces: ExploreSpace[] = rows.map(r => ({
@@ -311,6 +316,13 @@ export async function exploreRoutes(app: FastifyInstance): Promise<void> {
       publishedAt: r.published_at,
       visibility: r.visibility as ExploreSpace['visibility'],
       memberCount: r.member_count,
+      verification: r.verification_status === 'verified'
+        ? {
+            status: 'verified',
+            category: (r.verification_category as any) || 'space',
+            verifiedAt: r.published_at ?? r.created_at,
+          }
+        : null,
       createdAt: r.created_at,
       joined: mySpaceIds.has(r.id),
     }));

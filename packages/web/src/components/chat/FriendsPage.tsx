@@ -11,6 +11,7 @@ import { useInstanceStore } from '../../stores/instanceStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useFederationStore } from '../../stores/federationStore';
 import { Avatar } from '../ui/Avatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { MemberListToggleButton } from '../layout/MemberListToggleButton';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
@@ -820,7 +821,16 @@ function UserDiscoverCard({
       {/* Content */}
       <div className="px-4 pt-1.5 pb-3.5 flex flex-col flex-1">
         <button onClick={handleOpenProfile} className="text-left group">
-          <h3 className="text-[14px] font-bold text-txt-primary truncate group-hover:underline">{displayName}</h3>
+          <div className="flex items-center gap-1 min-w-0">
+            <h3 className="text-[14px] font-bold text-txt-primary truncate group-hover:underline">{displayName}</h3>
+            {user.verification?.status === 'verified' && (
+              <VerificationBadge
+                category={user.verification.category}
+                status={user.verification.status}
+                size="xs"
+              />
+            )}
+          </div>
           <p className="text-[12px] text-txt-tertiary truncate">@{user.username}</p>
         </button>
 
@@ -927,6 +937,13 @@ function FriendItem({ friend, onRemove, onDm }: { friend: TaggedFriend, onRemove
         <div className="flex flex-col leading-tight">
           <div className="flex items-center gap-1.5">
             <span className="text-txt-primary font-semibold text-[15px]">{friendDisplayName}</span>
+            {canonical.verification?.status === 'verified' && (
+              <VerificationBadge
+                category={canonical.verification.category}
+                status={canonical.verification.status}
+                size="xs"
+              />
+            )}
             <span className="text-txt-tertiary text-[13px] opacity-60 group-hover:opacity-100 transition-opacity font-medium">@{friend.username}</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -984,6 +1001,13 @@ function RequestItem({ request, type, onAccept, onDecline, onCancel }: {
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5">
             <span className="text-txt-primary font-bold text-sm">{reqDisplayName}</span>
+            {user.verification?.status === 'verified' && (
+              <VerificationBadge
+                category={user.verification.category}
+                status={user.verification.status}
+                size="xs"
+              />
+            )}
             <span className="text-txt-tertiary text-xs">@{user.username}</span>
           </div>
           <div className="flex items-center gap-1.5">

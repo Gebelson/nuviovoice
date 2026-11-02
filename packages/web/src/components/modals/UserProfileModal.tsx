@@ -7,6 +7,7 @@ import { describeError } from '../../i18n/errors';
 import { useNavigate } from 'react-router-dom';
 import type { User } from '@concord/shared';
 import { Avatar } from '../ui/Avatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { Username } from '../ui/Username';
 import { ProfileBio } from '../ui/ProfileBio';
 import { useUIStore, type ProfileMemberContext } from '../../stores/uiStore';
@@ -269,7 +270,16 @@ export function UserProfileModal() {
 
           <div className="mb-3">
             <ProfileSpaceNickname member={memberContext} />
-            <span className="text-[20px] font-bold leading-tight">{displayName}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[20px] font-bold leading-tight">{displayName}</span>
+              {user.verification?.status === 'verified' && (
+                <VerificationBadge
+                  category={user.verification.category}
+                  status={user.verification.status}
+                  size="md"
+                />
+              )}
+            </div>
             <div className="text-[14px] text-txt-tertiary mt-0.5">
               <Username username={user.username} showAt className="text-[14px] text-txt-tertiary" />
             </div>

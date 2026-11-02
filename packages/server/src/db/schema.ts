@@ -31,6 +31,8 @@ export const users = sqliteTable('users', {
   discoverable: integer('discoverable').default(1),
   friendDiscoveryVisibility: text('friend_discovery_visibility').notNull().default('everyone'),
   receiveWinks: integer('receive_winks').notNull().default(1),
+  verificationStatus: text('verification_status').notNull().default('none'),
+  verificationCategory: text('verification_category'),
   profileUpdatedAt: integer('profile_updated_at'),
   passwordChangedAt: integer('password_changed_at'),
   showActivity: integer('show_activity').notNull().default(1),
@@ -87,6 +89,8 @@ export const spaces = sqliteTable('spaces', {
   rules: text('rules'),
   publicationStatus: text('publication_status').notNull().default('draft'),
   publishedAt: integer('published_at'),
+  verificationStatus: text('verification_status').notNull().default('none'),
+  verificationCategory: text('verification_category'),
   createdAt: integer('created_at').notNull(),
 }, (table) => ({
   typePubIdx: index('idx_spaces_type_pub_status').on(table.type, table.publicationStatus),
@@ -1416,4 +1420,74 @@ export const securityAuditLogs = sqliteTable('security_audit_logs', {
   adminIdx: index('idx_security_audit_admin').on(table.adminId),
   actionIdx: index('idx_security_audit_action').on(table.action),
   createdIdx: index('idx_security_audit_created').on(table.createdAt),
+}));
+
+
+export const entityVerifications = sqliteTable('entity_verifications', {
+  id: text('id').primaryKey(),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  category: text('category').notNull(),
+  status: text('status').notNull().default('verified'),
+  method: text('method').notNull().default('manual_review'),
+  publicLabel: text('public_label'),
+  approvedByAdminId: text('approved_by_admin_id').references(() => users.id),
+  approvedAt: integer('approved_at').notNull(),
+  revokedByAdminId: text('revoked_by_admin_id').references(() => users.id),
+  revokedAt: integer('revoked_at'),
+  revokedReason: text('revoked_reason'),
+  version: integer('version').notNull().default(1),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  targetIdx: index('idx_entity_verif_target').on(table.targetType, table.targetId),
+  statusIdx: index('idx_entity_verif_status').on(table.status),
+  categoryIdx: index('idx_entity_verif_category').on(table.category),
+}));
+
+export const verificationRequests = sqliteTable('verification_requests', {
+  id: text('id').primaryKey(),
+  requesterUserId: text('requester_user_id').notNull().references(() => users.id),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  category: text('category').notNull(),
+  status: text('status').notNull().default('pending'),
+  publicName: text('public_name').notNull(),
+  activityDescription: text('activity_description'),
+  officialWebsite: text('official_website'),
+  socialLinks: text('social_links').default('[]'),
+  professionalLinks: text('professional_links').default('[]'),
+  domainToVerify: text('domain_to_verify'),
+  domainToken: text('domain_token'),
+  domainVerified: integer('domain_verified').notNull().default(0),
+  evidenceNotes: text('evidence_notes'),
+  rejectionReason: text('rejection_reason'),
+  infoRequestNotes: text('info_request_notes'),
+  reviewedByAdminId: text('reviewed_by_admin_id').references(() => users.id),
+  reviewedAt: integer('reviewed_at'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  statusIdx: index('idx_verif_req_status').on(table.status),
+  requesterIdx: index('idx_verif_req_requester').on(table.requesterUserId),
+  targetIdx: index('idx_verif_req_target').on(table.targetType, table.targetId),
+  createdIdx: index('idx_verif_req_created').on(table.createdAt),
+}));
+
+export const verificationAuditLogs = sqliteTable('verification_audit_logs', {
+  id: text('id').primaryKey(),
+  action: text('action').notNull(),
+  adminId: text('admin_id'),
+  adminUsername: text('admin_username'),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  requestId: text('request_id'),
+  category: text('category').notNull(),
+  justification: text('justification').notNull(),
+  metadata: text('metadata').default('{}'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  targetIdx: index('idx_verif_audit_target').on(table.targetType, table.targetId),
+  adminIdx: index('idx_verif_audit_admin').on(table.adminId),
+  createdIdx: index('idx_verif_audit_created').on(table.createdAt),
 }));

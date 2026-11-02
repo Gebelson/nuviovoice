@@ -16,6 +16,7 @@ import { OverviewPanel, MembersPanel, RolesPanel, BansPanel, AuditLogsPanel, Int
 import { useVisibilityOptions } from './spaceSettingsPanels/spaceOptions';
 import { ListInDirectoryConfirm } from './DirectoryConfirmations';
 import { isPublicSpace, type SpaceVisibility, type JoinRequest, type InstanceStreamingLimits } from '@concord/shared';
+import { SpaceVerificationSection } from './spaceSettingsPanels/SpaceVerificationSection';
 
 const DESCRIPTION_MAX_LENGTH = 200;
 
@@ -460,6 +461,8 @@ export function DiscoveryPanel({ spaceId }: { spaceId: string }) {
       {saveError && (
         <div className="p-2 bg-accent-rose/10 border border-accent-rose/30 rounded text-txt-danger text-sm">{saveError}</div>
       )}
+      <SpaceVerificationSection spaceId={spaceId} />
+
       {/* Pending Join Requests — only shown when visibility is 'request' */}
       {(visibility === 'request' || (space.visibility as SpaceVisibility) === 'request') && (
         <JoinRequestsSection spaceId={spaceId} />

@@ -26,7 +26,9 @@
     "./src/mentions": "./src/mentions.ts",
     "./src/mentions.js": "./src/mentions.ts",
     "./src/winks": "./src/winks.ts",
-    "./src/winks.js": "./src/winks.ts"
+    "./src/winks.js": "./src/winks.ts",
+    "./src/verifications": "./src/verifications.ts",
+    "./src/verifications.js": "./src/verifications.ts"
   },
   "scripts": {
     "build": "tsc",

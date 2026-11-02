@@ -53,9 +53,15 @@ vi.mock('../../stores/exploreStore', async () => {
     totalAll: number;
     error: ExploreFetchFailure | null;
     unansweredOrigins: string[];
+    selectedCategory: string;
+    sortBy: 'popular' | 'relevant' | 'recent';
+    verifiedOnly: boolean;
     fetchSpaces: typeof fetchSpaces;
     fetchMyRequests: typeof fetchMyRequests;
     setSearchQuery: (q: string) => void;
+    setSelectedCategory: (cat: string) => void;
+    setSortBy: (sort: 'popular' | 'relevant' | 'recent') => void;
+    setVerifiedOnly: (val: boolean) => void;
   }>((set) => ({
     spaces: [] as { id: string; name: string; _instanceOrigin: string; joined: boolean }[],
     myRequests: [],
@@ -66,9 +72,15 @@ vi.mock('../../stores/exploreStore', async () => {
     totalAll: 0,
     error: null,
     unansweredOrigins: [],
+    selectedCategory: 'all',
+    sortBy: 'popular',
+    verifiedOnly: false,
     fetchSpaces,
     fetchMyRequests,
     setSearchQuery: (q) => set({ searchQuery: q }),
+    setSelectedCategory: (cat) => set({ selectedCategory: cat }),
+    setSortBy: (sort) => set({ sortBy: sort }),
+    setVerifiedOnly: (val) => set({ verifiedOnly: val }),
   }));
   return { useExploreStore };
 });
@@ -137,7 +149,7 @@ function renderPage() {
 describe('ExplorePage search and the Outer Space gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useExploreStore.setState({ spaces: [], searchQuery: '', resultsQuery: '', error: null, unansweredOrigins: [] });
+    useExploreStore.setState({ spaces: [], searchQuery: '', resultsQuery: '', selectedCategory: 'all', verifiedOnly: false, error: null, unansweredOrigins: [] });
     // The hint under the chips reads this store directly. Its resting state is
     // a member whose settings have not arrived, which is the hint's silent row.
     useSettingsStore.setState({ isAdmin: false, streamingLimits: null });
@@ -342,7 +354,7 @@ describe('ExplorePage search and the Outer Space gate', () => {
 describe('ExplorePage connection chips', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useExploreStore.setState({ spaces: [], searchQuery: '', resultsQuery: '', error: null, unansweredOrigins: [] });
+    useExploreStore.setState({ spaces: [], searchQuery: '', resultsQuery: '', selectedCategory: 'all', verifiedOnly: false, error: null, unansweredOrigins: [] });
     useInstanceStore.setState({ registry: new Map(), instances: [] });
   });
 
@@ -415,7 +427,7 @@ describe('ExplorePage keeps an expired origin out of Outer Space through a faile
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useExploreStore.setState({ spaces: [], searchQuery: '', resultsQuery: '', error: null, unansweredOrigins: [] });
+    useExploreStore.setState({ spaces: [], searchQuery: '', resultsQuery: '', selectedCategory: 'all', verifiedOnly: false, error: null, unansweredOrigins: [] });
     useDirectoryStore.setState({ entries: [zwissEntry, farEntry], status: 'ok' });
   });
 

@@ -246,6 +246,41 @@
       "when": 1792457459439,
       "tag": "0034_nosy_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1792460000000,
+      "tag": "0035_message_deletion_and_moderation",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1792470000000,
+      "tag": "0036_bot_library_and_directory",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1792480000000,
+      "tag": "0037_friend_discovery_and_winks_privacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1792490000000,
+      "tag": "0038_security_center_and_authorities",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "6",
+      "when": 1792500000000,
+      "tag": "0039_verifications_system",
+      "breakpoints": true
     }
   ]
 }

@@ -1109,4 +1109,98 @@ export function migrateExistingSpacesSeparation(
     CREATE INDEX IF NOT EXISTS idx_security_audit_created ON security_audit_logs(created_at);
   `);
 
+
+  // 17. Ensure verification columns and tables
+  try {
+    const userCols = db.prepare('PRAGMA table_info(users)').all() as Array<{ name: string }>;
+    if (!userCols.some((c) => c.name === 'verification_status')) {
+      db.prepare("ALTER TABLE users ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'none'").run();
+    }
+    if (!userCols.some((c) => c.name === 'verification_category')) {
+      db.prepare('ALTER TABLE users ADD COLUMN verification_category TEXT').run();
+    }
+  } catch (err) {
+    console.warn('[defaults] Verification users columns check:', err);
+  }
+
+  try {
+    const spaceCols = db.prepare('PRAGMA table_info(spaces)').all() as Array<{ name: string }>;
+    if (!spaceCols.some((c) => c.name === 'verification_status')) {
+      db.prepare("ALTER TABLE spaces ADD COLUMN verification_status TEXT NOT NULL DEFAULT 'none'").run();
+    }
+    if (!spaceCols.some((c) => c.name === 'verification_category')) {
+      db.prepare('ALTER TABLE spaces ADD COLUMN verification_category TEXT').run();
+    }
+  } catch (err) {
+    console.warn('[defaults] Verification spaces columns check:', err);
+  }
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS entity_verifications (
+      id TEXT PRIMARY KEY NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'verified',
+      method TEXT NOT NULL DEFAULT 'manual_review',
+      public_label TEXT,
+      approved_by_admin_id TEXT REFERENCES users(id),
+      approved_at INTEGER NOT NULL,
+      revoked_by_admin_id TEXT REFERENCES users(id),
+      revoked_at INTEGER,
+      revoked_reason TEXT,
+      version INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_entity_verif_target ON entity_verifications(target_type, target_id);
+    CREATE INDEX IF NOT EXISTS idx_entity_verif_status ON entity_verifications(status);
+    CREATE INDEX IF NOT EXISTS idx_entity_verif_category ON entity_verifications(category);
+
+    CREATE TABLE IF NOT EXISTS verification_requests (
+      id TEXT PRIMARY KEY NOT NULL,
+      requester_user_id TEXT NOT NULL REFERENCES users(id),
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      category TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      public_name TEXT NOT NULL,
+      activity_description TEXT,
+      official_website TEXT,
+      social_links TEXT DEFAULT '[]',
+      professional_links TEXT DEFAULT '[]',
+      domain_to_verify TEXT,
+      domain_token TEXT,
+      domain_verified INTEGER NOT NULL DEFAULT 0,
+      evidence_notes TEXT,
+      rejection_reason TEXT,
+      info_request_notes TEXT,
+      reviewed_by_admin_id TEXT REFERENCES users(id),
+      reviewed_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_verif_req_status ON verification_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_verif_req_requester ON verification_requests(requester_user_id);
+    CREATE INDEX IF NOT EXISTS idx_verif_req_target ON verification_requests(target_type, target_id);
+    CREATE INDEX IF NOT EXISTS idx_verif_req_created ON verification_requests(created_at);
+
+    CREATE TABLE IF NOT EXISTS verification_audit_logs (
+      id TEXT PRIMARY KEY NOT NULL,
+      action TEXT NOT NULL,
+      admin_id TEXT,
+      admin_username TEXT,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      request_id TEXT,
+      category TEXT NOT NULL,
+      justification TEXT NOT NULL,
+      metadata TEXT DEFAULT '{}',
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_verif_audit_target ON verification_audit_logs(target_type, target_id);
+    CREATE INDEX IF NOT EXISTS idx_verif_audit_admin ON verification_audit_logs(admin_id);
+    CREATE INDEX IF NOT EXISTS idx_verif_audit_created ON verification_audit_logs(created_at);
+  `);
+
 }

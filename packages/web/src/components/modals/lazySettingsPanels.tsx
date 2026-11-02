@@ -60,6 +60,7 @@ export const StoragePanel = lazyPanel(() => import('./instanceSettingsPanels/Sto
 export const UsersPanel = lazyPanel(() => import('./instanceSettingsPanels/UsersPanel'), (m) => m.UsersPanel);
 export const UpdatesPanel = lazyPanel(() => import('./instanceSettingsPanels/UpdatesPanel'), (m) => m.UpdatesPanel);
 export const TelemetryPanel = lazyPanel(() => import('./instanceSettingsPanels/TelemetryPanel'), (m) => m.TelemetryPanel);
+export const VerificationsPanel = lazyPanel(() => import('./instanceSettingsPanels/VerificationsPanel'), (m) => m.VerificationsPanel);
 
 export const OverviewPanel = lazyPanel(() => import('./spaceSettingsPanels/OverviewPanel'), (m) => m.OverviewPanel);
 export const MembersPanel = lazyPanel(() => import('./spaceSettingsPanels/MembersPanel'), (m) => m.MembersPanel);

@@ -1,4 +1,6 @@
 import type { ErrorCode, ErrorDetails } from './errors.js';
+import type { VerificationInfo } from './verifications.js';
+export * from './verifications.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -28,6 +30,7 @@ export interface User {
   discoverable?: boolean;
   friendDiscoveryVisibility?: FriendDiscoveryVisibility;
   receiveWinks?: boolean;
+  verification?: VerificationInfo | null;
   profileUpdatedAt?: number;
   createdAt: number;
   homeInstance: string | null;
@@ -189,6 +192,7 @@ export interface Space {
   rules?: string | null;
   publicationStatus?: PublicationStatus;
   publishedAt?: number | null;
+  verification?: VerificationInfo | null;
   createdAt: number;
 }
 
@@ -228,6 +232,7 @@ export interface ExploreSpace {
   publishedAt?: number | null;
   visibility: SpaceVisibility;
   memberCount: number;
+  verification?: VerificationInfo | null;
   createdAt: number;
   joined?: boolean;
 }
@@ -1338,6 +1343,7 @@ export interface DiscoverUser {
   status: UserStatus;
   customStatus: string | null;
   createdAt: number;
+  verification?: VerificationInfo | null;
   homeInstance: string | null;
   homeUserId: string | null;
   mutualFriendCount: number;

@@ -12,6 +12,7 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 import { InlineMessageText } from './InlineMessageText';
 import { Avatar } from '../ui/Avatar';
 import { ProfileAvatar } from '../ui/ProfileAvatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { menuPositionFor, useContextMenuStore } from '../../stores/contextMenuStore';
 import { buildMessageMenuItems } from './messageMenuItems';
 import { useAuthStore, useSelfIdentity } from '../../stores/authStore';
@@ -87,13 +88,20 @@ function PendingAttachmentTile({ transferId }: PendingAttachmentTileProps) {
  */
 function PersonName({ name, person, className, style }: {
   name: string;
-  person: Pick<User, 'username'>;
+  person: Pick<User, 'username'> & { verification?: import('@concord/shared').VerificationInfo | null };
   className: string;
   style?: React.CSSProperties;
 }) {
   return (
-    <span className={`inline-flex items-center gap-0.5 ${className}`} style={style}>
-      {name}
+    <span className={`inline-flex items-center gap-1 ${className}`} style={style}>
+      <span>{name}</span>
+      {person.verification?.status === 'verified' && (
+        <VerificationBadge
+          category={person.verification.category}
+          status={person.verification.status}
+          size="xs"
+        />
+      )}
       {isFederationGlobeApplicable(person) && (
         <Tooltip content={person.username} position="top">
           <FederationGlobeIcon />

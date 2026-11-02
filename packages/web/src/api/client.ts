@@ -111,6 +111,13 @@ import type {
   SecurityAlertStatus,
   SecurityAuditLog,
   SecurityOverviewMetrics,
+  VerificationCategory,
+  VerificationStatus,
+  VerificationMethod,
+  VerificationInfo,
+  VerificationRequestData,
+  VerificationAuditLogEntry,
+  VerificationMetrics,
 } from '@concord/shared';
 import type {
   Product,
@@ -417,7 +424,7 @@ export class BackspaceApiClient {
       q?: string,
       limit?: number,
       offset?: number,
-      opts?: { category?: string; sort?: 'popular' | 'relevant' | 'recent' },
+      opts?: { category?: string; sort?: 'popular' | 'relevant' | 'recent'; verifiedOnly?: boolean },
     ) => Promise<{ spaces: ExploreSpace[]; total: number; totalAll: number; discoveryEnabled: boolean }>;
     preview: (spaceId: string) => Promise<ExploreSpace & { channels?: Array<{ id: string; name: string; type: string; topic: string | null }> }>;
     publicJoin: (spaceId: string) => Promise<SpaceWithChannelsAndMembers>;
@@ -623,6 +630,27 @@ export class BackspaceApiClient {
     suspendUser: (id: string, data: { justification: string; caseId?: string }) => Promise<{ success: boolean; userId: string; isSuspended: boolean }>;
     reactivateUser: (id: string, data: { justification: string }) => Promise<{ success: boolean; userId: string; isSuspended: boolean }>;
     getReportedSpaces: () => Promise<{ spaces: Array<{ id: string; name: string; ownerId: string; type: string; reportCount: number }> }>;
+  };
+
+  readonly verifications: {
+    getMyVerification: () => Promise<{ status: VerificationStatus; verification: VerificationInfo | null; activeRequest: VerificationRequestData | null }>;
+    createRequest: (data: { category: VerificationCategory; entityType?: 'user'; publicName: string; description: string; website?: string; socialLinks?: { platform: string; url: string }[]; domainName?: string }) => Promise<{ success: boolean; requestId: string }>;
+    getSpaceVerification: (spaceId: string) => Promise<{ status: VerificationStatus; verification: VerificationInfo | null; activeRequest: VerificationRequestData | null }>;
+    createSpaceRequest: (spaceId: string, data: { category: 'organization' | 'space'; publicName: string; description: string; website?: string; socialLinks?: { platform: string; url: string }[]; domainName?: string }) => Promise<{ success: boolean; requestId: string }>;
+    verifyDomain: (data: { domain: string; method?: 'dns_txt' | 'http_token' }) => Promise<{ success: boolean; method: string; token: string; verified: boolean; message: string }>;
+  };
+
+  readonly adminVerifications: {
+    getMetrics: () => Promise<VerificationMetrics>;
+    getRequests: (params?: { status?: string; entityType?: string; category?: string }) => Promise<{ requests: VerificationRequestData[] }>;
+    getRequest: (id: string) => Promise<{ request: VerificationRequestData }>;
+    approveRequest: (id: string, data?: { notes?: string }) => Promise<{ success: boolean; verificationId: string }>;
+    rejectRequest: (id: string, data: { reason: string; notes?: string }) => Promise<{ success: boolean }>;
+    requestInfo: (id: string, data: { requestedInfo: string }) => Promise<{ success: boolean }>;
+    revoke: (targetType: 'user' | 'space', targetId: string, data: { reason: string }) => Promise<{ success: boolean }>;
+    grantOfficial: (data: { targetUserId: string; targetUsername?: string; notes?: string }) => Promise<{ success: boolean; verificationId: string }>;
+    getAudit: (limit?: number) => Promise<{ logs: VerificationAuditLogEntry[] }>;
+    getVerifiedEntities: (entityType?: 'user' | 'space') => Promise<{ verified: Array<Record<string, unknown>> }>;
   };
 
   readonly admin: {
@@ -1056,11 +1084,12 @@ export class BackspaceApiClient {
     };
 
     this.explore = {
-      list: (q?: string, limit = 50, offset = 0, opts?: { category?: string; sort?: 'popular' | 'relevant' | 'recent' }) => {
+      list: (q?: string, limit = 50, offset = 0, opts?: { category?: string; sort?: 'popular' | 'relevant' | 'recent'; verifiedOnly?: boolean }) => {
         const params = new URLSearchParams();
         if (q) params.set('q', q);
         if (opts?.category && opts.category !== 'all') params.set('category', opts.category);
         if (opts?.sort) params.set('sort', opts.sort);
+        if (opts?.verifiedOnly) params.set('verifiedOnly', 'true');
         params.set('limit', String(limit));
         params.set('offset', String(offset));
         return request<{ spaces: ExploreSpace[]; total: number; totalAll: number; discoveryEnabled: boolean }>(
@@ -1495,6 +1524,37 @@ export class BackspaceApiClient {
       suspendUser: (id, data) => request('POST', `/admin/security/users/${encodeURIComponent(id)}/suspend`, data),
       reactivateUser: (id, data) => request('POST', `/admin/security/users/${encodeURIComponent(id)}/reactivate`, data),
       getReportedSpaces: () => request('GET', '/admin/security/spaces'),
+    };
+
+    this.verifications = {
+      getMyVerification: () => request('GET', '/verifications/me'),
+      createRequest: (data) => request('POST', '/verifications/requests', data),
+      getSpaceVerification: (spaceId) => request('GET', `/verifications/spaces/${encodeURIComponent(spaceId)}`),
+      createSpaceRequest: (spaceId, data) => request('POST', `/verifications/spaces/${encodeURIComponent(spaceId)}/requests`, data),
+      verifyDomain: (data) => request('POST', '/verifications/verify-domain', data),
+    };
+
+    this.adminVerifications = {
+      getMetrics: () => request('GET', '/admin/verifications/metrics'),
+      getRequests: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.entityType) qs.set('entityType', params.entityType);
+        if (params?.category) qs.set('category', params.category);
+        const query = qs.toString();
+        return request('GET', `/admin/verifications/requests${query ? `?${query}` : ''}`);
+      },
+      getRequest: (id) => request('GET', `/admin/verifications/requests/${encodeURIComponent(id)}`),
+      approveRequest: (id, data) => request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/approve`, data),
+      rejectRequest: (id, data) => request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/reject`, data),
+      requestInfo: (id, data) => request('POST', `/admin/verifications/requests/${encodeURIComponent(id)}/request-info`, data),
+      revoke: (targetType, targetId, data) =>
+        request('POST', `/admin/verifications/entities/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}/revoke`, data),
+      grantOfficial: (data) => request('POST', '/admin/verifications/official/grant', data),
+      getAudit: (limit) =>
+        request('GET', `/admin/verifications/audit${limit ? `?limit=${encodeURIComponent(limit)}` : ''}`),
+      getVerifiedEntities: (entityType) =>
+        request('GET', `/admin/verifications/verified${entityType ? `?entityType=${encodeURIComponent(entityType)}` : ''}`),
     };
   }
 }

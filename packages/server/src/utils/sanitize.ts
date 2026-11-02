@@ -54,6 +54,13 @@ export function sanitizeUser(row: typeof schema.users.$inferSelect, isSelf = fal
     discoverable: row.discoverable !== 0,
     friendDiscoveryVisibility: (row.friendDiscoveryVisibility as any) || 'everyone',
     receiveWinks: row.receiveWinks !== 0,
+    verification: (row.verificationStatus === 'verified')
+      ? {
+          status: 'verified',
+          category: (row.verificationCategory as any) || 'personal',
+          issuerInstance: row.homeInstance ?? null,
+        }
+      : null,
     profileUpdatedAt: row.profileUpdatedAt ?? 0,
     createdAt: row.createdAt,
     homeInstance: row.homeInstance ?? null,

@@ -9,6 +9,7 @@ import { useSpaceStore } from '../../stores/spaceStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useActivityStore, activitiesFor } from '../../stores/activityStore';
 import { Avatar } from '../ui/Avatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { ActivityCard, hasRichActivity, getActivityAccentClass } from '../ui/ActivityCard';
 import { getPrimaryActivity } from '@concord/shared/src/activities.js';
 import { parseFederatedUsername, isFederationGlobeApplicable, spaceMemberName } from '../../utils/identity';
@@ -88,6 +89,13 @@ function MemberSidebarRow({
           >
             {displayName}
           </span>
+          {canonical.verification?.status === 'verified' && (
+            <VerificationBadge
+              category={canonical.verification.category}
+              status={canonical.verification.status}
+              size="xs"
+            />
+          )}
           {(canonical.isBot || member.user?.isBot) && (
             <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-accent-primary/20 text-accent-primary text-[10px] font-bold leading-tight uppercase tracking-wider">
               BOT

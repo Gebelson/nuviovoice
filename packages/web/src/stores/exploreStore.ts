@@ -84,6 +84,7 @@ interface ExploreState {
   unansweredOrigins: string[];
   selectedCategory: string;
   sortBy: 'popular' | 'relevant' | 'recent';
+  verifiedOnly: boolean;
 
   fetchSpaces: (query?: string) => Promise<void>;
   fetchMyRequests: () => Promise<void>;
@@ -100,6 +101,7 @@ interface ExploreState {
   setSearchQuery: (q: string) => void;
   setSelectedCategory: (category: string) => void;
   setSortBy: (sort: 'popular' | 'relevant' | 'recent') => void;
+  setVerifiedOnly: (verifiedOnly: boolean) => void;
   reset: () => void;
 }
 
@@ -167,6 +169,7 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
   unansweredOrigins: [],
   selectedCategory: 'all',
   sortBy: 'popular',
+  verifiedOnly: false,
 
   fetchSpaces: async (query?: string) => {
     const seq = ++fetchSeq;
@@ -176,10 +179,11 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
 
     try {
       const connectedInstances = getConnectedInstances();
-      const { selectedCategory, sortBy } = get();
+      const { selectedCategory, sortBy, verifiedOnly } = get();
       const opts = {
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         sort: sortBy,
+        verifiedOnly: verifiedOnly ? true : undefined,
       };
 
       const fanOut: { origin: string; list: () => Promise<ExploreListResult> }[] = [
@@ -337,6 +341,10 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
   setSearchQuery: (q: string) => set({ searchQuery: q }),
   setSelectedCategory: (selectedCategory: string) => set({ selectedCategory }),
   setSortBy: (sortBy: 'popular' | 'relevant' | 'recent') => set({ sortBy }),
+  setVerifiedOnly: (verifiedOnly: boolean) => {
+    set({ verifiedOnly });
+    get().fetchSpaces(get().searchQuery);
+  },
 
   reset: () => {
     // Orphan whatever is in flight: its answer belongs to the state this
@@ -355,6 +363,7 @@ export const useExploreStore = create<ExploreState>((set, get) => ({
       unansweredOrigins: [],
       selectedCategory: 'all',
       sortBy: 'popular',
+  verifiedOnly: false,
     });
   },
 }));

@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { getSpaceGradient } from '../../utils/gradients';
 import { extractDominantColors, colorsToGradient } from '../../utils/colorExtractor';
 import { useSpaceJoin } from '../../hooks/useSpaceJoin';
+import { VerificationBadge } from '../ui/VerificationBadge';
 
 /** Length cap of the optional message on a join request; the modal and the card share it. */
 export const REQUEST_MESSAGE_MAX_LENGTH = 200;
@@ -180,7 +181,16 @@ export function SpaceCard({
       {/* Content */}
       <div className="px-4 pt-2 pb-4 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <h3 className="text-[15px] font-bold text-txt-primary truncate">{space.name}</h3>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h3 className="text-[15px] font-bold text-txt-primary truncate">{space.name}</h3>
+            {space.verification?.status === 'verified' && (
+              <VerificationBadge
+                category={space.verification.category}
+                status={space.verification.status}
+                size="sm"
+              />
+            )}
+          </div>
           {space.category && (
             <span className="text-[10px] px-2 py-0.5 rounded bg-surface-elevated text-txt-secondary font-medium flex-shrink-0">
               {t(`spaces:explore.categories.${space.category as import('@concord/shared').SpaceCategory}`)}

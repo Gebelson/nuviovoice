@@ -16,6 +16,7 @@ import { PASSWORD_MIN_LENGTH } from '@concord/shared/src/constants';
 import type { User, ChosenUserStatus, AvatarColor } from '@concord/shared';
 import { describeError } from '../../../i18n/errors';
 import { resolveUploadUrl } from '../../../utils/assetUrls';
+import { VerificationSection } from './VerificationSection';
 
 const BIO_MAX_LENGTH = 190;
 
@@ -759,6 +760,9 @@ export function AccountPanel() {
           </button>
         </form>
       </div>
+
+      {/* ── Verificação de Autenticidade ── */}
+      <VerificationSection />
 
       {/* ── Danger Zone ── */}
       <div>
