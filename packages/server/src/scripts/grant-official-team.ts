@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -112,7 +112,10 @@ export function grantOfficialTeamBadge(
       revokedReason: 'Substituído por concessão de equipe oficial Nuvio',
     })
     .where(
-      eq(schema.entityVerifications.targetType, 'user'),
+      and(
+        eq(schema.entityVerifications.targetType, 'user'),
+        eq(schema.entityVerifications.targetId, user.id)
+      )
     )
     .run();
 

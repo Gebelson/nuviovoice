@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useUIStore } from '../../stores/uiStore';
 import { useAuthStore } from '../../stores/authStore';
 import { Avatar } from '../ui/Avatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { parseFederatedUsername } from '../../utils/identity';
 import { replaceEmojiShortcodes, useEmojiShortcodeNames } from '../../utils/emojiShortcodes';
@@ -123,8 +124,11 @@ export function MobileYouScreen() {
 
         {/* User info */}
         <div className="px-4 pb-4 pt-2">
-          <h2 className="text-lg font-bold text-txt-primary">
-            {user.displayName ?? user.username}
+          <h2 className="text-lg font-bold text-txt-primary flex items-center gap-1.5">
+            <span className="truncate">{user.displayName ?? user.username}</span>
+            {user.verification?.status === 'verified' && (
+              <VerificationBadge category={user.verification.category} size="sm" />
+            )}
           </h2>
           <p className="text-sm text-txt-secondary">@{user.username}</p>
           {(() => {

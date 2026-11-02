@@ -7,11 +7,47 @@ import { authenticate, requireAdmin } from '../utils/auth.js';
 import { generateSnowflake } from '../utils/snowflake.js';
 import { isSpaceOwner, computePermissions, PermissionBits } from '../utils/permissions.js';
 import { sanitizeUser } from '../utils/sanitize.js';
+import { connectionManager } from '../ws/handler.js';
+import { collectProfileBroadcastTargetIds } from '../utils/userDeletion.js';
+import { rowToSpace } from './spaces.js';
 import type {
   VerificationCategory,
   VerificationRequestData,
   VerificationMetrics,
 } from '@concord/shared';
+
+function broadcastUserVerificationUpdated(userId: string): void {
+  try {
+    const db = getDb();
+    const updated = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
+    if (!updated) return;
+    const sanitized = sanitizeUser(updated);
+    const targets = collectProfileBroadcastTargetIds(userId);
+    targets.add(userId);
+    for (const uid of targets) {
+      connectionManager.sendToUser(uid, {
+        type: 'user_updated',
+        user: sanitized,
+      });
+    }
+  } catch {
+    // Non-fatal if connectionManager or broadcast fails
+  }
+}
+
+function broadcastSpaceVerificationUpdated(spaceId: string): void {
+  try {
+    const db = getDb();
+    const updated = db.select().from(schema.spaces).where(eq(schema.spaces.id, spaceId)).get();
+    if (!updated) return;
+    connectionManager.sendToSpace(spaceId, {
+      type: 'space_updated',
+      space: rowToSpace(updated),
+    });
+  } catch {
+    // Non-fatal if connectionManager or broadcast fails
+  }
+}
 
 function nextId(): string {
   try {
@@ -910,6 +946,12 @@ export async function verificationRoutes(app: FastifyInstance): Promise<void> {
         })
         .run();
 
+      if (reqRow.targetType === 'user') {
+        broadcastUserVerificationUpdated(reqRow.targetId);
+      } else if (reqRow.targetType === 'space') {
+        broadcastSpaceVerificationUpdated(reqRow.targetId);
+      }
+
       return reply.code(200).send({ success: true, verified: true, verificationId, status: 'approved' });
     }
   );
@@ -1103,6 +1145,12 @@ export async function verificationRoutes(app: FastifyInstance): Promise<void> {
         })
         .run();
 
+      if (targetType === 'user') {
+        broadcastUserVerificationUpdated(targetId);
+      } else if (targetType === 'space') {
+        broadcastSpaceVerificationUpdated(targetId);
+      }
+
       return reply.code(200).send({ success: true, revoked: true });
     }
   );
@@ -1209,6 +1257,7 @@ export async function verificationRoutes(app: FastifyInstance): Promise<void> {
         .run();
 
       const updatedUser = db.select().from(schema.users).where(eq(schema.users.id, targetUserId)).get();
+      broadcastUserVerificationUpdated(targetUserId);
 
       return reply.code(200).send({
         success: true,

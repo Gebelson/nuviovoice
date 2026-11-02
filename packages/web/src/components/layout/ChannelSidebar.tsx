@@ -1384,7 +1384,12 @@ function UserAreaPanel({
         <div className="p-1 hover:bg-interactive-hover rounded-[4px] flex items-center gap-2 flex-1 min-w-0 cursor-pointer transition-colors group">
           <ProfileAvatar src={user.avatar} name={user.displayName ?? user.username} size={34} status={shownStatus} user={user} origin="" />
           <div className="flex-1 min-w-0">
-            <div className="text-[13.5px] font-semibold text-txt-primary truncate leading-tight">{user.displayName ?? user.username}</div>
+            <div className="text-[13.5px] font-semibold text-txt-primary truncate leading-tight flex items-center gap-1.5">
+              <span className="truncate">{user.displayName ?? user.username}</span>
+              {user.verification?.status === 'verified' && (
+                <VerificationBadge category={user.verification.category} size="xs" />
+              )}
+            </div>
             <div className="text-[11px] text-txt-tertiary truncate leading-tight group-hover:text-txt-secondary">@{user.username}</div>
           </div>
         </div>

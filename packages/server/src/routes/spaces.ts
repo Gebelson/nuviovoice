@@ -64,7 +64,7 @@ function parseTagsJson(raw: string | null | undefined): string[] {
   }
 }
 
-function rowToSpace(row: typeof schema.spaces.$inferSelect): Space {
+export function rowToSpace(row: typeof schema.spaces.$inferSelect): Space {
   const effectiveType: Space['type'] =
     row.type === 'public' || row.type === 'private'
       ? row.type

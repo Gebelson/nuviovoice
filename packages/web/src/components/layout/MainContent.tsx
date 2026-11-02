@@ -30,6 +30,7 @@ import { DmDeletedNotice } from '../chat/DmDeletedNotice';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import type { User } from '@concord/shared';
 import { Tooltip } from '../ui/Tooltip';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { joinVoiceChannel } from '../../utils/voice';
 import { SearchPopover } from '../chat/SearchPopover';
 import { ChannelNotificationButton } from '../notifications/ChannelNotificationButton';
@@ -432,7 +433,12 @@ export function MainContent() {
                 {dmName}
               </span>
             ) : (
-              <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary truncate">{dmName}</span>
+              <span className="font-bold text-[15px] tracking-[-0.02em] text-txt-primary truncate flex items-center gap-1.5">
+                <span className="truncate">{dmName}</span>
+                {firstOther?.verification?.status === 'verified' && (
+                  <VerificationBadge category={firstOther.verification.category} size="xs" />
+                )}
+              </span>
             )}
             {!isGroupDm && firstOther && isFederationGlobeApplicable(firstOther) && (
               <Tooltip content={firstOther.username} position="bottom">
