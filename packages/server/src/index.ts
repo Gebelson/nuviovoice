@@ -44,6 +44,7 @@ import { botsRoutes } from './routes/bots.js';
 import { soundpadRoutes } from './routes/soundpad.js';
 import { winksRoutes } from './routes/winks.js';
 import { reportRoutes } from './routes/reports.js';
+import { securityAdminRoutes } from './routes/securityAdmin.js';
 import { buildCspHeaderValue, CSP_REPORT_GROUP, CSP_REPORT_PATH } from './utils/csp.js';
 import { startFederationWorkers, stopFederationWorkers } from './utils/federationWorker.js';
 import { startBackupWorker, stopBackupWorker } from './utils/backupWorker.js';
@@ -262,6 +263,7 @@ async function main(): Promise<void> {
   await app.register(soundpadRoutes);
   await app.register(winksRoutes);
   await app.register(reportRoutes);
+  await app.register(securityAdminRoutes);
   // Registered here rather than beside the hook above so it sits behind the
   // rate limiter. The sink is unauthenticated by design and writes a log line
   // per report, and @fastify/rate-limit only covers routes registered after it.
