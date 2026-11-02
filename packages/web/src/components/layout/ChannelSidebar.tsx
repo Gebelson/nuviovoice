@@ -22,6 +22,7 @@ import { useContextMenuStore, type ContextMenuItem } from '../../stores/contextM
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { DmSearchBar } from './DmSearchBar';
 import { DmListItem } from './DmListItem';
+import { DesktopUpdateButton } from './DesktopUpdateButton';
 import { useDragManager, type DropTarget, type LayoutItem } from '../../hooks/useDragManager';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useAudioDevices } from '../../hooks/useAudioDevices';
@@ -499,6 +500,7 @@ export function ChannelSidebar() {
   // Floating bottom panel — shared between DM view and server view
   const floatingPanel = user ? (
     <div ref={setFloatingPanelEl} data-pip-obstacle="bottom" className="fixed bottom-0 left-0 right-0 z-[105] p-2 desktop:right-auto desktop:w-[296px] desktop:bottom-[10px] desktop:left-[10px] desktop:p-0">
+      <DesktopUpdateButton />
       <div className="glass-bubble rounded-[14px]">
         {/* Voice controls (expands when connected) */}
         {(currentVoiceChannelId || activeDmCall) && <VoiceControls />}

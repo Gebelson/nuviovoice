@@ -3,6 +3,8 @@ import { useTranslation, Trans } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Toggle } from '../../ui/Toggle';
 import { useUpdateStore } from '../../../stores/updateStore';
+import { useVoiceStore } from '../../../stores/voiceStore';
+import { CallActiveUpdateModal } from '../CallActiveUpdateModal';
 import { useFormatters, type Formatters } from '../../../i18n/formatters';
 
 function AutoLaunchSettings() {
@@ -106,6 +108,8 @@ function UpdateSettings() {
   const checkNow = useUpdateStore((s) => s.checkNow);
   const install = useUpdateStore((s) => s.install);
   const openDownloadPage = useUpdateStore((s) => s.openDownloadPage);
+  const inActiveCall = useVoiceStore((s) => Boolean(s.currentVoiceChannelId || s.activeDmCall));
+  const [showCallWarning, setShowCallWarning] = useState(false);
 
   useEffect(() => initialize(), [initialize]);
 
@@ -143,7 +147,7 @@ function UpdateSettings() {
     case 'ready':
       if (capability === 'auto') {
         detail = t('desktop.updates.readyToInstall', { version: status.version });
-        action = { label: t('desktop.updates.restart'), onClick: install };
+        action = { label: t('desktop.updates.restart'), onClick: () => { if (inActiveCall) { setShowCallWarning(true); } else { install(); } } };
       } else {
         detail = t('desktop.updates.available', { version: status.version });
         action = { label: t('desktop.updates.download'), onClick: openDownloadPage };
@@ -236,6 +240,14 @@ function UpdateSettings() {
           <Trans t={t} i18nKey="desktop.updates.externalNote" components={{ code: <code /> }} />
         </p>
       )}
+      <CallActiveUpdateModal
+        isOpen={showCallWarning}
+        onClose={() => setShowCallWarning(false)}
+        onConfirm={() => {
+          setShowCallWarning(false);
+          install();
+        }}
+      />
     </div>
   );
 }
