@@ -1283,3 +1283,137 @@ export const winks = sqliteTable('winks', {
   publishedIdx: index('idx_winks_published').on(table.published),
 }));
 
+
+
+
+// ─── Safety & Security Center ────────────────────────────────────────────────
+
+export const safetyReports = sqliteTable('safety_reports', {
+  id: text('id').primaryKey(),
+  protocol: text('protocol').notNull().unique(),
+  reporterId: text('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetType: text('target_type').notNull(), // 'message' | 'space' | 'user'
+  targetId: text('target_id').notNull(),
+  channelId: text('channel_id'),
+  spaceId: text('space_id'),
+  category: text('category').notNull(),
+  priority: text('priority').notNull().default('medium'), // 'low' | 'medium' | 'high' | 'urgent'
+  description: text('description'),
+  status: text('status').notNull().default('pending'), // 'pending' | 'triaged' | 'under_investigation' | 'awaiting_info' | 'forwarded_to_authorities' | 'resolved' | 'archived'
+  assignedAdminId: text('assigned_admin_id').references(() => users.id),
+  resolutionNotes: text('resolution_notes'),
+  resolvedAt: integer('resolved_at'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  reporterIdx: index('idx_safety_reports_reporter').on(table.reporterId),
+  statusIdx: index('idx_safety_reports_status').on(table.status),
+  priorityIdx: index('idx_safety_reports_priority').on(table.priority),
+  targetIdx: index('idx_safety_reports_target').on(table.targetType, table.targetId),
+}));
+
+export const safetyReportEvidences = sqliteTable('safety_report_evidences', {
+  id: text('id').primaryKey(),
+  reportId: text('report_id').notNull().references(() => safetyReports.id, { onDelete: 'cascade' }),
+  messageId: text('message_id'),
+  contentSnapshot: text('content_snapshot'),
+  authorId: text('author_id'),
+  authorUsername: text('author_username'),
+  timestamp: integer('timestamp'),
+  attachments: text('attachments'),
+  sha256Hash: text('sha256_hash').notNull(),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  reportIdx: index('idx_safety_report_ev_report').on(table.reportId),
+}));
+
+export const securityCases = sqliteTable('security_cases', {
+  id: text('id').primaryKey(),
+  protocol: text('protocol').notNull().unique(),
+  reportId: text('report_id').references(() => safetyReports.id),
+  title: text('title').notNull(),
+  category: text('category').notNull(),
+  priority: text('priority').notNull().default('medium'),
+  status: text('status').notNull().default('received'),
+  subjectUserId: text('subject_user_id').references(() => users.id),
+  subjectUsername: text('subject_username'),
+  subjectSpaceId: text('subject_space_id'),
+  assignedTo: text('assigned_to').references(() => users.id),
+  summary: text('summary'),
+  resolution: text('resolution'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  statusIdx: index('idx_security_cases_status').on(table.status),
+  subjectUserIdx: index('idx_security_cases_subject_user').on(table.subjectUserId),
+}));
+
+export const evidenceVault = sqliteTable('evidence_vault', {
+  id: text('id').primaryKey(),
+  caseId: text('case_id').references(() => securityCases.id),
+  reportId: text('report_id').references(() => safetyReports.id),
+  evidenceType: text('evidence_type').notNull(),
+  collectedBy: text('collected_by').notNull(),
+  source: text('source').notNull(),
+  hashSha256: text('hash_sha256').notNull(),
+  payloadEncrypted: text('payload_encrypted').notNull(),
+  metadata: text('metadata').notNull(),
+  isExtremelySensitive: integer('is_extremely_sensitive').notNull().default(0),
+  custodyLog: text('custody_log').notNull().default('[]'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  caseIdx: index('idx_evidence_vault_case').on(table.caseId),
+}));
+
+export const authorityRequests = sqliteTable('authority_requests', {
+  id: text('id').primaryKey(),
+  protocolNumber: text('protocol_number').notNull(),
+  requestingBody: text('requesting_body').notNull(),
+  authorityName: text('authority_name').notNull(),
+  authorityContact: text('authority_contact').notNull(),
+  requestType: text('request_type').notNull(),
+  legalBasis: text('legal_basis').notNull(),
+  targetUserId: text('target_user_id'),
+  targetSpaceId: text('target_space_id'),
+  status: text('status').notNull().default('received'),
+  preservationUntil: integer('preservation_until'),
+  notes: text('notes'),
+  createdAdminId: text('created_admin_id').notNull().references(() => users.id),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  statusIdx: index('idx_authority_requests_status').on(table.status),
+  protocolIdx: index('idx_authority_requests_protocol').on(table.protocolNumber),
+}));
+
+export const securityAlerts = sqliteTable('security_alerts', {
+  id: text('id').primaryKey(),
+  alertType: text('alert_type').notNull(),
+  severity: text('severity').notNull().default('medium'),
+  subjectUserId: text('subject_user_id'),
+  subjectUsername: text('subject_username'),
+  subjectSpaceId: text('subject_space_id'),
+  technicalExplanation: text('technical_explanation').notNull(),
+  status: text('status').notNull().default('active'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  statusIdx: index('idx_security_alerts_status').on(table.status),
+  subjectIdx: index('idx_security_alerts_subject').on(table.subjectUserId),
+}));
+
+export const securityAuditLogs = sqliteTable('security_audit_logs', {
+  id: text('id').primaryKey(),
+  adminId: text('admin_id').notNull(),
+  adminUsername: text('admin_username'),
+  action: text('action').notNull(),
+  resourceType: text('resource_type').notNull(),
+  resourceId: text('resource_id'),
+  caseId: text('case_id'),
+  justification: text('justification').notNull(),
+  ip: text('ip'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  adminIdx: index('idx_security_audit_admin').on(table.adminId),
+  actionIdx: index('idx_security_audit_action').on(table.action),
+  createdIdx: index('idx_security_audit_created').on(table.createdAt),
+}));

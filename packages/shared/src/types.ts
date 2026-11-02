@@ -2431,3 +2431,163 @@ export interface SoundpadPlayEvent {
 
 // ─── Winks ──────────────────────────────────────────────────────────────────
 export * from './winks.js';
+
+
+// ─── Security Center & Authority Cooperation ─────────────────────────────────
+
+export type SafetyReportCategory =
+  | 'threat'
+  | 'harassment'
+  | 'fraud'
+  | 'extortion'
+  | 'stalking'
+  | 'csam_exploitation'
+  | 'hate_speech'
+  | 'violence'
+  | 'unauthorized_personal_data'
+  | 'illegal_other';
+
+export type SafetyReportPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export type SafetyReportStatus =
+  | 'pending'
+  | 'triaged'
+  | 'under_investigation'
+  | 'awaiting_info'
+  | 'forwarded_to_authorities'
+  | 'resolved'
+  | 'archived';
+
+export type SafetyReportTargetType = 'message' | 'space' | 'user';
+
+export interface SafetyReportEvidence {
+  id: string;
+  reportId: string;
+  messageId?: string | null;
+  contentSnapshot?: string | null;
+  authorId?: string | null;
+  authorUsername?: string | null;
+  timestamp?: number | null;
+  attachments?: string | null;
+  sha256Hash: string;
+  createdAt: number;
+}
+
+export interface SafetyReport {
+  id: string;
+  protocol: string;
+  reporterId: string;
+  reporterUsername?: string;
+  targetType: SafetyReportTargetType;
+  targetId: string;
+  channelId?: string | null;
+  spaceId?: string | null;
+  category: SafetyReportCategory;
+  priority: SafetyReportPriority;
+  description?: string | null;
+  status: SafetyReportStatus;
+  assignedAdminId?: string | null;
+  resolutionNotes?: string | null;
+  resolvedAt?: number | null;
+  evidences?: SafetyReportEvidence[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SecurityCase {
+  id: string;
+  protocol: string;
+  reportId?: string | null;
+  title: string;
+  category: string;
+  priority: SafetyReportPriority;
+  status: 'received' | 'triaged' | 'in_analysis' | 'awaiting_info' | 'forwarded_authorities' | 'resolved' | 'archived';
+  subjectUserId?: string | null;
+  subjectUsername?: string | null;
+  subjectSpaceId?: string | null;
+  assignedTo?: string | null;
+  summary?: string | null;
+  resolution?: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type AuthorityRequestType =
+  | 'preservation'
+  | 'data_disclosure'
+  | 'court_order'
+  | 'investigation_inquiry'
+  | 'imminent_risk_alert';
+
+export type AuthorityRequestStatus =
+  | 'received'
+  | 'verified'
+  | 'pending_legal_review'
+  | 'fulfilled'
+  | 'rejected'
+  | 'expired';
+
+export interface AuthorityRequest {
+  id: string;
+  protocolNumber: string;
+  requestingBody: string;
+  authorityName: string;
+  authorityContact: string;
+  requestType: AuthorityRequestType;
+  legalBasis: string;
+  targetUserId?: string | null;
+  targetSpaceId?: string | null;
+  status: AuthorityRequestStatus;
+  preservationUntil?: number | null;
+  notes?: string | null;
+  createdAdminId: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type SecurityAlertType =
+  | 'friend_request_spike'
+  | 'excessive_unsolicited_messages'
+  | 'high_block_ratio'
+  | 'repeated_reports'
+  | 'spam_invites';
+
+export type SecurityAlertSeverity = 'low' | 'medium' | 'high';
+export type SecurityAlertStatus = 'active' | 'acknowledged' | 'investigating' | 'dismissed';
+
+export interface SecurityAlert {
+  id: string;
+  alertType: SecurityAlertType;
+  severity: SecurityAlertSeverity;
+  subjectUserId?: string | null;
+  subjectUsername?: string | null;
+  subjectSpaceId?: string | null;
+  technicalExplanation: string;
+  status: SecurityAlertStatus;
+  createdAt: number;
+}
+
+export interface SecurityAuditLog {
+  id: string;
+  adminId: string;
+  adminUsername?: string;
+  action: string;
+  resourceType: string;
+  resourceId?: string | null;
+  caseId?: string | null;
+  justification: string;
+  ip?: string | null;
+  createdAt: number;
+}
+
+export interface SecurityOverviewMetrics {
+  pendingReports: number;
+  urgentReports: number;
+  activeCases: number;
+  completedCases: number;
+  suspendedAccounts: number;
+  reportedSpaces: number;
+  activeAlerts: number;
+  authorityRequests: number;
+  preservationOrders: number;
+}

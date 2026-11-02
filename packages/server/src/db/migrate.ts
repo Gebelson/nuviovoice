@@ -983,5 +983,130 @@ export function migrateExistingSpacesSeparation(
     console.log(`[spaces-migration] classified/updated ${changed} existing space(s) into private/public separation`);
   }
   return changed;
-}
+  // 17. Ensure Security Center tables exist
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS safety_reports (
+      id TEXT PRIMARY KEY,
+      protocol TEXT NOT NULL UNIQUE,
+      reporter_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      channel_id TEXT,
+      space_id TEXT,
+      category TEXT NOT NULL,
+      priority TEXT NOT NULL DEFAULT 'medium',
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      assigned_admin_id TEXT REFERENCES users(id),
+      resolution_notes TEXT,
+      resolved_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_safety_reports_reporter ON safety_reports(reporter_id);
+    CREATE INDEX IF NOT EXISTS idx_safety_reports_status ON safety_reports(status);
+    CREATE INDEX IF NOT EXISTS idx_safety_reports_priority ON safety_reports(priority);
+    CREATE INDEX IF NOT EXISTS idx_safety_reports_target ON safety_reports(target_type, target_id);
 
+    CREATE TABLE IF NOT EXISTS safety_report_evidences (
+      id TEXT PRIMARY KEY,
+      report_id TEXT NOT NULL REFERENCES safety_reports(id) ON DELETE CASCADE,
+      message_id TEXT,
+      content_snapshot TEXT,
+      author_id TEXT,
+      author_username TEXT,
+      timestamp INTEGER,
+      attachments TEXT,
+      sha256_hash TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_safety_report_ev_report ON safety_report_evidences(report_id);
+
+    CREATE TABLE IF NOT EXISTS security_cases (
+      id TEXT PRIMARY KEY,
+      protocol TEXT NOT NULL UNIQUE,
+      report_id TEXT REFERENCES safety_reports(id),
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      priority TEXT NOT NULL DEFAULT 'medium',
+      status TEXT NOT NULL DEFAULT 'received',
+      subject_user_id TEXT REFERENCES users(id),
+      subject_username TEXT,
+      subject_space_id TEXT,
+      assigned_to TEXT REFERENCES users(id),
+      summary TEXT,
+      resolution TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_security_cases_status ON security_cases(status);
+    CREATE INDEX IF NOT EXISTS idx_security_cases_subject_user ON security_cases(subject_user_id);
+
+    CREATE TABLE IF NOT EXISTS evidence_vault (
+      id TEXT PRIMARY KEY,
+      case_id TEXT REFERENCES security_cases(id),
+      report_id TEXT REFERENCES safety_reports(id),
+      evidence_type TEXT NOT NULL,
+      collected_by TEXT NOT NULL,
+      source TEXT NOT NULL,
+      hash_sha256 TEXT NOT NULL,
+      payload_encrypted TEXT NOT NULL,
+      metadata TEXT NOT NULL,
+      is_extremely_sensitive INTEGER NOT NULL DEFAULT 0,
+      custody_log TEXT NOT NULL DEFAULT '[]',
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_evidence_vault_case ON evidence_vault(case_id);
+
+    CREATE TABLE IF NOT EXISTS authority_requests (
+      id TEXT PRIMARY KEY,
+      protocol_number TEXT NOT NULL,
+      requesting_body TEXT NOT NULL,
+      authority_name TEXT NOT NULL,
+      authority_contact TEXT NOT NULL,
+      request_type TEXT NOT NULL,
+      legal_basis TEXT NOT NULL,
+      target_user_id TEXT,
+      target_space_id TEXT,
+      status TEXT NOT NULL DEFAULT 'received',
+      preservation_until INTEGER,
+      notes TEXT,
+      created_admin_id TEXT NOT NULL REFERENCES users(id),
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_authority_requests_status ON authority_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_authority_requests_protocol ON authority_requests(protocol_number);
+
+    CREATE TABLE IF NOT EXISTS security_alerts (
+      id TEXT PRIMARY KEY,
+      alert_type TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'medium',
+      subject_user_id TEXT,
+      subject_username TEXT,
+      subject_space_id TEXT,
+      technical_explanation TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_security_alerts_status ON security_alerts(status);
+    CREATE INDEX IF NOT EXISTS idx_security_alerts_subject ON security_alerts(subject_user_id);
+
+    CREATE TABLE IF NOT EXISTS security_audit_logs (
+      id TEXT PRIMARY KEY,
+      admin_id TEXT NOT NULL,
+      admin_username TEXT,
+      action TEXT NOT NULL,
+      resource_type TEXT NOT NULL,
+      resource_id TEXT,
+      case_id TEXT,
+      justification TEXT NOT NULL,
+      ip TEXT,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_security_audit_admin ON security_audit_logs(admin_id);
+    CREATE INDEX IF NOT EXISTS idx_security_audit_action ON security_audit_logs(action);
+    CREATE INDEX IF NOT EXISTS idx_security_audit_created ON security_audit_logs(created_at);
+  `);
+
+}
