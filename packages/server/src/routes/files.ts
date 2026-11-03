@@ -415,6 +415,10 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     reply.hijack();
     tusServer.handle(request.raw, reply.raw);
   });
+  app.all('/api/files/', (request, reply) => {
+    reply.hijack();
+    tusServer.handle(request.raw, reply.raw);
+  });
   app.all('/api/files/*', (request, reply) => {
     reply.hijack();
     tusServer.handle(request.raw, reply.raw);

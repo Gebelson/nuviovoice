@@ -62,7 +62,16 @@ jobs:
         shell: powershell
         run: |
           if (-not (Test-Path "packages/desktop/dist-electron/Nuvio-Setup.exe")) { throw "Nuvio-Setup.exe was not generated" }
+          if (-not (Test-Path "packages/desktop/dist-electron/Nuvio-Setup.exe.blockmap")) { throw "Nuvio-Setup.exe.blockmap was not generated" }
           if (-not (Test-Path "packages/desktop/dist-electron/latest.yml")) { throw "latest.yml was not generated" }
+
+          # Verify package.json version matches latest.yml version
+          $pkgVersion = (Get-Content packages/desktop/package.json | ConvertFrom-Json).version
+          $latestYmlContent = Get-Content packages/desktop/dist-electron/latest.yml -Raw
+          if ($latestYmlContent -notmatch "version:\s*$pkgVersion") {
+            throw "Version mismatch: package.json ($pkgVersion) does not match latest.yml"
+          }
+          Write-Output "Verified package version matches latest.yml: $pkgVersion"
           
           # Inspect Authenticode signature status
           $sig = Get-AuthenticodeSignature "packages/desktop/dist-electron/Nuvio-Setup.exe"
@@ -77,7 +86,7 @@ jobs:
           }
           
           # Generate official SHA-256 checksums file
-          Get-ChildItem packages/desktop/dist-electron/Nuvio-Setup.exe, packages/desktop/dist-electron/latest.yml |
+          Get-ChildItem packages/desktop/dist-electron/Nuvio-Setup.exe, packages/desktop/dist-electron/Nuvio-Setup.exe.blockmap, packages/desktop/dist-electron/latest.yml |
             Get-FileHash -Algorithm SHA256 |
             ForEach-Object { "$($_.Hash.ToLower())  $($_.Path | Split-Path -Leaf)" } |
             Set-Content -Encoding ascii packages/desktop/dist-electron/SHA256SUMS.txt
@@ -102,8 +111,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || inputs.tag }}
-          name: Nuvio Desktop ${{ github.ref_name || inputs.tag }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: Nuvio Desktop ${{ inputs.tag || github.ref_name }}
           draft: false
           prerelease: false
           files: |

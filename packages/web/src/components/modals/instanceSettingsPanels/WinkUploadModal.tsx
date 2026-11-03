@@ -26,6 +26,20 @@ const CATEGORIES: Array<{ id: WinkCategory; label: string }> = [
 
 type UploadStatus = 'idle' | 'uploading' | 'paused' | 'processing' | 'completed' | 'error';
 
+function extractHttpStatus(err: any): number | null {
+  if (err?.originalResponse?.getStatus) {
+    try {
+      const s = err.originalResponse.getStatus();
+      if (typeof s === 'number') return s;
+    } catch {}
+  }
+  const match = String(err?.message || '').match(/response code:\s*(\d{3})/i);
+  if (match && match[1]) return parseInt(match[1], 10);
+  if (typeof err?.status === 'number') return err.status;
+  if (typeof err?.statusCode === 'number') return err.statusCode;
+  return null;
+}
+
 export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
@@ -44,10 +58,12 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
   const [remainingTime, setRemainingTime] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [isResumable, setIsResumable] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const tusUploadRef = useRef<Upload | null>(null);
+  const bytesUploadedRef = useRef<number>(0);
   const speedTrackerRef = useRef<{ lastLoaded: number; lastTime: number }>({ lastLoaded: 0, lastTime: 0 });
 
   useEffect(() => {
@@ -75,8 +91,10 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
     setFile(selected);
     setAllowDuplicate(false);
     setBytesUploaded(0);
+    bytesUploadedRef.current = 0;
     setBytesTotal(selected.size);
     setUploadStatus('idle');
+    setIsResumable(false);
     if (!name.trim()) {
       const baseName = selected.name.replace(/\.[^/.]+$/, '');
       setName(baseName);
@@ -105,6 +123,7 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
       tusUploadRef.current.abort(false);
       setUploadStatus('paused');
       setStatusMessage('Upload pausado pelo usuário');
+      setIsResumable(true);
     }
   };
 
@@ -115,10 +134,24 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
     }
     setUploadStatus('idle');
     setBytesUploaded(0);
+    bytesUploadedRef.current = 0;
     setUploadSpeed('');
     setRemainingTime('');
     setStatusMessage('');
     setError(null);
+    setIsResumable(false);
+  };
+
+  const handleRetryOrResume = () => {
+    if (isResumable && tusUploadRef.current) {
+      setError(null);
+      setUploadStatus('uploading');
+      setStatusMessage('Retomando envio fragmentado...');
+      speedTrackerRef.current = { lastLoaded: bytesUploadedRef.current, lastTime: Date.now() };
+      tusUploadRef.current.start();
+    } else {
+      startUpload();
+    }
   };
 
   const startUpload = () => {
@@ -140,10 +173,20 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
       return;
     }
 
+    if (tusUploadRef.current) {
+      try {
+        tusUploadRef.current.abort(false);
+      } catch {}
+      tusUploadRef.current = null;
+    }
+
     setError(null);
+    setIsResumable(false);
+    setBytesUploaded(0);
+    bytesUploadedRef.current = 0;
     setUploadStatus('uploading');
     setStatusMessage('Iniciando envio fragmentado...');
-    speedTrackerRef.current = { lastLoaded: bytesUploaded, lastTime: Date.now() };
+    speedTrackerRef.current = { lastLoaded: 0, lastTime: Date.now() };
 
     const endpoint = winkTusEndpoint();
 
@@ -161,8 +204,12 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
         allowDuplicate: allowDuplicate ? 'true' : 'false',
       },
       onProgress: (loaded: number, total: number) => {
+        bytesUploadedRef.current = loaded;
         setBytesUploaded(loaded);
         setBytesTotal(total);
+        if (loaded > 0) {
+          setIsResumable(true);
+        }
 
         // Speed & ETA estimation
         const now = Date.now();
@@ -183,6 +230,7 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
         setStatusMessage(`Enviando fragmentos (${pct}%)...`);
       },
       onSuccess: async (payload) => {
+        setIsResumable(false);
         setUploadStatus('processing');
         setStatusMessage('Vídeo recebido! Processando com FFmpeg (preservando transparência e áudio)...');
 
@@ -219,7 +267,7 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
           }, 600);
         } catch (err: any) {
           setUploadStatus('error');
-          const status = err?.status || err?.statusCode;
+          const status = extractHttpStatus(err);
           const msg = err?.message || 'Falha ao salvar o Wink no servidor.';
 
           if (status === 409 || msg.includes('duplicate_wink') || msg.includes('Já existe um Wink')) {
@@ -233,24 +281,54 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
           }
         }
       },
-      onError: (err: Error) => {
-        const msg = err?.message || 'Falha na conexão de upload.';
+      onError: (err: any) => {
         setUploadStatus('error');
         setUploadSpeed('');
         setRemainingTime('');
 
-        if (msg.includes('409') || msg.includes('duplicate_wink') || msg.includes('Já existe um Wink')) {
+        const status = extractHttpStatus(err);
+        const rawMsg = String(err?.message || '');
+
+        const currentLoaded = bytesUploadedRef.current;
+        const hasValidSession = Boolean(
+          upload.url &&
+          currentLoaded > 0 &&
+          status !== 404 &&
+          status !== 401 &&
+          status !== 403
+        );
+        setIsResumable(hasValidSession);
+
+        if (status === 404 || rawMsg.includes('404')) {
+          setError(
+            'O serviço de upload de Winks não foi encontrado no servidor (HTTP 404). Verifique se o backend do Nuvio está atualizado com a versão mais recente.'
+          );
+        } else if (status === 401 || rawMsg.includes('401')) {
+          setError('Sessão expirada. Faça login novamente para continuar.');
+        } else if (status === 403 || rawMsg.includes('403')) {
+          setError('Permissão negada. Apenas administradores do Nuvio têm permissão para enviar Winks.');
+        } else if (status === 409 || rawMsg.includes('409') || rawMsg.includes('duplicate_wink') || rawMsg.includes('Já existe um Wink')) {
           setError('Já existe um Wink cadastrado com este arquivo. Marque "Permitir duplicata" se deseja prosseguir.');
-        } else if (msg.includes('507') || msg.includes('insufficient_storage') || msg.includes('Espaço em disco')) {
+        } else if (status === 507 || rawMsg.includes('507') || rawMsg.includes('insufficient_storage') || rawMsg.includes('Espaço em disco')) {
           setError('Espaço em disco insuficiente no servidor para processar este vídeo.');
-        } else if (msg.includes('413') || msg.includes('muito grande')) {
+        } else if (status === 413 || rawMsg.includes('413') || rawMsg.includes('muito grande')) {
           setError('Arquivo muito grande. O limite máximo é de 500 MB.');
-        } else if (msg.includes('400') || msg.includes('unsupported_file_format')) {
+        } else if (status === 400 || rawMsg.includes('unsupported_file_format')) {
           setError('Formato não suportado. Apenas arquivos MOV, MP4 e WebM são aceitos.');
-        } else if (msg.includes('403')) {
-          setError('Permissão negada. Apenas administradores podem enviar Winks.');
+        } else if (status === 502 || status === 503 || status === 504) {
+          setError('Servidor temporariamente indisponível. Verifique a conexão com o backend do Nuvio.');
         } else {
-          setError(`Falha no upload: ${msg}. O progresso foi mantido; clique em Retomar para continuar.`);
+          const sanitized = rawMsg
+            .replace(/https?:\/\/[^\s]+/gi, '[servidor]')
+            .replace(/Bearer\s+[a-zA-Z0-9._-]+/gi, 'Bearer ***')
+            .replace(/response text:.*$/gi, '')
+            .trim();
+
+          if (hasValidSession) {
+            setError(`Falha na conexão: ${sanitized || 'erro de rede'}. O progresso foi mantido; clique em "Retomar Envio" para continuar.`);
+          } else {
+            setError(`Não foi possível iniciar o envio (${sanitized || 'falha de comunicação com o servidor'}). Clique em "Tentar Novamente".`);
+          }
         }
       },
     });
@@ -262,7 +340,11 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (uploadStatus === 'uploading' || uploadStatus === 'processing') return;
-    startUpload();
+    if (uploadStatus === 'error') {
+      handleRetryOrResume();
+    } else {
+      startUpload();
+    }
   };
 
   const isBusy = uploadStatus === 'uploading' || uploadStatus === 'processing';
@@ -450,7 +532,7 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
                   {uploadStatus === 'paused' && (
                     <button
                       type="button"
-                      onClick={() => startUpload()}
+                      onClick={handleRetryOrResume}
                       className="px-2 py-0.5 rounded text-[11px] bg-accent-primary hover:bg-accent-primary-hover text-white transition-colors"
                     >
                       Retomar
@@ -468,10 +550,10 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
                   {uploadStatus === 'error' && (
                     <button
                       type="button"
-                      onClick={() => startUpload()}
+                      onClick={handleRetryOrResume}
                       className="px-2 py-0.5 rounded text-[11px] bg-accent-primary hover:bg-accent-primary-hover text-white transition-colors"
                     >
-                      Tentar Novamente
+                      {isResumable ? 'Retomar Envio' : 'Tentar Novamente'}
                     </button>
                   )}
                 </div>
@@ -599,6 +681,8 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
                   </svg>
                   <span>Processando FFmpeg...</span>
                 </>
+              ) : uploadStatus === 'error' ? (
+                <span>{isResumable ? 'Retomar Envio' : 'Tentar Novamente'}</span>
               ) : (
                 <span>Confirmar Envio</span>
               )}

@@ -183,7 +183,12 @@ export async function winksRoutes(app: FastifyInstance): Promise<void> {
     },
   });
 
+  // Support canonical /api/admin/winks/files and /api/admin/winks/files/
   app.all('/api/admin/winks/files', (request, reply) => {
+    reply.hijack();
+    winkTusServer.handle(request.raw, reply.raw);
+  });
+  app.all('/api/admin/winks/files/', (request, reply) => {
     reply.hijack();
     winkTusServer.handle(request.raw, reply.raw);
   });
@@ -199,6 +204,9 @@ export async function winksRoutes(app: FastifyInstance): Promise<void> {
     const sidecarFile = path.join(winkTusDir, `${cleanId}.json`);
     try { if (fs.existsSync(targetFile)) fs.unlinkSync(targetFile); } catch {}
     try { if (fs.existsSync(sidecarFile)) fs.unlinkSync(sidecarFile); } catch {}
+    if (request.headers['tus-resumable']) {
+      return reply.code(204).header('Tus-Resumable', '1.0.0').send();
+    }
     return reply.code(200).send({ success: true, id: cleanId });
   });
 

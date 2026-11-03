@@ -56,5 +56,5 @@ export function tusEndpoint(origin: string | undefined): string {
  */
 export function winkTusEndpoint(origin?: string): string {
   const base = origin && origin.trim() ? origin.trim() : getHomeOrigin();
-  return new URL('/api/admin/winks/files/', base).toString();
+  return new URL('/api/admin/winks/files', base).toString();
 }

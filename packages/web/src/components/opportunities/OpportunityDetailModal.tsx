@@ -61,20 +61,20 @@ export function OpportunityDetailModal({
   const getModalityBadge = () => {
     switch (opportunity.workModality) {
       case 'remote':
-        return { label: 'Remoto', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' };
+        return { label: 'Remoto', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' };
       case 'hybrid':
-        return { label: 'Híbrido', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' };
+        return { label: 'Híbrido', color: 'bg-amber-500/15 text-amber-400 border-amber-500/25' };
       case 'onsite':
-        return { label: 'Presencial', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
+        return { label: 'Presencial', color: 'bg-sky-500/15 text-sky-400 border-sky-500/25' };
       default:
-        return { label: 'A combinar', color: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20' };
+        return { label: 'A combinar', color: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/25' };
     }
   };
 
   const modality = getModalityBadge();
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/opportunities?id=${opportunity.id}`;
+    const url = `${window.location.origin}/opportunities?tab=${opportunity.type === 'job' ? 'jobs' : opportunity.type === 'freelance' ? 'freelance' : 'gigs'}&id=${opportunity.id}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
@@ -104,28 +104,28 @@ export function OpportunityDetailModal({
     return (
       <div
         onClick={() => setSelectedGigTier(tierKey)}
-        className={`flex-1 p-4 rounded-xl border transition-all cursor-pointer ${
+        className={`flex-1 p-5 rounded-2xl border transition-all cursor-pointer ${
           isSelected
-            ? 'bg-accent-primary/10 border-accent-primary shadow-md shadow-accent-primary/10'
-            : 'bg-surface-base border-border-card hover:border-border-card/80'
+            ? 'bg-accent-primary/15 border-accent-primary shadow-lg shadow-accent-primary/10'
+            : 'bg-surface-channel border-border-hard hover:border-border-soft'
         }`}
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-txt-secondary">{title}</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-txt-secondary">{title}</span>
           {isSelected && (
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-primary" />
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-primary shadow-sm" />
           )}
         </div>
-        <div className="text-base font-bold text-txt-primary mb-1">{name}</div>
+        <div className="text-base font-bold text-white mb-1">{name}</div>
         <div className="text-xl font-extrabold text-accent-primary mb-3">
           {price ? f.formatCurrency(price) : 'Sob consulta'}
         </div>
 
         {tier?.description && (
-          <p className="text-xs text-txt-tertiary mb-3 line-clamp-2">{tier.description}</p>
+          <p className="text-xs text-txt-secondary mb-3.5 line-clamp-2 leading-relaxed">{tier.description}</p>
         )}
 
-        <div className="space-y-1.5 text-xs text-txt-secondary pt-3 border-t border-border-card">
+        <div className="space-y-2 text-xs text-txt-secondary pt-3 border-t border-border-hard">
           <div className="flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
@@ -147,15 +147,15 @@ export function OpportunityDetailModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl" mobileStyle="fullscreen">
-      <div className="flex flex-col max-h-[85vh] overflow-hidden -m-6">
+      <div className="flex flex-col max-h-[85vh] overflow-hidden -m-6 bg-surface-chat">
         {/* Header Bar */}
-        <div className="p-6 pb-4 border-b border-border-card bg-surface-header flex items-start justify-between gap-4">
+        <div className="p-6 pb-4 border-b border-border-hard bg-surface-panel/90 flex items-start justify-between gap-4 backdrop-blur-md">
           <div className="flex items-start gap-4 min-w-0">
             {opportunity.companyLogo ? (
               <img
                 src={opportunity.companyLogo}
                 alt={opportunity.companyName || opportunity.title}
-                className="w-14 h-14 rounded-xl object-cover border border-border-card flex-shrink-0"
+                className="w-14 h-14 rounded-2xl object-cover border border-border-hard flex-shrink-0 shadow-sm"
               />
             ) : (
               <Avatar
@@ -163,47 +163,47 @@ export function OpportunityDetailModal({
                 src={opportunity.author?.avatar}
                 name={opportunity.author?.displayName || opportunity.author?.username || 'Anunciante'}
                 size={56}
-                className="flex-shrink-0"
+                className="flex-shrink-0 ring-2 ring-border-hard"
               />
             )}
 
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span
-                  className={`text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full border ${
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                     isJob
-                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                      ? 'bg-blue-500/15 text-blue-400 border-blue-500/25'
                       : isFreelance
-                      ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      ? 'bg-purple-500/15 text-purple-400 border-purple-500/25'
+                      : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
                   }`}
                 >
                   {isJob ? 'Vaga de Emprego' : isFreelance ? 'Projeto Freelance' : 'Serviço Profissional'}
                 </span>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${modality.color}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${modality.color}`}>
                   {modality.label}
                 </span>
                 {opportunity.category && (
-                  <span className="text-[11px] font-medium text-txt-tertiary px-2 py-0.5 bg-surface-base rounded-full border border-border-card">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-txt-secondary px-2.5 py-0.5 bg-surface-channel rounded-full border border-border-hard">
                     {opportunity.category}
                   </span>
                 )}
                 {opportunity.status === 'paused' && (
-                  <span className="text-[11px] font-semibold text-amber-400 px-2 py-0.5 bg-amber-500/10 rounded-full border border-amber-500/20">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 px-2.5 py-0.5 bg-amber-500/15 rounded-full border border-amber-500/25">
                     Pausada
                   </span>
                 )}
                 {opportunity.status === 'closed' && (
-                  <span className="text-[11px] font-semibold text-rose-400 px-2 py-0.5 bg-rose-500/10 rounded-full border border-rose-500/20">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 px-2.5 py-0.5 bg-rose-500/15 rounded-full border border-rose-500/25">
                     Encerrada
                   </span>
                 )}
               </div>
 
-              <h2 className="text-xl font-bold text-txt-primary truncate">{opportunity.title}</h2>
+              <h2 className="text-xl font-extrabold text-white tracking-tight truncate">{opportunity.title}</h2>
 
-              <p className="text-xs text-txt-secondary flex items-center gap-2 mt-0.5">
-                <span>{opportunity.companyName || opportunity.author?.displayName || opportunity.author?.username || 'Anunciante'}</span>
+              <p className="text-xs text-txt-secondary flex items-center gap-2 mt-1">
+                <span className="font-semibold text-txt-primary">{opportunity.companyName || opportunity.author?.displayName || opportunity.author?.username || 'Anunciante'}</span>
                 {opportunity.locationCity && (
                   <>
                     <span>•</span>
@@ -216,7 +216,7 @@ export function OpportunityDetailModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 text-txt-tertiary hover:text-txt-primary hover:bg-surface-card rounded-lg transition-colors"
+            className="p-2 text-txt-tertiary hover:text-white hover:bg-white/5 rounded-xl transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -226,35 +226,35 @@ export function OpportunityDetailModal({
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
           {/* Cover for Gigs */}
           {isGig && opportunity.coverImage && (
-            <div className="w-full h-56 rounded-xl overflow-hidden border border-border-card">
+            <div className="w-full h-56 rounded-2xl overflow-hidden border border-border-hard shadow-xl">
               <img src={opportunity.coverImage} alt={opportunity.title} className="w-full h-full object-cover" />
             </div>
           )}
 
           {/* Key Metrics / Highlights Card */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-surface-card border border-border-card rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl">
             <div>
-              <span className="text-[11px] text-txt-tertiary block font-medium">Remuneração / Valor</span>
-              <span className="text-sm font-bold text-txt-primary">{formatSalary()}</span>
+              <span className="text-[10px] uppercase tracking-wider text-txt-secondary block font-bold">Remuneração / Valor</span>
+              <span className="text-sm font-extrabold text-accent-primary mt-0.5 block">{formatSalary()}</span>
             </div>
             {opportunity.contractType && (
               <div>
-                <span className="text-[11px] text-txt-tertiary block font-medium">Contratação</span>
-                <span className="text-sm font-bold text-txt-primary">{opportunity.contractType.toUpperCase()}</span>
+                <span className="text-[10px] uppercase tracking-wider text-txt-secondary block font-bold">Contratação</span>
+                <span className="text-sm font-bold text-white mt-0.5 block">{opportunity.contractType.toUpperCase()}</span>
               </div>
             )}
             {opportunity.experienceLevel && (
               <div>
-                <span className="text-[11px] text-txt-tertiary block font-medium">Experiência</span>
-                <span className="text-sm font-bold text-txt-primary capitalize">{opportunity.experienceLevel}</span>
+                <span className="text-[10px] uppercase tracking-wider text-txt-secondary block font-bold">Experiência</span>
+                <span className="text-sm font-bold text-white mt-0.5 block capitalize">{opportunity.experienceLevel}</span>
               </div>
             )}
             <div>
-              <span className="text-[11px] text-txt-tertiary block font-medium">Publicado em</span>
-              <span className="text-sm font-bold text-txt-primary">
+              <span className="text-[10px] uppercase tracking-wider text-txt-secondary block font-bold">Publicado em</span>
+              <span className="text-sm font-bold text-white mt-0.5 block">
                 {f.formatShortDate(opportunity.createdAt)}
               </span>
             </div>
@@ -263,7 +263,7 @@ export function OpportunityDetailModal({
           {/* Gigs Packages Selector */}
           {isGig && (
             <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-3">Escolha o Pacote Ideal</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary mb-3">Escolha o Pacote Ideal</h3>
               <div className="flex flex-col sm:flex-row gap-3">
                 {renderGigPackageCard('basic', 'Básico', opportunity.packages?.basic)}
                 {opportunity.packages?.standard &&
@@ -275,22 +275,22 @@ export function OpportunityDetailModal({
           )}
 
           {/* Main Description */}
-          <div>
-            <h3 className="text-sm font-bold text-txt-primary mb-2">Sobre esta Oportunidade</h3>
-            <div className="text-xs text-txt-secondary leading-relaxed whitespace-pre-line">
+          <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Sobre esta Oportunidade</h3>
+            <div className="text-xs text-txt-secondary leading-relaxed whitespace-pre-line pt-1">
               {opportunity.description}
             </div>
           </div>
 
           {/* Responsibilities */}
           {opportunity.responsibilities && (
-            <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-2">Responsabilidades e Atividades</h3>
-              <ul className="space-y-1.5 text-xs text-txt-secondary">
+            <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Responsabilidades e Atividades</h3>
+              <ul className="space-y-2 text-xs text-txt-secondary pt-1">
                 {opportunity.responsibilities.split('\n').map((r, i) => (
-                  <li key={i} className="flex items-start gap-2">
+                  <li key={i} className="flex items-start gap-2.5">
                     <span className="text-accent-primary mt-0.5">•</span>
-                    <span>{r}</span>
+                    <span className="leading-relaxed">{r}</span>
                   </li>
                 ))}
               </ul>
@@ -299,15 +299,15 @@ export function OpportunityDetailModal({
 
           {/* Minimum Qualifications */}
           {opportunity.qualificationsMin && (
-            <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-2">Qualificações Necessárias</h3>
-              <ul className="space-y-1.5 text-xs text-txt-secondary">
+            <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Qualificações Necessárias</h3>
+              <ul className="space-y-2 text-xs text-txt-secondary pt-1">
                 {opportunity.qualificationsMin.split('\n').map((q, i) => (
-                  <li key={i} className="flex items-start gap-2">
+                  <li key={i} className="flex items-start gap-2.5">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-400 flex-shrink-0 mt-0.5">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
-                    <span>{q}</span>
+                    <span className="leading-relaxed">{q}</span>
                   </li>
                 ))}
               </ul>
@@ -316,15 +316,15 @@ export function OpportunityDetailModal({
 
           {/* Desired Qualifications */}
           {opportunity.qualificationsPref && (
-            <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-2">Diferenciais</h3>
-              <ul className="space-y-1.5 text-xs text-txt-secondary">
+            <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Diferenciais</h3>
+              <ul className="space-y-2 text-xs text-txt-secondary pt-1">
                 {opportunity.qualificationsPref.split('\n').map((dq, i) => (
-                  <li key={i} className="flex items-start gap-2">
+                  <li key={i} className="flex items-start gap-2.5">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent-primary flex-shrink-0 mt-0.5">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                     </svg>
-                    <span>{dq}</span>
+                    <span className="leading-relaxed">{dq}</span>
                   </li>
                 ))}
               </ul>
@@ -333,13 +333,13 @@ export function OpportunityDetailModal({
 
           {/* Skills Required */}
           {opportunity.skills && opportunity.skills.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-2">Habilidades Desejadas</h3>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Habilidades Desejadas</h3>
+              <div className="flex flex-wrap gap-2 pt-1">
                 {opportunity.skills.map((skill, i) => (
                   <span
                     key={i}
-                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-surface-card border border-border-card text-txt-secondary"
+                    className="px-3 py-1 text-xs font-semibold rounded-lg bg-surface-channel border border-border-hard text-white"
                   >
                     {skill}
                   </span>
@@ -350,13 +350,13 @@ export function OpportunityDetailModal({
 
           {/* Benefits */}
           {opportunity.benefits && opportunity.benefits.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-2">Benefícios</h3>
-              <div className="flex flex-wrap gap-2">
+            <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Benefícios</h3>
+              <div className="flex flex-wrap gap-2 pt-1">
                 {opportunity.benefits.map((benefit, i) => (
                   <span
                     key={i}
-                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                    className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                       <polyline points="20 6 9 17 4 12" />
@@ -370,16 +370,16 @@ export function OpportunityDetailModal({
 
           {/* Portfolio & Visual References */}
           {opportunity.gallery && opportunity.gallery.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-txt-primary mb-2">Trabalhos Anteriores & Referências</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="p-6 bg-surface-panel/80 border border-border-hard rounded-2xl shadow-xl space-y-2.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-txt-secondary">Trabalhos Anteriores & Referências</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                 {opportunity.gallery.map((url, i) => (
                   <a
                     key={i}
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-3 bg-surface-card hover:bg-surface-card-hover border border-border-card rounded-lg flex items-center justify-between text-xs text-txt-secondary hover:text-accent-primary transition-colors"
+                    className="p-3.5 bg-surface-channel hover:bg-surface-elevated border border-border-hard rounded-xl flex items-center justify-between text-xs text-txt-secondary hover:text-white transition-colors"
                   >
                     <span className="truncate">Portfólio #{i + 1}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -395,13 +395,13 @@ export function OpportunityDetailModal({
 
           {/* External Link */}
           {opportunity.externalLink && (
-            <div className="p-3 bg-surface-card border border-border-card rounded-xl flex items-center justify-between">
+            <div className="p-4 bg-surface-panel/80 border border-border-hard rounded-2xl flex items-center justify-between">
               <span className="text-xs text-txt-secondary">Informações externas disponíveis</span>
               <a
                 href={opportunity.externalLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-semibold text-accent-primary hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-accent-primary hover:underline flex items-center gap-1.5"
               >
                 Visitar site oficial
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -415,14 +415,14 @@ export function OpportunityDetailModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 px-6 border-t border-border-card bg-surface-header flex flex-wrap items-center justify-between gap-3">
+        <div className="p-4 px-6 border-t border-border-hard bg-surface-panel/90 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <button
               onClick={() => toggleFavorite(opportunity.id)}
-              className={`p-2 rounded-lg border transition-colors flex items-center gap-1.5 text-xs font-medium ${
+              className={`px-3 py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold ${
                 isFavorite
-                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                  : 'bg-surface-card hover:bg-surface-card-hover text-txt-tertiary border-border-card'
+                  ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                  : 'bg-surface-channel hover:bg-surface-elevated text-txt-secondary hover:text-white border-border-hard'
               }`}
               title="Salvar nos favoritos"
             >
@@ -441,7 +441,7 @@ export function OpportunityDetailModal({
 
             <button
               onClick={handleCopyLink}
-              className="p-2 rounded-lg border border-border-card bg-surface-card hover:bg-surface-card-hover text-txt-tertiary hover:text-txt-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
+              className="px-3 py-2 rounded-xl border border-border-hard bg-surface-channel hover:bg-surface-elevated text-txt-secondary hover:text-white transition-all flex items-center gap-1.5 text-xs font-semibold"
               title="Copiar link"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -457,14 +457,14 @@ export function OpportunityDetailModal({
               <>
                 <button
                   onClick={handleToggleStatus}
-                  className="px-4 py-2 rounded-lg border border-border-card bg-surface-card hover:bg-surface-card-hover text-xs font-semibold text-txt-primary transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-border-hard bg-surface-channel hover:bg-surface-elevated text-xs font-bold text-white transition-all"
                 >
                   {opportunity.status === 'published' ? 'Pausar Publicação' : 'Retomar Publicação'}
                 </button>
                 {opportunity.status !== 'closed' && (
                   <button
                     onClick={handleClosePosting}
-                    className="px-4 py-2 rounded-lg border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 text-xs font-semibold text-rose-400 transition-colors"
+                    className="px-4 py-2.5 rounded-xl border border-rose-500/25 bg-rose-500/15 hover:bg-rose-500/25 text-xs font-bold text-rose-400 transition-all"
                   >
                     Encerrar
                   </button>
@@ -475,7 +475,7 @@ export function OpportunityDetailModal({
                       onClose();
                       onEdit(opportunity);
                     }}
-                    className="px-5 py-2 rounded-lg bg-accent-primary hover:bg-accent-primary-hover text-white text-xs font-bold transition-all shadow-md shadow-accent-primary/20"
+                    className="px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/20"
                   >
                     Editar Anúncio
                   </button>
@@ -488,7 +488,7 @@ export function OpportunityDetailModal({
                   onClose();
                   onApply(opportunity, isGig ? selectedGigTier : undefined);
                 }}
-                className="px-6 py-2.5 rounded-lg bg-accent-primary hover:bg-accent-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/25"
+                className="px-6 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/25"
               >
                 {opportunity.status === 'closed'
                   ? 'Oportunidade Encerrada'

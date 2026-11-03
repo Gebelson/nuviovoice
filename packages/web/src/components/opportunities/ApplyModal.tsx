@@ -92,21 +92,21 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-surface-card border border-border-card rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in">
+      <div className="w-full max-w-lg max-h-[90vh] flex flex-col bg-surface-panel border border-border-hard rounded-2xl shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-card bg-surface-card/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-hard bg-surface-panel/90">
           <div>
-            <h3 className="text-base font-bold text-txt-primary">
+            <h3 className="text-base font-bold text-white">
               {isJob ? 'Candidatura à Vaga' : isFreelance ? 'Enviar Proposta de Freelance' : 'Solicitar Serviço'}
             </h3>
-            <p className="text-xs text-txt-muted truncate max-w-sm">
+            <p className="text-xs text-txt-secondary truncate max-w-sm mt-0.5">
               {opportunity.title}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-txt-muted hover:text-txt-primary hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-xl text-txt-tertiary hover:text-white hover:bg-white/5 transition-colors"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -115,9 +115,9 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
         </div>
 
         {/* Modal Content Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-xs no-scrollbar">
           {errorMessage && (
-            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+            <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/25 text-rose-400 text-xs font-semibold">
               {errorMessage}
             </div>
           )}
@@ -125,36 +125,35 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
           {/* Gig Package Selection (if gig) */}
           {isGig && opportunity.packages && (
             <div>
-              <label className="block text-txt-secondary font-semibold mb-1.5">Escolha o Pacote Desejado</label>
+              <label className="block text-txt-secondary font-semibold mb-2">Selecione o Pacote de Serviço</label>
               <div className="grid grid-cols-3 gap-2">
-                {Object.entries(opportunity.packages).map(([tier, pkg]) => {
-                  if (!pkg) return null;
-                  const isSelected = selectedPackage === tier;
+                {(['basic', 'standard', 'premium'] as const).map((tierKey) => {
+                  const pkg = opportunity.packages?.[tierKey];
+                  if (!pkg && tierKey !== 'basic') return null;
+                  const isSelected = selectedPackage === tierKey;
                   return (
-                    <div
-                      key={tier}
-                      onClick={() => {
-                        setSelectedPackage(tier as any);
-                        setProposedPrice(String(pkg.price));
-                        setProposedDuration(`${pkg.deliveryDays} dias`);
-                      }}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all text-center ${
+                    <button
+                      key={tierKey}
+                      type="button"
+                      onClick={() => setSelectedPackage(tierKey)}
+                      className={`p-3 rounded-xl border text-center transition-all ${
                         isSelected
-                          ? 'border-accent-primary bg-accent-primary/10 text-white'
-                          : 'border-border-card bg-surface-base text-txt-secondary hover:border-white/20'
+                          ? 'bg-accent-primary/15 border-accent-primary text-white shadow-sm'
+                          : 'bg-surface-channel border-border-hard text-txt-secondary hover:text-white'
                       }`}
                     >
-                      <span className="block font-bold capitalize text-xs">{pkg.name}</span>
-                      <span className="block text-accent-primary font-bold mt-1">R$ {pkg.price}</span>
-                      <span className="block text-[10px] text-txt-muted mt-0.5">{pkg.deliveryDays} dias</span>
-                    </div>
+                      <span className="block font-bold text-xs capitalize">{pkg?.name || tierKey}</span>
+                      <span className="block text-accent-primary font-extrabold text-xs mt-1">
+                        {pkg?.price ? `R$ ${pkg.price}` : 'Sob consulta'}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {/* Freelance Price & Duration */}
+          {/* Price & Duration for freelance */}
           {isFreelance && (
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -163,18 +162,18 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
                   type="number"
                   value={proposedPrice}
                   onChange={(e) => setProposedPrice(e.target.value)}
-                  placeholder="Ex: 1200"
-                  className="w-full px-3 py-2 bg-surface-base border border-border-card rounded-lg text-txt-primary focus:outline-none focus:border-accent-primary"
+                  placeholder="Ex: 1500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard hover:border-border-soft text-white text-xs focus:outline-none focus:border-accent-primary transition-all"
                 />
               </div>
               <div>
-                <label className="block text-txt-secondary font-semibold mb-1">Prazo de Entrega</label>
+                <label className="block text-txt-secondary font-semibold mb-1">Prazo Estimado</label>
                 <input
                   type="text"
                   value={proposedDuration}
                   onChange={(e) => setProposedDuration(e.target.value)}
-                  placeholder="Ex: 5 dias úteis"
-                  className="w-full px-3 py-2 bg-surface-base border border-border-card rounded-lg text-txt-primary focus:outline-none focus:border-accent-primary"
+                  placeholder="Ex: 10 dias úteis"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard hover:border-border-soft text-white text-xs focus:outline-none focus:border-accent-primary transition-all"
                 />
               </div>
             </div>
@@ -183,46 +182,42 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
           {/* Presentation message */}
           <div>
             <label className="block text-txt-secondary font-semibold mb-1">
-              Mensagem de Apresentação / Proposta *
+              Carta de Apresentação / Mensagem Inicial <span className="text-rose-400">*</span>
             </label>
             <textarea
+              rows={4}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              placeholder={
-                isJob
-                  ? 'Fale sobre sua experiência, projetos relevantes e por que deseja esta vaga...'
-                  : 'Descreva sua abordagem para o projeto, referências e ferramentas que utilizará...'
-              }
-              className="w-full px-3 py-2.5 bg-surface-base border border-border-card rounded-lg text-txt-primary focus:outline-none focus:border-accent-primary resize-none leading-relaxed"
+              placeholder="Apresente sua experiência, por que você é o profissional ideal e como pretende entregar o melhor resultado..."
+              className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard hover:border-border-soft text-white text-xs focus:outline-none focus:border-accent-primary transition-all resize-none leading-relaxed"
+              required
             />
           </div>
 
-          {/* Screening questions (if job) */}
-          {isJob && opportunity.questions && opportunity.questions.length > 0 && (
-            <div className="space-y-3 pt-2 border-t border-border-subtle">
-              <span className="font-bold text-txt-primary block">Perguntas do Contratante</span>
+          {/* Questions (if job has screening questions) */}
+          {opportunity.questions && opportunity.questions.length > 0 && (
+            <div className="space-y-3 pt-2 border-t border-border-hard">
+              <span className="text-txt-secondary font-semibold block">Perguntas do Contratante:</span>
               {opportunity.questions.map((q) => (
                 <div key={q.id}>
-                  <label className="block text-txt-secondary mb-1">
-                    {q.question} {q.required && <span className="text-rose-400">*</span>}
-                  </label>
+                  <label className="block text-txt-secondary mb-1">{q.question}</label>
                   <input
                     type="text"
                     value={answers[q.id] || ''}
                     onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
-                    className="w-full px-3 py-2 bg-surface-base border border-border-card rounded-lg text-txt-primary focus:outline-none focus:border-accent-primary"
+                    placeholder="Sua resposta..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-channel border border-border-hard hover:border-border-soft text-white text-xs focus:outline-none focus:border-accent-primary transition-all"
                   />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Resume / Document Upload */}
-          <div className="pt-2 border-t border-border-subtle">
+          {/* Resume Upload */}
+          <div>
             <label className="block text-txt-secondary font-semibold mb-1">Currículo ou Anexo (PDF, DOCX)</label>
             {resumeUrl ? (
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-surface-base border border-border-card">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-channel border border-border-hard">
                 <span className="text-accent-primary font-medium truncate">{resumeName}</span>
                 <button
                   type="button"
@@ -230,19 +225,19 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
                     setResumeUrl('');
                     setResumeName('');
                   }}
-                  className="text-rose-400 hover:text-rose-300 text-[11px]"
+                  className="text-rose-400 hover:text-rose-300 text-[11px] font-bold"
                 >
                   Remover
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center p-4 border border-dashed border-border-card hover:border-accent-primary/50 rounded-xl cursor-pointer bg-surface-base/50 transition-colors">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-txt-muted mb-1">
+              <label className="flex flex-col items-center justify-center p-5 border border-dashed border-border-hard hover:border-accent-primary/50 rounded-2xl cursor-pointer bg-surface-channel/50 transition-colors">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-txt-tertiary mb-1">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <span className="text-[11px] text-txt-secondary font-medium">
+                <span className="text-xs text-txt-secondary font-medium">
                   {isUploading ? 'Enviando arquivo...' : 'Clique para selecionar arquivo do seu computador'}
                 </span>
                 <input
@@ -265,12 +260,12 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
                 value={portfolioLink}
                 onChange={(e) => setPortfolioLink(e.target.value)}
                 placeholder="https://..."
-                className="flex-1 px-3 py-2 bg-surface-base border border-border-card rounded-lg text-txt-primary focus:outline-none focus:border-accent-primary"
+                className="flex-1 px-3.5 py-2 bg-surface-channel border border-border-hard hover:border-border-soft rounded-xl text-white text-xs focus:outline-none focus:border-accent-primary transition-all"
               />
               <button
                 type="button"
                 onClick={handleAddPortfolio}
-                className="px-3 py-2 rounded-lg bg-surface-hover hover:bg-white/10 text-txt-primary border border-border-card font-medium"
+                className="px-4 py-2 rounded-xl bg-surface-channel hover:bg-surface-elevated text-white border border-border-hard font-semibold transition-colors"
               >
                 Adicionar
               </button>
@@ -278,12 +273,12 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
             {portfolioUrls.length > 0 && (
               <div className="space-y-1">
                 {portfolioUrls.map((url, i) => (
-                  <div key={i} className="flex items-center justify-between text-[11px] text-txt-secondary px-2 py-1 bg-surface-base rounded">
+                  <div key={i} className="flex items-center justify-between text-[11px] text-txt-secondary px-3 py-1.5 bg-surface-channel rounded-lg border border-border-hard">
                     <span className="truncate max-w-xs">{url}</span>
                     <button
                       type="button"
                       onClick={() => setPortfolioUrls(portfolioUrls.filter((_, idx) => idx !== i))}
-                      className="text-rose-400 hover:text-rose-300"
+                      className="text-rose-400 hover:text-rose-300 font-bold"
                     >
                       ×
                     </button>
@@ -294,29 +289,29 @@ export function ApplyModal({ opportunity, onClose, onSuccess }: ApplyModalProps)
           </div>
 
           {/* Privacy Note */}
-          <div className="p-3 rounded-lg bg-surface-base/80 border border-border-subtle text-[11px] text-txt-muted flex items-start gap-2">
+          <div className="p-3.5 rounded-xl bg-surface-channel/80 border border-border-hard text-[11px] text-txt-secondary flex items-start gap-2.5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 text-accent-primary mt-0.5">
               <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            <span>
-              <strong>Chat Protegido:</strong> o contratante poderá analisar sua proposta com privacidade. Novas mensagens e chamadas só serão liberadas após a aprovação inicial.
+            <span className="leading-relaxed">
+              <strong className="text-white">Chat Protegido:</strong> o contratante poderá analisar sua proposta com privacidade. Novas mensagens e chamadas só serão liberadas após a aprovação inicial.
             </span>
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-card">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border-hard">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-txt-secondary hover:bg-white/5 transition-colors"
+              className="px-4 py-2 rounded-xl text-txt-secondary hover:text-white transition-colors font-semibold"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting || isUploading}
-              className="px-6 py-2 rounded-xl font-bold bg-accent-primary hover:bg-accent-primary-hover disabled:opacity-50 text-white transition-colors shadow-sm"
+              className="px-6 py-2.5 rounded-xl font-bold bg-accent-primary hover:bg-accent-primary/90 disabled:opacity-50 text-white transition-all shadow-lg shadow-accent-primary/20"
             >
               {isSubmitting ? 'Enviando...' : 'Enviar Proposta'}
             </button>

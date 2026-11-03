@@ -295,14 +295,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-3xl" mobileStyle="fullscreen">
       <div className="flex flex-col max-h-[85vh] overflow-hidden -m-6">
         {/* Header with Type selector */}
-        <div className="p-6 pb-4 border-b border-border-card bg-surface-header">
+        <div className="p-6 pb-4 border-b border-border-hard bg-surface-panel/90">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-txt-primary">
+            <h2 className="text-xl font-bold text-white">
               {initialData ? 'Editar Oportunidade' : 'Publicar Nova Oportunidade'}
             </h2>
             <button
               onClick={onClose}
-              className="p-1.5 text-txt-tertiary hover:text-txt-primary hover:bg-surface-card rounded-lg transition-colors"
+              className="p-1.5 text-txt-tertiary hover:text-white hover:bg-surface-channel rounded-lg transition-colors"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -313,14 +313,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
 
           {/* Type Selector (if not editing) */}
           {!initialData && (
-            <div className="grid grid-cols-3 gap-2 p-1 bg-surface-base border border-border-card rounded-xl mb-4">
+            <div className="grid grid-cols-3 gap-2 p-1 bg-surface-channel border border-border-hard rounded-xl mb-4">
               <button
                 type="button"
                 onClick={() => setType('job')}
                 className={`py-2 text-xs font-bold rounded-lg transition-all ${
                   type === 'job'
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-txt-secondary hover:text-txt-primary hover:bg-surface-card'
+                    : 'text-txt-secondary hover:text-white hover:bg-surface-channel'
                 }`}
               >
                 Vaga de Emprego
@@ -331,7 +331,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                 className={`py-2 text-xs font-bold rounded-lg transition-all ${
                   type === 'freelance'
                     ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-txt-secondary hover:text-txt-primary hover:bg-surface-card'
+                    : 'text-txt-secondary hover:text-white hover:bg-surface-channel'
                 }`}
               >
                 Projeto Freelance
@@ -342,7 +342,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                 className={`py-2 text-xs font-bold rounded-lg transition-all ${
                   type === 'gig'
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-txt-secondary hover:text-txt-primary hover:bg-surface-card'
+                    : 'text-txt-secondary hover:text-white hover:bg-surface-channel'
                 }`}
               >
                 Serviço / Gig
@@ -351,14 +351,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
           )}
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-4 text-xs font-semibold border-b border-border-card -mb-4">
+          <div className="flex items-center gap-4 text-xs font-semibold border-b border-border-hard -mb-4">
             <button
               type="button"
               onClick={() => setActiveTab('info')}
               className={`pb-2.5 transition-colors border-b-2 ${
                 activeTab === 'info'
                   ? 'border-accent-primary text-accent-primary'
-                  : 'border-transparent text-txt-tertiary hover:text-txt-primary'
+                  : 'border-transparent text-txt-tertiary hover:text-white'
               }`}
             >
               1. Informações Básicas
@@ -369,7 +369,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
               className={`pb-2.5 transition-colors border-b-2 ${
                 activeTab === 'details'
                   ? 'border-accent-primary text-accent-primary'
-                  : 'border-transparent text-txt-tertiary hover:text-txt-primary'
+                  : 'border-transparent text-txt-tertiary hover:text-white'
               }`}
             >
               2. Detalhes & Pacotes
@@ -380,7 +380,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
               className={`pb-2.5 transition-colors border-b-2 ${
                 activeTab === 'preview'
                   ? 'border-accent-primary text-accent-primary'
-                  : 'border-transparent text-txt-tertiary hover:text-txt-primary'
+                  : 'border-transparent text-txt-tertiary hover:text-white'
               }`}
             >
               3. Prévia
@@ -414,7 +414,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       ? 'Ex: Criação de Identidade Visual e Logotipo 3D'
                       : 'Ex: Desenvolvo Bots para Discord e Nuvio em TypeScript'
                   }
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                 />
               </div>
 
@@ -426,7 +426,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                   >
                     {OPPORTUNITY_CATEGORIES.map((cat) => (
                       <option key={cat.id} value={cat.id}>
@@ -443,7 +443,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                   <select
                     value={workModality}
                     onChange={(e) => setWorkModality(e.target.value as WorkModality)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                   >
                     <option value="remote">Remoto (100% Home Office)</option>
                     <option value="hybrid">Híbrido</option>
@@ -463,7 +463,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                     value={locationCity}
                     onChange={(e) => setLocationCity(e.target.value)}
                     placeholder="Ex: São Paulo, SP - Brasil"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                   />
                   <span className="text-[11px] text-txt-tertiary mt-1 block">
                     Por privacidade, informe apenas cidade ou região geral, nunca o endereço completo.
@@ -480,7 +480,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                   <select
                     value={creatorRole}
                     onChange={(e) => setCreatorRole(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                   >
                     <option value="organization">Empresa / Organização</option>
                     <option value="recruiter">Recrutador / Headhunter</option>
@@ -497,7 +497,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="Ex: Nuvio Studios"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                   />
                 </div>
               </div>
@@ -513,14 +513,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       <img
                         src={companyLogo}
                         alt="Logo"
-                        className="w-12 h-12 rounded-xl object-cover border border-border-card"
+                        className="w-12 h-12 rounded-xl object-cover border border-border-hard"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-surface-card border border-border-card flex items-center justify-center text-txt-tertiary text-xs">
+                      <div className="w-12 h-12 rounded-xl bg-surface-channel border border-border-hard flex items-center justify-center text-txt-tertiary text-xs">
                         Logo
                       </div>
                     )}
-                    <label className="px-3.5 py-2 rounded-xl border border-border-card bg-surface-card hover:bg-surface-card-hover text-xs font-semibold text-txt-secondary cursor-pointer transition-colors">
+                    <label className="px-3.5 py-2 rounded-xl border border-border-hard bg-surface-channel hover:bg-surface-elevated text-xs font-semibold text-txt-secondary cursor-pointer transition-colors">
                       {isUploading ? 'Enviando...' : 'Carregar Imagem'}
                       <input
                         type="file"
@@ -542,14 +542,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                         <img
                           src={coverImage}
                           alt="Cover"
-                          className="w-12 h-12 rounded-xl object-cover border border-border-card"
+                          className="w-12 h-12 rounded-xl object-cover border border-border-hard"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-xl bg-surface-card border border-border-card flex items-center justify-center text-txt-tertiary text-xs">
+                        <div className="w-12 h-12 rounded-xl bg-surface-channel border border-border-hard flex items-center justify-center text-txt-tertiary text-xs">
                           Capa
                         </div>
                       )}
-                      <label className="px-3.5 py-2 rounded-xl border border-border-card bg-surface-card hover:bg-surface-card-hover text-xs font-semibold text-txt-secondary cursor-pointer transition-colors">
+                      <label className="px-3.5 py-2 rounded-xl border border-border-hard bg-surface-channel hover:bg-surface-elevated text-xs font-semibold text-txt-secondary cursor-pointer transition-colors">
                         {isUploading ? 'Enviando...' : 'Carregar Capa'}
                         <input
                           type="file"
@@ -572,7 +572,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Descreva detalhadamente a oportunidade, escopo, objetivos e expectativas..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-card border border-border-card text-txt-primary text-sm focus:outline-none focus:border-accent-primary resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-surface-channel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary resize-none"
                 />
               </div>
             </div>
@@ -592,7 +592,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       <select
                         value={contractType}
                         onChange={(e) => setContractType(e.target.value as ContractType)}
-                        className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       >
                         <option value="clt">CLT</option>
                         <option value="pj">PJ</option>
@@ -610,7 +610,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       <select
                         value={experienceLevel}
                         onChange={(e) => setExperienceLevel(e.target.value as ExperienceLevel)}
-                        className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       >
                         <option value="entry">Entrada / Estágio</option>
                         <option value="junior">Júnior</option>
@@ -628,7 +628,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       <select
                         value={remunerationType}
                         onChange={(e) => setRemunerationType(e.target.value as RemunerationType)}
-                        className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       >
                         <option value="range">Faixa Salarial</option>
                         <option value="fixed">Valor Fixo</option>
@@ -650,7 +650,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={salaryMin}
                           onChange={(e) => setSalaryMin(e.target.value)}
                           placeholder="Ex: 5000"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                       {remunerationType === 'range' && (
@@ -663,7 +663,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={salaryMax}
                             onChange={(e) => setSalaryMax(e.target.value)}
                             placeholder="Ex: 8000"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                       )}
@@ -687,19 +687,19 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           }
                         }}
                         placeholder="Ex: Desenvolver interfaces fluidas em React e Tailwind..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddItem(currentResp, setCurrentResp, responsibilities, setResponsibilities)}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
                     </div>
                     <div className="space-y-1">
                       {responsibilities.map((r, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-surface-card rounded-lg text-xs">
+                        <div key={i} className="flex items-center justify-between p-2 bg-surface-channel rounded-lg text-xs">
                           <span>{r}</span>
                           <button
                             type="button"
@@ -730,19 +730,19 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           }
                         }}
                         placeholder="Ex: 3+ anos com TypeScript e React..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddItem(currentQual, setCurrentQual, qualifications, setQualifications)}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
                     </div>
                     <div className="space-y-1">
                       {qualifications.map((q, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-surface-card rounded-lg text-xs">
+                        <div key={i} className="flex items-center justify-between p-2 bg-surface-channel rounded-lg text-xs">
                           <span>{q}</span>
                           <button
                             type="button"
@@ -773,12 +773,12 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           }
                         }}
                         placeholder="Ex: Vale Refeição R$ 1.200 / Plano de Saúde Bradesco..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddItem(currentBenefit, setCurrentBenefit, benefits, setBenefits)}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
@@ -787,7 +787,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       {benefits.map((b, i) => (
                         <span
                           key={i}
-                          className="px-2.5 py-1 bg-surface-card border border-border-card rounded-lg text-xs flex items-center gap-1.5"
+                          className="px-2.5 py-1 bg-surface-channel border border-border-hard rounded-lg text-xs flex items-center gap-1.5"
                         >
                           {b}
                           <button
@@ -819,19 +819,19 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           }
                         }}
                         placeholder="Ex: Qual sua experiência prática com WebSockets em Node.js?"
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddItem(currentQuestion, setCurrentQuestion, screeningQuestions, setScreeningQuestions)}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
                     </div>
                     <div className="space-y-1">
                       {screeningQuestions.map((q, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-surface-card rounded-lg text-xs">
+                        <div key={i} className="flex items-center justify-between p-2 bg-surface-channel rounded-lg text-xs">
                           <span>{i + 1}. {q}</span>
                           <button
                             type="button"
@@ -858,7 +858,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       <select
                         value={budgetType}
                         onChange={(e) => setBudgetType(e.target.value as BudgetType)}
-                        className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       >
                         <option value="fixed">Orçamento Fixo</option>
                         <option value="hourly">Valor por Hora</option>
@@ -877,7 +877,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={budget}
                           onChange={(e) => setBudget(e.target.value)}
                           placeholder="Ex: 3500"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                     )}
@@ -892,7 +892,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       placeholder="Ex: 15 dias, 1 mês"
-                      className="w-full px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                      className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                     />
                   </div>
 
@@ -913,19 +913,19 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           }
                         }}
                         placeholder="Ex: Arquivo Figma completo, Design System e componentes..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddItem(currentDeliverable, setCurrentDeliverable, deliverables, setDeliverables)}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
                     </div>
                     <div className="space-y-1">
                       {deliverables.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-surface-card rounded-lg text-xs">
+                        <div key={i} className="flex items-center justify-between p-2 bg-surface-channel rounded-lg text-xs">
                           <span>{d}</span>
                           <button
                             type="button"
@@ -956,12 +956,12 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           }
                         }}
                         placeholder="Ex: Blender, Figma, Next.js..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddItem(currentSkill, setCurrentSkill, skills, setSkills)}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
@@ -970,7 +970,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                       {skills.map((s, i) => (
                         <span
                           key={i}
-                          className="px-2.5 py-1 bg-surface-card border border-border-card rounded-lg text-xs flex items-center gap-1.5"
+                          className="px-2.5 py-1 bg-surface-channel border border-border-hard rounded-lg text-xs flex items-center gap-1.5"
                         >
                           {s}
                           <button
@@ -990,9 +990,9 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
               {/* If Gig */}
               {type === 'gig' && (
                 <>
-                  <div className="flex items-center justify-between p-4 bg-surface-card border border-border-card rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-surface-channel border border-border-hard rounded-xl">
                     <div>
-                      <span className="text-sm font-bold text-txt-primary block">
+                      <span className="text-sm font-bold text-white block">
                         Estrutura de Pacotes (Básico, Padrão, Premium)
                       </span>
                       <span className="text-xs text-txt-tertiary">
@@ -1006,12 +1006,12 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                         onChange={(e) => setHasTiers(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-surface-base peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
+                      <div className="w-11 h-6 bg-surface-channel peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
                     </label>
                   </div>
 
                   {/* Standard or Basic Single Package */}
-                  <div className="p-4 bg-surface-card border border-border-card rounded-xl space-y-3">
+                  <div className="p-4 bg-surface-channel border border-border-hard rounded-xl space-y-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-accent-primary">
                       {hasTiers ? 'Pacote 1: Básico' : 'Preço e Entrega Padrão'}
                     </h4>
@@ -1025,7 +1025,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={basicPrice}
                           onChange={(e) => setBasicPrice(e.target.value)}
                           placeholder="Ex: 350"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                       <div>
@@ -1037,7 +1037,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={basicDays}
                           onChange={(e) => setBasicDays(e.target.value)}
                           placeholder="Ex: 3"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                       <div>
@@ -1049,7 +1049,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={basicRevs}
                           onChange={(e) => setBasicRevs(e.target.value)}
                           placeholder="Ex: 2"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                     </div>
@@ -1062,14 +1062,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                         value={basicDesc}
                         onChange={(e) => setBasicDesc(e.target.value)}
                         placeholder="Ex: 1 proposta de logo, arquivos em PNG/SVG e paleta de cores"
-                        className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                        className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                     </div>
                   </div>
 
                   {/* Standard Package */}
                   {hasTiers && (
-                    <div className="p-4 bg-surface-card border border-border-card rounded-xl space-y-3">
+                    <div className="p-4 bg-surface-channel border border-border-hard rounded-xl space-y-3">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400">
                         Pacote 2: Padrão (Opcional)
                       </h4>
@@ -1081,7 +1081,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={standardPrice}
                             onChange={(e) => setStandardPrice(e.target.value)}
                             placeholder="Ex: 700"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                         <div>
@@ -1091,7 +1091,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={standardDays}
                             onChange={(e) => setStandardDays(e.target.value)}
                             placeholder="Ex: 5"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                         <div>
@@ -1101,7 +1101,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={standardRevs}
                             onChange={(e) => setStandardRevs(e.target.value)}
                             placeholder="Ex: 4"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                       </div>
@@ -1111,7 +1111,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={standardDesc}
                           onChange={(e) => setStandardDesc(e.target.value)}
                           placeholder="Ex: 3 propostas de logo, manual de marca completo e artes para redes sociais"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                     </div>
@@ -1119,7 +1119,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
 
                   {/* Premium Package */}
                   {hasTiers && (
-                    <div className="p-4 bg-surface-card border border-border-card rounded-xl space-y-3">
+                    <div className="p-4 bg-surface-channel border border-border-hard rounded-xl space-y-3">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">
                         Pacote 3: Premium (Opcional)
                       </h4>
@@ -1131,7 +1131,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={premiumPrice}
                             onChange={(e) => setPremiumPrice(e.target.value)}
                             placeholder="Ex: 1500"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                         <div>
@@ -1141,7 +1141,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={premiumDays}
                             onChange={(e) => setPremiumDays(e.target.value)}
                             placeholder="Ex: 7"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                         <div>
@@ -1151,7 +1151,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             value={premiumRevs}
                             onChange={(e) => setPremiumRevs(e.target.value)}
                             placeholder="Ex: Ilimitadas"
-                            className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                            className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                           />
                         </div>
                       </div>
@@ -1161,7 +1161,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                           value={premiumDesc}
                           onChange={(e) => setPremiumDesc(e.target.value)}
                           placeholder="Ex: Identidade visual 360, mockups 3D, animação de logo e suporte prioritário"
-                          className="w-full px-3 py-2 rounded-xl bg-surface-base border border-border-card text-txt-primary text-xs"
+                          className="w-full px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                         />
                       </div>
                     </div>
@@ -1178,7 +1178,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                         value={portfolioLink}
                         onChange={(e) => setPortfolioLink(e.target.value)}
                         placeholder="https://behance.net/meu-trabalho ou https://github.com/..."
-                        className="flex-1 px-3 py-2 rounded-xl bg-surface-card border border-border-card text-txt-primary text-xs"
+                        className="flex-1 px-3 py-2 rounded-xl bg-surface-channel border border-border-hard text-white text-xs"
                       />
                       <button
                         type="button"
@@ -1188,14 +1188,14 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
                             setPortfolioLink('');
                           }
                         }}
-                        className="px-3.5 py-2 bg-surface-card hover:bg-surface-card-hover border border-border-card text-xs font-bold text-accent-primary rounded-xl"
+                        className="px-3.5 py-2 bg-surface-channel hover:bg-surface-elevated border border-border-hard text-xs font-bold text-accent-primary rounded-xl"
                       >
                         + Adicionar
                       </button>
                     </div>
                     <div className="space-y-1">
                       {portfolioUrls.map((p, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 bg-surface-card rounded-lg text-xs">
+                        <div key={i} className="flex items-center justify-between p-2 bg-surface-channel rounded-lg text-xs">
                           <span className="truncate">{p}</span>
                           <button
                             type="button"
@@ -1216,22 +1216,22 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
           {/* TAB 3: PREVIEW */}
           {activeTab === 'preview' && (
             <div className="space-y-4">
-              <div className="p-4 bg-surface-base border border-border-card rounded-xl">
+              <div className="p-4 bg-surface-channel border border-border-hard rounded-xl">
                 <span className="text-[11px] font-bold text-txt-tertiary uppercase tracking-wider block mb-2">
                   Prévia do Card de Exibição
                 </span>
-                <div className="p-5 bg-surface-card border border-border-card rounded-xl max-w-md">
+                <div className="p-5 bg-surface-channel border border-border-hard rounded-xl max-w-md">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="text-xs font-bold text-accent-primary">{companyName || 'Empresa'}</span>
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-base border border-border-card text-txt-tertiary">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-channel border border-border-hard text-txt-tertiary">
                       {workModality === 'remote' ? 'Remoto' : 'Presencial/Híbrido'}
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-txt-primary mb-1">{title || 'Título da Oportunidade'}</h3>
+                  <h3 className="text-base font-bold text-white mb-1">{title || 'Título da Oportunidade'}</h3>
                   <p className="text-xs text-txt-secondary line-clamp-2 mb-3">
                     {description || 'Descrição detalhada aparecerá aqui...'}
                   </p>
-                  <div className="text-xs font-bold text-txt-primary">
+                  <div className="text-xs font-bold text-white">
                     {type === 'job' && salaryMin ? `A partir de R$ ${salaryMin}` : ''}
                     {type === 'freelance' && budget ? `Orçamento: R$ ${budget}` : ''}
                     {type === 'gig' && basicPrice ? `A partir de R$ ${basicPrice}` : ''}
@@ -1243,11 +1243,11 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 px-6 border-t border-border-card bg-surface-header flex items-center justify-between gap-3">
+        <div className="p-4 px-6 border-t border-border-hard bg-surface-panel/90 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-txt-tertiary hover:text-txt-primary transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-txt-tertiary hover:text-white transition-colors"
           >
             Cancelar
           </button>
@@ -1257,7 +1257,7 @@ export function CreateOpportunityModal({ isOpen, onClose, initialData }: CreateO
               type="button"
               disabled={isSubmitting}
               onClick={() => handleSubmit('draft')}
-              className="px-4 py-2 rounded-xl border border-border-card bg-surface-card hover:bg-surface-card-hover text-xs font-semibold text-txt-secondary transition-colors"
+              className="px-4 py-2 rounded-xl border border-border-hard bg-surface-channel hover:bg-surface-elevated text-xs font-semibold text-txt-secondary transition-colors"
             >
               Salvar Rascunho
             </button>

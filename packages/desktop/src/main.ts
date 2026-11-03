@@ -1305,8 +1305,14 @@ function notifyAboutUpdate(
   if (snapshot.status.phase === 'ready' && snapshot.capability === 'auto') {
     showNotification(
       'Atualização do Nuvio pronta',
-      `Clique para reiniciar e instalar a versão ${version}.`,
-      () => updater.quitAndInstall(),
+      `Clique para abrir o Nuvio e aplicar a versão ${version}.`,
+      () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+        }
+      },
     );
     return;
   }

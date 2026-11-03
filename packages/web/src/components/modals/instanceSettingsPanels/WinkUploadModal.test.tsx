@@ -266,4 +266,83 @@ describe('WinkUploadModal Component', () => {
       );
     });
   });
+
+  it('displays friendly backend update message on 404 error and offers retry without false progress claims', async () => {
+    (Upload as any).mockImplementationOnce(function (file: any, options: any) {
+      const instance = {
+        file,
+        options,
+        url: null,
+        start: vi.fn().mockImplementation(() => {
+          const error: any = new Error('tus: unexpected response while creating upload, response code: 404, response text: {"error":"Not found","statusCode":404}');
+          error.originalResponse = { getStatus: () => 404 };
+          options.onError(error);
+        }),
+        abort: vi.fn(),
+      };
+      lastUploadInstance = instance;
+      return instance;
+    });
+
+    render(
+      <WinkUploadModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const movFile = new File(['content'], 'iHazar.mov', { type: 'video/quicktime' });
+    Object.defineProperty(movFile, 'size', { value: 5000000 });
+
+    fireEvent.change(input, { target: { files: [movFile] } });
+    fireEvent.click(screen.getByText('Confirmar Envio'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/O serviço de upload de Winks não foi encontrado no servidor \(HTTP 404\)/i)).toBeInTheDocument();
+      expect(screen.queryByText(/O progresso foi mantido/i)).not.toBeInTheDocument();
+      expect(screen.getAllByText('Tentar Novamente').length).toBeGreaterThan(0);
+      expect(screen.queryByText('Retomar Envio')).not.toBeInTheDocument();
+    });
+  });
+
+  it('displays resumable option when network fails after partial upload', async () => {
+    (Upload as any).mockImplementationOnce(function (file: any, options: any) {
+      const instance = {
+        file,
+        options,
+        url: 'http://localhost:3000/api/admin/winks/files/upload-999',
+        start: vi.fn().mockImplementation(() => {
+          options.onProgress(1000000, 5000000);
+          const error: any = new Error('tus: failed to upload chunk at http://localhost:3000/api/admin/winks/files/upload-999');
+          options.onError(error);
+        }),
+        abort: vi.fn(),
+      };
+      lastUploadInstance = instance;
+      return instance;
+    });
+
+    render(
+      <WinkUploadModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const movFile = new File(['content'], 'iHazar.mov', { type: 'video/quicktime' });
+    Object.defineProperty(movFile, 'size', { value: 5000000 });
+
+    fireEvent.change(input, { target: { files: [movFile] } });
+    fireEvent.click(screen.getByText('Confirmar Envio'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/O progresso foi mantido/i)).toBeInTheDocument();
+      expect(screen.getAllByText('Retomar Envio').length).toBeGreaterThan(0);
+      expect(screen.queryByText('Tentar Novamente')).not.toBeInTheDocument();
+    });
+  });
 });

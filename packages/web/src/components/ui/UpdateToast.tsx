@@ -8,6 +8,7 @@ import {
 } from '../../stores/updateStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useVoiceStore } from '../../stores/voiceStore';
+import { CallActiveUpdateModal } from '../modals/CallActiveUpdateModal';
 
 export function UpdateToast() {
   const { t } = useTranslation(['desktop', 'common']);
@@ -18,14 +19,10 @@ export function UpdateToast() {
   const install = useUpdateStore((s) => s.install);
   const openDownloadPage = useUpdateStore((s) => s.openDownloadPage);
   const addToast = useUIStore((s) => s.addToast);
-  const inActiveCall = useVoiceStore((s) => Boolean(s.currentVoiceChannelId));
-  const [confirmedInCall, setConfirmedInCall] = useState(false);
+  const inActiveCall = useVoiceStore((s) => Boolean(s.currentVoiceChannelId || s.activeDmCall));
+  const [showCallWarning, setShowCallWarning] = useState(false);
 
   useEffect(() => initialize(), [initialize]);
-
-  useEffect(() => {
-    if (!inActiveCall) setConfirmedInCall(false);
-  }, [inActiveCall]);
 
   if (!shouldPrompt(snapshot) || snapshot === null) return null;
 
@@ -50,9 +47,8 @@ export function UpdateToast() {
   };
 
   const handleInstallClick = () => {
-    if (inActiveCall && !confirmedInCall) {
-      setConfirmedInCall(true);
-      addToast(t('desktop:update.laterHint'), 'warning', 5000);
+    if (inActiveCall) {
+      setShowCallWarning(true);
       return;
     }
     install();
@@ -198,6 +194,14 @@ export function UpdateToast() {
           </button>
         </div>
       </div>
+      <CallActiveUpdateModal
+        isOpen={showCallWarning}
+        onClose={() => setShowCallWarning(false)}
+        onConfirm={() => {
+          setShowCallWarning(false);
+          install();
+        }}
+      />
     </div>
   );
 }

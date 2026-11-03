@@ -482,4 +482,78 @@ describe('Winks Chunked & Resumable Upload Architecture', () => {
     expect(webmProbe.hasAlpha).toBe(true);
     expect(webmProbe.hasAudio).toBe(true);
   });
+
+  it('handles TUS endpoints consistently with and without trailing slash (POST, OPTIONS, HEAD, PATCH, DELETE)', async () => {
+    // 1. OPTIONS without trailing slash
+    const optRes1 = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/admin/winks/files',
+      headers: { authorization: 'Bearer user-admin' },
+    });
+    expect([200, 204]).toContain(optRes1.statusCode);
+    expect(optRes1.headers['tus-resumable']).toBe('1.0.0');
+
+    // 2. OPTIONS with trailing slash
+    const optRes2 = await app.inject({
+      method: 'OPTIONS',
+      url: '/api/admin/winks/files/',
+      headers: { authorization: 'Bearer user-admin' },
+    });
+    expect([200, 204]).toContain(optRes2.statusCode);
+    expect(optRes2.headers['tus-resumable']).toBe('1.0.0');
+
+    // 3. POST with trailing slash
+    const createSlashRes = await app.inject({
+      method: 'POST',
+      url: '/api/admin/winks/files/',
+      headers: {
+        authorization: 'Bearer user-admin',
+        'tus-resumable': '1.0.0',
+        'upload-length': '1024',
+        'upload-metadata': 'filename c2xhc2hfdGVzdC5tb3Y=',
+      },
+    });
+    expect(createSlashRes.statusCode).toBe(201);
+    const locSlash = createSlashRes.headers['location'] as string;
+    expect(locSlash).toMatch(/\/api\/admin\/winks\/files\/[a-zA-Z0-9_-]+/);
+    const slashUploadId = path.basename(locSlash);
+
+    // 4. POST without trailing slash
+    const createNoSlashRes = await app.inject({
+      method: 'POST',
+      url: '/api/admin/winks/files',
+      headers: {
+        authorization: 'Bearer user-admin',
+        'tus-resumable': '1.0.0',
+        'upload-length': '1024',
+        'upload-metadata': 'filename bm9fc2xhc2hfdGVzdC5tb3Y=',
+      },
+    });
+    expect(createNoSlashRes.statusCode).toBe(201);
+    const locNoSlash = createNoSlashRes.headers['location'] as string;
+    expect(locNoSlash).toMatch(/\/api\/admin\/winks\/files\/[a-zA-Z0-9_-]+/);
+    const noSlashUploadId = path.basename(locNoSlash);
+
+    // 5. DELETE with tus-resumable header returns 204 No Content
+    const delRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/admin/winks/files/${slashUploadId}`,
+      headers: {
+        authorization: 'Bearer user-admin',
+        'tus-resumable': '1.0.0',
+      },
+    });
+    expect(delRes.statusCode).toBe(204);
+    expect(delRes.headers['tus-resumable']).toBe('1.0.0');
+
+    // Clean up second upload
+    await app.inject({
+      method: 'DELETE',
+      url: `/api/admin/winks/files/${noSlashUploadId}`,
+      headers: {
+        authorization: 'Bearer user-admin',
+        'tus-resumable': '1.0.0',
+      },
+    });
+  });
 });

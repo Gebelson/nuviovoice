@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { resolveTusUrl, tusEndpoint, getHomeOrigin } from './tusUrl';
+import { resolveTusUrl, tusEndpoint, winkTusEndpoint, getHomeOrigin } from './tusUrl';
 
 describe('resolveTusUrl', () => {
   it('resolves a relative Location against the home origin when no origin is given', () => {
@@ -42,6 +42,30 @@ describe('tusEndpoint', () => {
       expect(getHomeOrigin()).toBe('https://backend.nuvio.app');
       expect(tusEndpoint(undefined)).toBe('https://backend.nuvio.app/api/files/');
       expect(resolveTusUrl('/api/files/test123', undefined)).toBe('https://backend.nuvio.app/api/files/test123');
+    } finally {
+      (window as any).nuvioConfig = originalNuvioConfig;
+    }
+  });
+});
+
+
+describe('winkTusEndpoint', () => {
+  it('is absolute without a trailing slash for home instance', () => {
+    expect(winkTusEndpoint(undefined)).toBe('http://localhost:3000/api/admin/winks/files');
+    expect(winkTusEndpoint('')).toBe('http://localhost:3000/api/admin/winks/files');
+  });
+
+  it('targets remote origins without a trailing slash', () => {
+    expect(winkTusEndpoint('https://orbit.example')).toBe('https://orbit.example/api/admin/winks/files');
+    expect(winkTusEndpoint('https://orbit.example/')).toBe('https://orbit.example/api/admin/winks/files');
+    expect(winkTusEndpoint('https://167-234-239-100.sslip.io')).toBe('https://167-234-239-100.sslip.io/api/admin/winks/files');
+  });
+
+  it('honours desktop nuvioConfig backendUrl when set', () => {
+    const originalNuvioConfig = (window as any).nuvioConfig;
+    try {
+      (window as any).nuvioConfig = { backendUrl: 'https://backend.nuvio.app' };
+      expect(winkTusEndpoint(undefined)).toBe('https://backend.nuvio.app/api/admin/winks/files');
     } finally {
       (window as any).nuvioConfig = originalNuvioConfig;
     }

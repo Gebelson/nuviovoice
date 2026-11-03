@@ -30,25 +30,25 @@ export function GigCard({ opportunity, onClick, onToggleFavorite, isFavorite }: 
   return (
     <div
       onClick={onClick}
-      className="group relative flex flex-col justify-between overflow-hidden bg-surface-card hover:bg-surface-card-hover border border-border-card hover:border-accent-primary/40 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-xl hover:shadow-accent-primary/5 select-none"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-surface-panel/80 hover:bg-surface-panel border border-border-hard hover:border-accent-primary/40 transition-all duration-300 shadow-xl cursor-pointer select-none"
     >
       <div>
         {/* Cover / Media Area */}
-        <div className="relative aspect-[16/10] w-full bg-surface-base overflow-hidden border-b border-border-card">
+        <div className="relative h-44 w-full bg-surface-channel overflow-hidden border-b border-border-hard">
           {opportunity.coverImage ? (
             <img
               src={opportunity.coverImage}
               alt={opportunity.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-accent-primary/10 via-surface-base to-purple-900/10 text-txt-tertiary">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-                <circle cx="9" cy="9" r="2" />
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-              </svg>
-              <span className="text-[11px] font-medium mt-1">Serviço Especializado</span>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-accent-primary/20 via-surface-panel to-surface-channel text-txt-tertiary">
+              <div className="w-12 h-12 rounded-2xl bg-surface-base/80 border border-border-hard flex items-center justify-center text-accent-primary shadow-sm mb-1">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                </svg>
+              </div>
+              <span className="text-[11px] font-semibold text-txt-secondary">Serviço Especializado</span>
             </div>
           )}
 
@@ -60,7 +60,7 @@ export function GigCard({ opportunity, onClick, onToggleFavorite, isFavorite }: 
                 e.stopPropagation();
                 onToggleFavorite(e);
               }}
-              className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-md bg-black/40 hover:bg-black/60 transition-all ${
+              className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-md bg-black/50 hover:bg-black/70 transition-all ${
                 isFavorite ? 'text-rose-500' : 'text-white/80 hover:text-white'
               }`}
               title={isFavorite ? 'Remover dos favoritos' : 'Favoritar'}
@@ -80,40 +80,40 @@ export function GigCard({ opportunity, onClick, onToggleFavorite, isFavorite }: 
 
           {/* Package count badge */}
           {packages && (
-            <div className="absolute bottom-2 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 backdrop-blur-md text-white/90 border border-white/10">
+            <div className="absolute bottom-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-white/90 border border-white/10">
               {Object.keys(packages).length} {Object.keys(packages).length === 1 ? 'pacote' : 'pacotes'}
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-5">
           {/* Author row */}
-          <div className="flex items-center gap-2 mb-2.5">
+          <div className="flex items-center gap-2.5 mb-3">
             {opportunity.author ? (
               <Avatar
                 user={opportunity.author as any}
                 name={opportunity.author?.displayName || opportunity.author?.username || 'Profissional'}
-                size={24}
+                size={26}
               />
             ) : (
-              <div className="w-6 h-6 rounded-full bg-surface-base" />
+              <div className="w-6 h-6 rounded-full bg-surface-channel border border-border-hard" />
             )}
-            <span className="text-xs font-semibold text-txt-secondary truncate">
+            <span className="text-xs font-bold text-txt-secondary truncate group-hover:text-txt-primary transition-colors">
               {opportunity.author?.displayName || opportunity.author?.username || 'Profissional'}
             </span>
           </div>
 
           {/* Gig Title */}
-          <h3 className="text-sm font-semibold text-txt-primary group-hover:text-accent-primary transition-colors line-clamp-2 leading-snug mb-3">
+          <h3 className="text-base font-bold text-white group-hover:text-accent-primary transition-colors line-clamp-2 leading-snug mb-3">
             {opportunity.title}
           </h3>
 
           {/* Delivery & details meta */}
-          <div className="flex items-center gap-3 text-[11px] text-txt-muted mb-2">
+          <div className="flex items-center gap-3 text-[11px] text-txt-tertiary mb-2">
             {deliveryDays && (
-              <span className="flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <span className="flex items-center gap-1 font-medium">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
@@ -121,8 +121,8 @@ export function GigCard({ opportunity, onClick, onToggleFavorite, isFavorite }: 
               </span>
             )}
             {opportunity.revisionsCount !== undefined && opportunity.revisionsCount !== null && (
-              <span className="flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <span className="flex items-center gap-1 font-medium">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                   <path d="M3 3v5h5" />
                 </svg>
@@ -134,9 +134,9 @@ export function GigCard({ opportunity, onClick, onToggleFavorite, isFavorite }: 
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-border-subtle bg-surface-card/40 flex items-center justify-between">
-        <span className="text-xs text-txt-muted">A partir de</span>
-        <span className="text-sm font-bold text-accent-primary">
+      <div className="px-5 py-3.5 border-t border-border-hard bg-surface-channel/40 flex items-center justify-between">
+        <span className="text-xs text-txt-tertiary font-medium">A partir de</span>
+        <span className="text-sm font-extrabold text-accent-primary">
           {getStartingPrice()}
         </span>
       </div>

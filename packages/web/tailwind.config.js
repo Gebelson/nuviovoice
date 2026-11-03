@@ -18,11 +18,14 @@ export default {
           members:  'rgb(var(--bg-members) / <alpha-value>)',
           elevated: 'rgb(var(--bg-elevated) / <alpha-value>)',
           input:    'rgb(var(--bg-input) / <alpha-value>)',
+          panel:    'rgb(var(--bg-channel) / <alpha-value>)',
+          card:     'rgb(var(--bg-elevated) / <alpha-value>)',
           overlay:  'var(--bg-overlay)',
         },
         border: {
           hard: 'rgb(var(--border-hard) / <alpha-value>)',
           soft: 'rgb(var(--border-soft) / <alpha-value>)',
+          card: 'rgb(var(--border-hard) / <alpha-value>)',
         },
         accent: {
           mint:            'rgb(var(--accent-mint) / <alpha-value>)',
