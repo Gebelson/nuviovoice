@@ -7,7 +7,7 @@ import { useSpaceStore, getMyUserIdForOrigin } from '../../stores/spaceStore';
 import type { TaggedSpace } from '../../stores/spaceStore';
 import { resolveSpaceLayout, type ResolvedSpaceLayoutItem } from '../../utils/spaceLayout';
 import { spaceInviteUrl } from '../../utils/inviteParser';
-import { activeHomeNavItem } from '../../utils/homeNav';
+import { activeHomeNavItem, isDirectMessagesRailActive } from '../../utils/homeNav';
 import { useChatStore } from '../../stores/chatStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useInstanceStore } from '../../stores/instanceStore';
@@ -1580,11 +1580,7 @@ export function SpaceSidebar() {
       <SidebarItem
         id="@me"
         name={t('spaces:sidebar.directMessages')}
-        active={
-          showDms ||
-          activeHomeNavItem(location.pathname, currentChannelId) === 'backspace' ||
-          activeHomeNavItem(location.pathname, currentChannelId) === 'download'
-        }
+        active={isDirectMessagesRailActive(location.pathname)}
         onClick={handleDmClick}
         type="dm"
         hasUnread={hasDmUnread}

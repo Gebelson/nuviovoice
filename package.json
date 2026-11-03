@@ -25,7 +25,9 @@
     "gen-icons": "python scripts/generate_icons.py",
     "gen-social-preview": "node scripts/gen-social-preview.mjs",
     "bump": "node scripts/bump-version.mjs",
-    "smoke:web": "node scripts/smoke-web-browser.mjs"
+    "smoke:web": "node scripts/smoke-web-browser.mjs",
+    "release": "node scripts/publish-nuvio.mjs",
+    "release:patch": "node scripts/publish-nuvio.mjs --bump patch"
   },
   "devDependencies": {
     "eslint": "^10.11.0",

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { HubUpdateState } from '../../stores/projectHubStore';
 
 // Stub AudioManager to avoid AudioWorkletNode reference error in jsdom.
-// Reached transitively via the voice components and stores.
 vi.mock('../../audio/AudioManager', () => ({
   AudioManager: {
     getInstance: vi.fn().mockReturnValue({
@@ -12,22 +10,16 @@ vi.mock('../../audio/AudioManager', () => ({
   },
 }));
 
-// The dot's source of truth has its own tests; here only what the sidebar
-// does with each state matters.
-const hubState = vi.hoisted(() => ({ state: 'current' as HubUpdateState }));
-vi.mock('../../hooks/useHubUpdateState', () => ({
-  useHubUpdateState: () => ({ state: hubState.state, version: '1.2.0' }),
-}));
-
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { useChatStore } from '../../stores/chatStore';
 import { useSpaceStore } from '../../stores/spaceStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useAuthStore } from '../../stores/authStore';
 import { ChannelSidebar } from './ChannelSidebar';
+import * as platformModule from '../../platform/platform';
 
 const SELECTED = 'bg-interactive-selected';
-const LABELS = { friends: 'Friends', explore: 'Explore', backspace: 'Backspace' } as const;
 
 function LocationProbe() {
   return <div data-testid="location">{useLocation().pathname}</div>;
@@ -42,69 +34,109 @@ function renderAt(pathname: string) {
   );
 }
 
-/** The clickable row of a home item, found by its visible label. */
-function homeItem(label: string): HTMLElement {
-  const row = screen.getByText(label, { selector: 'span' }).parentElement;
-  if (!row) throw new Error(`no row for ${label}`);
-  return row;
+function getFriendsItem(): HTMLElement {
+  const el = screen.getByText(/Friends|Amigos/i, { selector: 'span' }).parentElement;
+  if (!el) throw new Error('Friends item not found');
+  return el;
 }
 
-function selectedItems(): string[] {
-  return Object.entries(LABELS)
-    .filter(([, label]) => homeItem(label).classList.contains(SELECTED))
-    .map(([key]) => key);
+function getOpportunitiesItem(): HTMLElement {
+  return screen.getByTestId('dm-sidebar-opportunities');
+}
+
+function getStoreItem(): HTMLElement {
+  return screen.getByTestId('dm-sidebar-store');
+}
+
+function getDownloadItem(): HTMLElement {
+  return screen.getByTestId('dm-sidebar-download-nuvio');
 }
 
 beforeEach(() => {
-  hubState.state = 'current';
+  vi.spyOn(platformModule, 'isElectron').mockReturnValue(false);
   useChatStore.setState({ currentChannelId: null });
   useSpaceStore.setState({ spaces: [], currentSpaceId: null, channels: [], dmChannels: [] });
   useUIStore.setState({ showDms: true });
+  useAuthStore.setState({
+    user: {
+      id: 'u-1',
+      username: 'gebelson',
+      displayName: 'Gebelson',
+      createdAt: 1,
+      isAdmin: false,
+      replicatedInstances: [],
+    } as any,
+  });
 });
 
-describe('ChannelSidebar home items', () => {
-  it('selects only Explore on /explore', () => {
-    renderAt('/explore');
-    expect(selectedItems()).toEqual(['explore']);
-  });
-
-  it('selects only Backspace on /backspace', () => {
-    renderAt('/backspace');
-    expect(selectedItems()).toEqual(['backspace']);
-  });
-
-  it('selects only Friends on the DM home', () => {
+describe('ChannelSidebar home navigation items', () => {
+  it('selects only Friends on the DM home (/channels/@me)', () => {
     renderAt('/channels/@me');
-    expect(selectedItems()).toEqual(['friends']);
+    expect(getFriendsItem().classList.contains(SELECTED)).toBe(true);
+    expect(getOpportunitiesItem().classList.contains(SELECTED)).toBe(false);
+    expect(getStoreItem().classList.contains(SELECTED)).toBe(false);
+    expect(getDownloadItem().classList.contains(SELECTED)).toBe(false);
   });
 
-  it('selects none of them while a DM is open', () => {
+  it('selects only Opportunities on /opportunities', () => {
+    renderAt('/opportunities');
+    expect(getFriendsItem().classList.contains(SELECTED)).toBe(false);
+    expect(getOpportunitiesItem().classList.contains(SELECTED)).toBe(true);
+    expect(getStoreItem().classList.contains(SELECTED)).toBe(false);
+    expect(getDownloadItem().classList.contains(SELECTED)).toBe(false);
+  });
+
+  it('selects only Store on /store and /developers', () => {
+    const { unmount } = renderAt('/store');
+    expect(getFriendsItem().classList.contains(SELECTED)).toBe(false);
+    expect(getOpportunitiesItem().classList.contains(SELECTED)).toBe(false);
+    expect(getStoreItem().classList.contains(SELECTED)).toBe(true);
+    expect(getDownloadItem().classList.contains(SELECTED)).toBe(false);
+    unmount();
+
+    renderAt('/developers');
+    expect(getStoreItem().classList.contains(SELECTED)).toBe(true);
+    expect(getFriendsItem().classList.contains(SELECTED)).toBe(false);
+  });
+
+  it('selects only Download Nuvio on /download', () => {
+    renderAt('/download');
+    expect(getFriendsItem().classList.contains(SELECTED)).toBe(false);
+    expect(getOpportunitiesItem().classList.contains(SELECTED)).toBe(false);
+    expect(getStoreItem().classList.contains(SELECTED)).toBe(false);
+    expect(getDownloadItem().classList.contains(SELECTED)).toBe(true);
+  });
+
+  it('selects none of the 4 home items while a DM conversation is open', () => {
     useChatStore.setState({ currentChannelId: 'dm-1' });
     renderAt('/channels/@me/dm-1');
-    expect(selectedItems()).toEqual([]);
+    expect(getFriendsItem().classList.contains(SELECTED)).toBe(false);
+    expect(getOpportunitiesItem().classList.contains(SELECTED)).toBe(false);
+    expect(getStoreItem().classList.contains(SELECTED)).toBe(false);
+    expect(getDownloadItem().classList.contains(SELECTED)).toBe(false);
   });
 
-  it('navigates to /backspace when the Backspace item is clicked', () => {
+  it('navigates to /opportunities when Opportunities is clicked', () => {
     renderAt('/channels/@me');
-    fireEvent.click(homeItem(LABELS.backspace));
-    expect(screen.getByTestId('location')).toHaveTextContent('/backspace');
+    fireEvent.click(getOpportunitiesItem());
+    expect(screen.getByTestId('location')).toHaveTextContent('/opportunities');
   });
 
-  it('no longer renders the Coming Soon placeholder', () => {
+  it('navigates to /store when Store is clicked', () => {
     renderAt('/channels/@me');
-    expect(screen.queryByText('Coming Soon')).toBeNull();
+    fireEvent.click(getStoreItem());
+    expect(screen.getByTestId('location')).toHaveTextContent('/store');
   });
 
-  it('shows the updated dot when the instance updated since the last visit', () => {
-    hubState.state = 'updated';
+  it('navigates to /download when Download Nuvio is clicked', () => {
     renderAt('/channels/@me');
-    const dot = screen.getByRole('img', { name: 'Backspace was updated' });
-    expect(homeItem(LABELS.backspace)).toContainElement(dot);
+    fireEvent.click(getDownloadItem());
+    expect(screen.getByTestId('location')).toHaveTextContent('/download');
   });
 
-  it.each<HubUpdateState>(['unknown', 'first-run', 'current'])('shows no dot when the state is %s', (state) => {
-    hubState.state = state;
-    renderAt('/channels/@me');
-    expect(screen.queryByRole('img', { name: 'Backspace was updated' })).toBeNull();
+  it('navigates to /channels/@me when Friends is clicked', () => {
+    renderAt('/download');
+    fireEvent.click(getFriendsItem());
+    expect(screen.getByTestId('location')).toHaveTextContent('/channels/@me');
   });
 });

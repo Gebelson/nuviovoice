@@ -505,21 +505,25 @@ export function ChannelSidebar() {
 
   const handleHomeClick = () => {
     setCurrentChannel(null);
+    useUIStore.getState().setShowDms(true);
     navigate('/channels/@me');
   };
 
   const handleStoreClick = () => {
     setCurrentChannel(null);
+    useUIStore.getState().setShowDms(false);
     navigate('/store');
   };
 
   const handleOpportunitiesClick = () => {
     setCurrentChannel(null);
+    useUIStore.getState().setShowDms(false);
     navigate('/opportunities');
   };
 
   const handleDownloadClick = () => {
     setCurrentChannel(null);
+    useUIStore.getState().setShowDms(false);
     navigate('/download');
   };
 

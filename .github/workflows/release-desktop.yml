@@ -2,14 +2,20 @@ name: Release Nuvio Desktop
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag da versão para publicar (ex: v1.12.0)'
-        required: true
+        description: 'Tag da versão para publicar (ex: v1.15.0)'
+        required: false
         type: string
+
+concurrency:
+  group: release-desktop-build
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -33,22 +39,55 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Resolve Release Tag & Check Status
+        id: release_meta
+        shell: powershell
+        run: |
+          $pkgVersion = (Get-Content packages/desktop/package.json | ConvertFrom-Json).version
+          $inputTag = "${{ inputs.tag }}"
+          $targetTag = if ($inputTag -ne "") { $inputTag } elseif ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "v$pkgVersion" }
+          Write-Output "Resolved target tag: $targetTag"
+          Write-Output "Package version: $pkgVersion"
+          "TARGET_TAG=$targetTag" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "PKG_VERSION=$pkgVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          # Check if this release already exists with built assets on GitHub
+          try {
+            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/tags/$targetTag" -Headers @{ "User-Agent" = "GitHubActions"; "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}" } -ErrorAction Stop
+            if ($rel -and $rel.id -and $rel.assets.Count -ge 3) {
+              Write-Output "Release $targetTag is already published with $($rel.assets.Count) assets on GitHub. Skipping build."
+              "SKIP_BUILD=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+            } else {
+              Write-Output "Release $targetTag has not been completed yet. Proceeding with build."
+              "SKIP_BUILD=false" | Out-File -FilePath $env:GITHUB_ENV -Append
+            }
+          } catch {
+            Write-Output "Release $targetTag does not exist yet. Automated build and publish will proceed for version $pkgVersion."
+            "SKIP_BUILD=false" | Out-File -FilePath $env:GITHUB_ENV -Append
+          }
+
       - name: Install dependencies
+        if: env.SKIP_BUILD != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build shared package
+        if: env.SKIP_BUILD != 'true'
         run: pnpm --filter @concord/shared build
 
       - name: Run TypeScript checks
+        if: env.SKIP_BUILD != 'true'
         run: pnpm -r typecheck
 
       - name: Run Desktop & Update unit tests
+        if: env.SKIP_BUILD != 'true'
         run: pnpm --filter @concord/desktop test
 
       - name: Build shared Web frontend
+        if: env.SKIP_BUILD != 'true'
         run: pnpm --filter @concord/web build
 
       - name: Build & Package Nuvio Desktop (Windows NSIS + Updater Metadata)
+        if: env.SKIP_BUILD != 'true'
         working-directory: packages/desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -59,6 +98,7 @@ jobs:
           pnpm exec electron-builder --win --x64 --publish never
 
       - name: Verify build artifacts and signatures
+        if: env.SKIP_BUILD != 'true'
         shell: powershell
         run: |
           if (-not (Test-Path "packages/desktop/dist-electron/Nuvio-Setup.exe")) { throw "Nuvio-Setup.exe was not generated" }
@@ -72,7 +112,7 @@ jobs:
             throw "Version mismatch: package.json ($pkgVersion) does not match latest.yml"
           }
           Write-Output "Verified package version matches latest.yml: $pkgVersion"
-          
+
           # Inspect Authenticode signature status
           $sig = Get-AuthenticodeSignature "packages/desktop/dist-electron/Nuvio-Setup.exe"
           Write-Output "=== Authenticode Signature Status ==="
@@ -84,7 +124,7 @@ jobs:
           } else {
             Write-Output "Note: Binary is unsigned. SmartScreen reputation will be established per-hash or through Microsoft Store / SignPath code signing."
           }
-          
+
           # Generate official SHA-256 checksums file
           Get-ChildItem packages/desktop/dist-electron/Nuvio-Setup.exe, packages/desktop/dist-electron/Nuvio-Setup.exe.blockmap, packages/desktop/dist-electron/latest.yml |
             Get-FileHash -Algorithm SHA256 |
@@ -95,7 +135,7 @@ jobs:
           Get-Content packages/desktop/dist-electron/SHA256SUMS.txt
 
       - name: Sign with SignPath (Optional / Automated when configured)
-        if: ${{ env.SIGNPATH_API_TOKEN != '' }}
+        if: env.SKIP_BUILD != 'true' && env.SIGNPATH_API_TOKEN != ''
         uses: SignPath/github-action-submit-signing-request@v1
         env:
           SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -109,10 +149,11 @@ jobs:
           output-artifact-directory: "packages/desktop/dist-electron"
 
       - name: Publish GitHub Release
+        if: env.SKIP_BUILD != 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          name: Nuvio Desktop ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ env.TARGET_TAG }}
+          name: Nuvio Desktop ${{ env.TARGET_TAG }}
           draft: false
           prerelease: false
           files: |
@@ -122,5 +163,3 @@ jobs:
             packages/desktop/dist-electron/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-

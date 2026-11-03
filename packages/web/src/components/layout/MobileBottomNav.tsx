@@ -54,7 +54,9 @@ export function MobileBottomNav() {
         (location.pathname.startsWith('/channels/@me') && mobileScreen !== 'you') ||
         (mobileScreen === 'dms' &&
           !location.pathname.startsWith('/explore') &&
-          !location.pathname.startsWith('/store'))
+          !location.pathname.startsWith('/store') &&
+          !location.pathname.startsWith('/opportunities') &&
+          !location.pathname.startsWith('/download'))
       );
     }
     if (tabId === 'you') {
@@ -65,6 +67,8 @@ export function MobileBottomNav() {
         mobileScreen === 'spaces' &&
         !location.pathname.startsWith('/explore') &&
         !location.pathname.startsWith('/store') &&
+        !location.pathname.startsWith('/opportunities') &&
+        !location.pathname.startsWith('/download') &&
         !location.pathname.startsWith('/channels/@me')
       );
     }
