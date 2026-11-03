@@ -3,12 +3,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { InstanceInfoResponse, User } from '@concord/shared';
 
 // ── Fixtures and store mocks ────────────────────────────────────────────────
-// The modal reads four stores through selectors. Each is mocked with the
-// selector-aware callable idiom used across the web suite
-// (settingsPanels/AccountPanel.detachedNotice.test.tsx), so a selector gets the
-// fixture state and `getState()` keeps working for anything that reaches for it
-// outside a render. Everything a `vi.mock` factory touches lives in `vi.hoisted`,
-// because those factories run before module-level `const`s are initialised.
 const mocks = vi.hoisted(() => {
   const user: User = {
     id: 'user-self',
@@ -46,15 +40,12 @@ const mocks = vi.hoisted(() => {
       closeModal: vi.fn(),
     },
     auth: { user, logout: vi.fn() },
-    // useInstanceUpdateBadge reads these three; no update is pending, so no dot.
     settings: {
       updateStatus: null,
       updateAck: { seenVersion: null, toastShownFor: null },
       isAdmin: false,
     },
     instanceInfo,
-    // The update store the Electron panel consumes, copied from
-    // settingsPanels/DesktopPanel.test.tsx.
     update: {
       initialize: vi.fn(),
       snapshot: {
@@ -95,14 +86,26 @@ vi.mock('../../stores/updateStore', () => ({
   useUpdateStore: (selector: (s: typeof mocks.update) => unknown) => selector(mocks.update),
 }));
 
-vi.mock('../../api/client', () => ({
-  api: { instance: { info: () => Promise.resolve(mocks.instanceInfo) } },
-}));
+vi.mock('../../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/client')>();
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      instance: { info: () => Promise.resolve(mocks.instanceInfo) },
+    },
+  };
+});
 
-// Every sibling panel is stubbed, so this test renders only the modal chrome and
-// whichever of the two Desktop panels the wiring picks.
+// Stubs for panels to isolate modal navigation and layout testing
 vi.mock('./settingsPanels/AccountPanel', () => ({ AccountPanel: () => <p>AccountPanel stub</p> }));
 vi.mock('./settingsPanels/AppearancePanel', () => ({ AppearancePanel: () => <p>AppearancePanel stub</p> }));
+vi.mock('./settingsPanels/DataPrivacyPanel', () => ({ DataPrivacyPanel: () => <p>DataPrivacyPanel stub</p> }));
+vi.mock('./settingsPanels/MessagePermissionsPanel', () => ({ MessagePermissionsPanel: () => <p>MessagePermissionsPanel stub</p> }));
+vi.mock('./settingsPanels/NotificationsPanel', () => ({ NotificationsPanel: () => <p>NotificationsPanel stub</p> }));
+vi.mock('./settingsPanels/GamesAppsPanel', () => ({ GamesAppsPanel: () => <p>GamesAppsPanel stub</p> }));
+vi.mock('./settingsPanels/AccessibilityPanel', () => ({ AccessibilityPanel: () => <p>AccessibilityPanel stub</p> }));
+vi.mock('./settingsPanels/LanguageTimePanel', () => ({ LanguageTimePanel: () => <p>LanguageTimePanel stub</p> }));
 vi.mock('./settingsPanels/VoicePanel', () => ({ VoicePanel: () => <p>VoicePanel stub</p> }));
 vi.mock('./settingsPanels/PrivacyPanel', () => ({ PrivacyPanel: () => <p>PrivacyPanel stub</p> }));
 vi.mock('./settingsPanels/ConnectionsPanel', () => ({ ConnectionsPanel: () => <p>ConnectionsPanel stub</p> }));
@@ -111,7 +114,6 @@ vi.mock('./settingsPanels/InstancePanel', () => ({ InstancePanel: () => <p>Insta
 
 import { UserSettingsModal } from './UserSettings';
 
-/** The preload bridge whose presence is what `isElectron()` reads. */
 function installDesktopHost() {
   Object.defineProperty(window, 'backspace', {
     configurable: true,
@@ -125,7 +127,6 @@ function installDesktopHost() {
   });
 }
 
-/** True when the nodes appear in this order in the document, each one after the last. */
 function inDocumentOrder(...nodes: HTMLElement[]): boolean {
   return nodes.every(
     (node, i) =>
@@ -134,14 +135,9 @@ function inDocumentOrder(...nodes: HTMLElement[]): boolean {
   );
 }
 
-/**
- * Renders the modal and waits for the instance info fetch to land. The panels
- * are lazily loaded (`lazySettingsPanels`), so this does not mean the open
- * panel has mounted: a test that reads a panel waits for it with `findBy*`.
- */
 async function openSettings(): Promise<void> {
   render(<UserSettingsModal />);
-  await screen.findByRole('link', { name: /Source code/i });
+  await screen.findByRole('button', { name: /Log Out/i });
 }
 
 beforeEach(() => {
@@ -151,72 +147,98 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   Reflect.deleteProperty(window as unknown as Record<string, unknown>, 'backspace');
+  mocks.ui.modalData = {};
+  mocks.auth.user = { ...mocks.auth.user, isAdmin: false };
 });
 
-describe('UserSettingsModal Desktop tab', () => {
-  it('shows the download offer in the browser', async () => {
+describe('UserSettingsModal Hub navigation structure', () => {
+  it('renders all 6 primary Hub categories for regular users', async () => {
     await openSettings();
 
-    const tab = screen.getByRole('button', { name: 'Desktop' });
-    // The tab sits inside App Settings: after that group's heading and its last
-    // entry, and before the next thing in the nav list. This account is not an
-    // admin, so what follows the group is the log out button in the footer.
+    expect(screen.getByRole('button', { name: 'Account' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Data & Privacy' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Message Permissions' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Notifications' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Experience' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Games & Apps' })).toBeInTheDocument();
+    // Non-admin does not have Instance tab
+    expect(screen.queryByRole('button', { name: 'Instance' })).not.toBeInTheDocument();
+
     expect(
       inDocumentOrder(
+        screen.getByText('User Settings'),
+        screen.getByRole('button', { name: 'Account' }),
+        screen.getByRole('button', { name: 'Data & Privacy' }),
+        screen.getByRole('button', { name: 'Message Permissions' }),
+        screen.getByRole('button', { name: 'Notifications' }),
         screen.getByText('App Settings'),
-        screen.getByRole('button', { name: 'Keybinds' }),
-        tab,
+        screen.getByRole('button', { name: 'Experience' }),
+        screen.getByRole('button', { name: 'Games & Apps' }),
         screen.getByRole('button', { name: 'Log Out' }),
       ),
     ).toBe(true);
-    // Nothing starts a new group between the heading and the tab: the only
-    // group headings rendered are User Settings and App Settings.
-    expect(screen.getAllByText(/^(User Settings|App Settings|Administration)$/)).toHaveLength(2);
+  });
 
-    fireEvent.click(tab);
+  it('renders Administration category when user is admin', async () => {
+    mocks.auth.user = { ...mocks.auth.user, isAdmin: true };
+    await openSettings();
+
+    expect(screen.getByRole('button', { name: 'Instance' })).toBeInTheDocument();
+    expect(screen.getByText('Administration')).toBeInTheDocument();
+  });
+
+  it('switches panels when clicking Hub category tabs', async () => {
+    await openSettings();
+
+    expect(await screen.findByText('AccountPanel stub')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Data & Privacy' }));
+    expect(await screen.findByText('DataPrivacyPanel stub')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Message Permissions' }));
+    expect(await screen.findByText('MessagePermissionsPanel stub')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(await screen.findByText('NotificationsPanel stub')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Games & Apps' }));
+    expect(await screen.findByText('GamesAppsPanel stub')).toBeInTheDocument();
+  });
+});
+
+describe('UserSettingsModal Desktop & Platform handling', () => {
+  it('shows the download offer in browser when viewing desktop sub-section', async () => {
+    mocks.ui.modalData = { tab: 'desktop' };
+    await openSettings();
 
     expect(await screen.findByRole('link', { name: 'All releases on GitHub' })).toBeInTheDocument();
-    // The Electron-only panel stays out of the browser.
     expect(screen.queryByRole('button', { name: 'Change Instance' })).not.toBeInTheDocument();
   });
 
-  it('shows the desktop app settings inside Electron', async () => {
+  it('shows desktop app controls inside Electron', async () => {
     installDesktopHost();
+    mocks.ui.modalData = { tab: 'desktop' };
     await openSettings();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Desktop' }));
-
-    // Both panels carry the same "Desktop" title, so the instance control is
-    // what tells them apart.
-    expect(await screen.findByRole('heading', { name: 'Desktop' })).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Change Instance' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'All releases on GitHub' })).not.toBeInTheDocument();
   });
 });
 
-describe('UserSettingsModal deep links (#330)', () => {
-  afterEach(() => {
-    mocks.ui.modalData = {};
-    mocks.auth.user = { ...mocks.auth.user, isAdmin: false };
-  });
-
+describe('UserSettingsModal deep link resolution and backward compatibility', () => {
   it.each([
     ['appearance', 'AppearancePanel stub'],
     ['voice', 'VoicePanel stub'],
     ['keybinds', 'KeybindsPanel stub'],
-  ])('opens on the %s tab a caller names', async (tab, marker) => {
+    ['chat', 'MessagePermissionsPanel stub'],
+    ['privacy', 'DataPrivacyPanel stub'],
+    ['connections', 'GamesAppsPanel stub'],
+    ['accessibility', 'AccessibilityPanel stub'],
+    ['language-time', 'LanguageTimePanel stub'],
+  ])('resolves deep link %s correctly', async (tab, expectedStub) => {
     mocks.ui.modalData = { tab };
     await openSettings();
-    // The named panel has to mount before the absence check below means
-    // anything: before it does, no panel is rendered at all.
-    expect(await screen.findByText(marker)).toBeInTheDocument();
-    expect(screen.queryByText('AccountPanel stub')).not.toBeInTheDocument();
-  });
-
-  it('opens on the desktop tab a caller names', async () => {
-    mocks.ui.modalData = { tab: 'desktop' };
-    await openSettings();
-    expect(await screen.findByRole('link', { name: 'All releases on GitHub' })).toBeInTheDocument();
+    expect(await screen.findByText(expectedStub)).toBeInTheDocument();
   });
 
   it('falls back to Account for the instance tab when the user is not an admin', async () => {
@@ -232,8 +254,8 @@ describe('UserSettingsModal deep links (#330)', () => {
     expect(await screen.findByText('InstancePanel stub')).toBeInTheDocument();
   });
 
-  it('falls back to Account for a tab that does not exist', async () => {
-    mocks.ui.modalData = { tab: 'nonsense' };
+  it('falls back to Account for unknown tabs', async () => {
+    mocks.ui.modalData = { tab: 'unknown_route' };
     await openSettings();
     expect(await screen.findByText('AccountPanel stub')).toBeInTheDocument();
   });

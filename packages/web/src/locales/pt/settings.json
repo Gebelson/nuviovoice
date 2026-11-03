@@ -180,7 +180,51 @@
     "backToMenu": "Voltar ao menu de configurações"
   },
   "appearance": {
-    "title": "Aparência"
+    "title": "Aparência",
+    "hubSubtitle": "Personalize o visual do seu perfil, densidade de mensagens e paleta de cores do Nuvio.",
+    "profileVisuals": {
+      "heading": "Identidade visual do perfil",
+      "description": "Escolha as cores de destaque e avatar exibidas para outros usuários no Nuvio.",
+      "unsavedBadge": "Alterações não salvas",
+      "previewLabel": "Prévia em tempo real",
+      "saveButton": "Salvar visual do perfil"
+    },
+    "themes": {
+      "heading": "Tema de superfície",
+      "description": "Selecione o estilo visual e de contraste da interface do Nuvio.",
+      "obsidian": {
+        "title": "Obsidiana (Padrão)",
+        "description": "Superfície escura com transparências sutis e brilho refinado."
+      },
+      "midnight": {
+        "title": "Meia-noite de alto contraste",
+        "description": "Fundo preto profundo com contraste máximo e bordas nítidas."
+      },
+      "amethyst": {
+        "title": "Vidro ametista",
+        "description": "Tons arroxeados com efeito de vidro fosco mais pronunciado."
+      }
+    },
+    "density": {
+      "heading": "Densidade das mensagens",
+      "description": "Ajuste o espaçamento vertical entre mensagens no chat.",
+      "comfortable": {
+        "title": "Confortável (Padrão)",
+        "description": "Mais espaçamento entre blocos e avatares normais."
+      },
+      "balanced": {
+        "title": "Equilibrada",
+        "description": "Espaçamento moderado ideal para telas médias."
+      },
+      "compact": {
+        "title": "Compacta",
+        "description": "Menor altura de linha para ver mais mensagens simultâneas."
+      },
+      "showAvatarsCompact": {
+        "title": "Exibir avatares no modo compacto",
+        "description": "Mantém avatares menores visíveis mesmo na visualização compacta."
+      }
+    }
   },
   "account": {
     "title": "Minha conta",
@@ -301,6 +345,12 @@
         "spacesFailed": "Falha ao processar os espaços",
         "deleteFailed": "Falha ao excluir a conta"
       }
+    },
+    "hubSubtitle": "Gerencie seus dados pessoais, credenciais e a identidade pública da sua conta.",
+    "visualMoved": {
+      "heading": "Cores e tema visual do perfil agora ficam em Aparência",
+      "description": "Para manter suas configurações mais organizadas, a paleta do avatar, banner e prévia do perfil foram unificadas em Experiência → Aparência.",
+      "action": "Ir para Aparência"
     }
   },
   "privacy": {
@@ -506,5 +556,605 @@
     },
     "version": "Versão {{version}}",
     "allReleases": "Todas as versões no GitHub"
+  },
+  "hub": {
+    "categories": {
+      "account": "Conta",
+      "dataPrivacy": "Dados e privacidade",
+      "messagePermissions": "Permissões de mensagens",
+      "notifications": "Notificações",
+      "experience": "Experiência",
+      "gamesApps": "Jogos e apps"
+    }
+  },
+  "experience": {
+    "title": "Experiência",
+    "subtitle": "Ajustes de áudio, vídeo, aparência, acessibilidade e atalhos de navegação.",
+    "subsections": {
+      "voiceVideo": "Voz e vídeo",
+      "appearance": "Aparência",
+      "accessibility": "Acessibilidade",
+      "keybinds": "Atalhos",
+      "desktop": "Desktop",
+      "languageTime": "Idioma e Horário"
+    }
+  },
+  "dataPrivacy": {
+    "title": "Dados e privacidade",
+    "subtitle": "Controle como suas informações são utilizadas, a visibilidade do seu perfil e proteções de criptografia.",
+    "subsections": {
+      "dataUsage": "Como o Nuvio usa meus dados",
+      "profilePrivacy": "Privacidade do perfil",
+      "voiceEncryption": "Criptografia de voz de ponta a ponta"
+    },
+    "dataUsage": {
+      "heading": "Uso de dados na plataforma",
+      "description": "Defina quais dados você autoriza o Nuvio a processar para melhorar o serviço.",
+      "operate": {
+        "title": "Dados essenciais de operação",
+        "description": "Permite processar telemetria básica necessária para estabilidade e entrega de mensagens."
+      },
+      "personalize": {
+        "title": "Personalização da experiência",
+        "description": "Utiliza interações recentes para recomendar canais, espaços e atalhos relevantes."
+      },
+      "sponsored": {
+        "title": "Conteúdo e espaços em destaque patrocinados",
+        "description": "Permite exibir recomendações promovidas por parceiros oficiais da comunidade."
+      },
+      "thirdParty": {
+        "title": "Dados de integração de terceiros",
+        "description": "Compartilha metadados mínimos com provedores externos como Twitch, Kick e YouTube."
+      },
+      "requestData": {
+        "heading": "Exportação de dados",
+        "description": "Baixe uma cópia completa dos dados associados à sua conta no Nuvio.",
+        "cardTitle": "Solicitar meus dados",
+        "cardBody": "Gera um arquivo seguro contendo seu histórico de perfil, espaços e configurações.",
+        "requestedStatus": "Solicitação enviada recentemente",
+        "button": "Solicitar pacote de dados",
+        "toastSuccess": "Solicitação de exportação registrada com sucesso!"
+      },
+      "transparencyTitle": "Compromisso com a sua privacidade",
+      "transparencyBody": "O Nuvio prioriza sua privacidade. Suas mensagens diretas e chamadas de voz são criptografadas e não vendemos dados a corretores de publicidade."
+    },
+    "profilePrivacy": {
+      "visibility": {
+        "heading": "Visibilidade do perfil público",
+        "description": "Defina quem pode visualizar seus dados completos de perfil e presenças ativas.",
+        "all": {
+          "title": "Todos os amigos e membros dos meus espaços",
+          "description": "Seu perfil completo pode ser visto por amigos e membros de qualquer espaço onde você participa."
+        },
+        "smallSpaces": {
+          "title": "Amigos e espaços pequenos (até 200 membros)",
+          "description": "Oculta detalhes avançados em grandes espaços públicos, exibindo somente para círculos menores."
+        },
+        "friendsOnly": {
+          "title": "Apenas amigos confirmados",
+          "description": "Somente usuários na sua lista de amigos podem ver detalhes do perfil e status de atividade."
+        }
+      },
+      "notifyFriends": {
+        "title": "Notificar amigos ao atualizar o perfil",
+        "description": "Envia um aviso discreto no feed de amigos quando você altera seu avatar ou biografia."
+      },
+      "related": {
+        "heading": "Controle quem pode encontrar você",
+        "description": "Ajuste quem tem permissão para enviar pedidos diretos de amizade.",
+        "action": "Ver permissões de amizade"
+      }
+    },
+    "voiceEncryption": {
+      "architectureTitle": "Criptografia de voz em tempo real",
+      "architectureBody": "As transmissões de voz entre os participantes são cifradas de ponta a ponta via WebRTC SRTP com chaves efêmeras geradas diretamente no cliente.",
+      "heading": "Segurança de chamadas e canais de voz",
+      "description": "Recursos adicionais para auditoria e verificação de chaves em canais de voz criptografados.",
+      "persistentCodes": {
+        "title": "Códigos de verificação persistentes",
+        "description": "Mantém impressões digitais de segurança salvas para alertar caso a chave de algum participante mude."
+      },
+      "verifiedPeersTitle": "Dispositivos e participantes verificados",
+      "protocolBadge": "E2EE Nativo",
+      "verifiedPeersEmpty": "Nenhum participante com código estático verificado no momento."
+    }
+  },
+  "messagePermissions": {
+    "title": "Permissões de mensagens",
+    "subtitle": "Configure filtros de conteúdo, proteção contra spam, mensagens diretas e gerenciamento de contatos.",
+    "subsections": {
+      "contentFilters": "Filtros de conteúdo",
+      "spamFilters": "Filtros de spam",
+      "directMessages": "Mensagens diretas",
+      "friendRequests": "Pedidos de amizade",
+      "connectedGames": "Jogos conectados",
+      "ignoreBlock": "Ignorar e bloquear"
+    },
+    "contentFilters": {
+      "sensitiveHeading": "Mídia sensível",
+      "sensitiveDescription": "Controle a exibição de imagens e vídeos com conteúdo sensível em diferentes áreas.",
+      "graphicHeading": "Mídia com violência ou conteúdo gráfico",
+      "graphicDescription": "Defina o nível de proteção para mídias potencialmente perturbadoras.",
+      "actions": {
+        "show": "Mostrar diretamente",
+        "blur": "Desfocar com aviso",
+        "block": "Bloquear completamente"
+      },
+      "contexts": {
+        "friendsDm": {
+          "title": "Mensagens diretas de amigos",
+          "description": "Aplica o filtro ao receber mídia de usuários adicionados como amigos."
+        },
+        "strangersDm": {
+          "title": "Mensagens diretas de desconhecidos",
+          "description": "Aplica o filtro a solicitações de mensagem de quem não é seu amigo."
+        },
+        "spaceChannels": {
+          "title": "Canais públicos e espaços",
+          "description": "Aplica o filtro em canais de texto de espaços comunitários."
+        }
+      },
+      "ageRestriction": {
+        "heading": "Espaços com restrição de idade",
+        "title": "Permitir entrada em canais e espaços 18+",
+        "description": "Habilita acesso a canais classificados como restritos para maiores."
+      },
+      "related": {
+        "heading": "Proteção automática contra spam",
+        "description": "Configure regras automáticas para mensagens não solicitadas.",
+        "action": "Configurar filtros de spam"
+      }
+    },
+    "spamFilters": {
+      "heading": "Proteção contra mensagens e links suspeitos",
+      "description": "O Nuvio analisa mensagens para identificar fraudes, phishing e spam automatizado.",
+      "recommendedBadge": "Recomendado",
+      "options": {
+        "all": {
+          "title": "Filtrar todas as mensagens",
+          "description": "Analisa mensagens recebidas de todos os usuários, incluindo amigos."
+        },
+        "nonFriends": {
+          "title": "Filtrar apenas mensagens de não amigos (Recomendado)",
+          "description": "Não escaneia mensagens enviadas por seus amigos confirmados."
+        },
+        "off": {
+          "title": "Desativado",
+          "description": "Nenhum filtro de spam ou verificação de links suspeitos será aplicado."
+        }
+      }
+    },
+    "directMessages": {
+      "heading": "Regras para mensagens diretas (DMs)",
+      "description": "Defina quem pode entrar em contato diretamente com você.",
+      "allowSpaceDms": {
+        "title": "Permitir mensagens diretas de membros de espaços",
+        "description": "Esta configuração define o padrão para novos espaços aos quais você se juntar."
+      },
+      "messageRequests": {
+        "title": "Habilitar solicitações de mensagem",
+        "description": "Coloca mensagens de pessoas desconhecidas em uma caixa de entrada separada."
+      },
+      "winksAutoplay": {
+        "title": "Reprodução automática de animações e Winks",
+        "description": "Reproduz animações enviadas no chat sem precisar clicar nelas."
+      },
+      "winksAudio": {
+        "title": "Efeitos sonoros nos Winks",
+        "description": "Toca sons divertidos sincronizados com as animações de Winks."
+      },
+      "winksVolume": "Volume dos efeitos de Winks",
+      "winksReduceMotion": {
+        "title": "Reduzir movimento em animações de mensagens",
+        "description": "Substitui transições intensas por aparições suaves."
+      }
+    },
+    "friendRequests": {
+      "whoCanSendHeading": "Quem pode enviar pedidos de amizade",
+      "whoCanSendDescription": "Escolha quem pode solicitar conexão direta com sua conta.",
+      "everyone": {
+        "title": "Todos",
+        "description": "Qualquer usuário do Nuvio pode enviar pedidos de amizade para você."
+      },
+      "mutualFriends": {
+        "title": "Amigos de amigos",
+        "description": "Apenas pessoas que já tenham pelo menos um amigo em comum."
+      },
+      "spaceMembers": {
+        "title": "Membros de espaços em comum",
+        "description": "Apenas usuários que compartilham pelo menos um espaço com você."
+      },
+      "customMessages": {
+        "title": "Permitir mensagem personalizada no pedido",
+        "description": "Permite que quem envia uma solicitação anexe uma mensagem curta de introdução."
+      }
+    },
+    "connectedGames": {
+      "heading": "Mensagens originadas de jogos",
+      "description": "Regras de comunicação para jogos integrados ao Nuvio.",
+      "allowFriendDms": {
+        "title": "Permitir DMs de amigos dentro de partidas",
+        "description": "Receba mensagens no chat enquanto estiver jogando com amigos conectados."
+      },
+      "allowMatchInvites": {
+        "title": "Permitir convites para partidas e lobbies",
+        "description": "Receba convites de jogos diretamente nas notificações do Nuvio."
+      },
+      "displayModesHeading": "Exibição de mensagens de jogo",
+      "displayModesDescription": "Controle quais mensagens de jogos são destacadas na interface.",
+      "displayModes": {
+        "all": {
+          "title": "Exibir de todos os jogos conectados",
+          "description": "Mostra notificações e convites de qualquer jogo com suporte ativo."
+        },
+        "sameGame": {
+          "title": "Apenas do mesmo jogo em execução",
+          "description": "Mostra apenas mensagens relacionadas ao título que você está jogando agora."
+        },
+        "none": {
+          "title": "Ocultar mensagens de jogos",
+          "description": "Não exibe alertas de partidas durante o jogo."
+        }
+      },
+      "related": {
+        "heading": "Gerenciar aplicativos e jogos conectados",
+        "description": "Veja integrações ativas com plataformas e contas externas.",
+        "action": "Ver apps conectados"
+      }
+    },
+    "ignoreBlock": {
+      "blockedHeading": "Contas bloqueadas",
+      "blockedDescription": "Usuários bloqueados não podem enviar mensagens, entrar em chamadas com você nem ver seu status.",
+      "ignoredHeading": "Contas ignoradas",
+      "ignoredDescription": "Mensagens de usuários ignorados são ocultadas do chat sem que eles saibam.",
+      "inputPlaceholder": "Digite o @nome_de_usuario…",
+      "blockAction": "Bloquear conta",
+      "unblockAction": "Desbloquear",
+      "ignoreAction": "Ignorar",
+      "unignoreAction": "Remover de ignorados",
+      "blockedEmpty": "Você não possui nenhuma conta bloqueada.",
+      "ignoredEmpty": "Nenhuma conta está marcada como ignorada."
+    }
+  },
+  "notifications": {
+    "title": "Notificações",
+    "subtitle": "Gerencie alertas visuais, toques sonoros, insígnias de mensagens e comunicações por e-mail.",
+    "subsections": {
+      "overview": "Visão geral",
+      "sounds": "Sons",
+      "badges": "Insígnias",
+      "email": "E-mail",
+      "advanced": "Avançado"
+    },
+    "overview": {
+      "deliveryHeading": "Entrega de notificações",
+      "deliveryDescription": "Escolha como o Nuvio alerta você sobre novidades e atividades.",
+      "desktop": {
+        "title": "Notificações na área de trabalho",
+        "description": "Exibe banners no sistema operacional quando novas mensagens chegam."
+      },
+      "taskbarFlash": {
+        "title": "Piscar ícone na barra de tarefas",
+        "description": "Faz o ícone do Nuvio pulsar na barra de tarefas ao receber menções não lidas."
+      },
+      "eventsHeading": "Eventos de atividade",
+      "eventsDescription": "Selecione quais eventos geram notificações para você.",
+      "friendOnline": {
+        "title": "Quando amigos ficarem online",
+        "description": "Avisa quando um amigo na sua lista iniciar uma nova sessão."
+      },
+      "friendProfile": {
+        "title": "Atualizações de perfil de amigos",
+        "description": "Avisa quando um amigo mudar o avatar ou mensagem de status."
+      },
+      "spaceEvents": {
+        "title": "Eventos e transmissões nos espaços",
+        "description": "Receba lembretes quando eventos agendados nos seus espaços começarem."
+      },
+      "reactions": {
+        "title": "Notificar reações às minhas mensagens",
+        "description": "Receba um aviso quando outros usuários reagirem com emojis às suas mensagens."
+      },
+      "reactionScope": {
+        "label": "Alcance das notificações de reação",
+        "description": "Filtre em quais conversas as reações geram alertas visuais.",
+        "all": "Em todas as mensagens (DMs e espaços)",
+        "dmsAndMentions": "Apenas em DMs e mensagens com menção direta",
+        "none": "Nenhuma notificação de reação"
+      }
+    },
+    "sounds": {
+      "volumeHeading": "Volume e prévia sonora",
+      "volumeDescription": "Ajuste a intensidade dos avisos sonoros de mensagens e chamadas.",
+      "muteAll": {
+        "title": "Silenciar todos os sons de notificação",
+        "description": "Desativa completamente os efeitos sonoros de mensagens e alertas do Nuvio."
+      },
+      "volumeSliderLabel": "Volume dos alertas sonoros",
+      "previewButton": "Testar som de notificação",
+      "previewPlayedToast": "Som de teste reproduzido com sucesso.",
+      "eventsHeading": "Sons específicos por evento",
+      "eventsDescription": "Escolha quais eventos reproduzem efeitos audíveis.",
+      "newMessage": {
+        "title": "Som de nova mensagem",
+        "description": "Toca um sinal sonoro ao receber novas mensagens de texto."
+      },
+      "currentChannel": {
+        "title": "Som no canal atualmente aberto",
+        "description": "Toca som mesmo quando a mensagem for recebida no canal em que você está conversando."
+      },
+      "incomingCall": {
+        "title": "Toque de chamada recebida",
+        "description": "Toca melodia característica ao receber uma chamada de voz ou vídeo."
+      },
+      "voiceJoinLeave": {
+        "title": "Sons de entrada e saída no canal de voz",
+        "description": "Toca aviso sonoro quando outros usuários entram ou saem da chamada."
+      },
+      "related": {
+        "heading": "Configurações de microfone e alto-falantes",
+        "description": "Ajuste os dispositivos de reprodução e captura de áudio.",
+        "action": "Configurar voz e vídeo"
+      }
+    },
+    "badges": {
+      "heading": "Indicadores e contadores visuais",
+      "description": "Configure as marcas que mostram itens pendentes na interface.",
+      "unreadIndicator": {
+        "title": "Indicador de mensagens não lidas",
+        "description": "Mostra um ponto visual nos ícones de espaços com mensagens novas."
+      },
+      "mentionCount": {
+        "title": "Contador numérico de menções",
+        "description": "Exibe o número exato de vezes que você foi mencionado diretamente."
+      },
+      "highlightChannels": {
+        "title": "Destacar canais com novas mensagens",
+        "description": "Torna o texto do nome dos canais com novas mensagens mais brilhante."
+      }
+    },
+    "email": {
+      "heading": "Notificações por e-mail",
+      "description": "Controle quais mensagens e resumos são enviados para o seu e-mail cadastrado.",
+      "communication": {
+        "title": "Comunicações diretas e menções",
+        "description": "Receba resumos quando você estiver ausente por mais de 24 horas."
+      },
+      "social": {
+        "title": "Atividades sociais e convites",
+        "description": "Avisos sobre pedidos de amizade e convites para novos espaços."
+      },
+      "updates": {
+        "title": "Atualizações e novidades do Nuvio",
+        "description": "Informações sobre novas versões, recursos e melhorias na plataforma."
+      },
+      "tips": {
+        "title": "Dicas de uso e tutoriais",
+        "description": "Recomendações para aproveitar ao máximo os recursos do Nuvio."
+      },
+      "recommendations": {
+        "title": "Recomendações personalizadas",
+        "description": "Sugestões de novos espaços públicos e transmissões ao vivo de streamers."
+      },
+      "unsubscribeTitle": "Descadastro de e-mails informativos",
+      "unsubscribeDescription": "Você pode cancelar todas as comunicações não essenciais com apenas um clique.",
+      "unsubscribeButton": "Cancelar todos os e-mails promocionais",
+      "unsubscribedToast": "Preferência registrada: e-mails promocionais cancelados."
+    },
+    "advanced": {
+      "heading": "Modo Foco e Horário Silencioso",
+      "description": "Evite distrações e interrupções durante tarefas importantes ou transmissões.",
+      "quietHours": {
+        "title": "Ativar horário de silêncio programado",
+        "description": "Pausa alertas visuais e sonoros durante o período definido.",
+        "startLabel": "Início",
+        "endLabel": "Término"
+      },
+      "suppressOnStream": {
+        "title": "Ocultar notificações ao compartilhar tela ou transmitir",
+        "description": "Evita vazamento de mensagens privadas durante transmissões ao vivo."
+      }
+    }
+  },
+  "accessibility": {
+    "title": "Acessibilidade",
+    "subtitle": "Opções de contraste, redução de movimento e visibilidade para melhorar a navegação.",
+    "contrastHeading": "Contraste e Legibilidade",
+    "contrastDescription": "Ajuste as cores da interface para melhor leitura e foco visual.",
+    "highContrast": {
+      "title": "Modo de alto contraste",
+      "description": "Aumenta a separação entre planos de fundo e textos em toda a interface."
+    },
+    "underlineLinks": {
+      "title": "Sempre sublinhar links no chat",
+      "description": "Facilita a identificação de hiperlinks no corpo das mensagens."
+    },
+    "saturation": {
+      "title": "Saturação de cores",
+      "description": "Controle a intensidade e vivacidade das cores exibidas na interface."
+    },
+    "motionHeading": "Movimento e Animações",
+    "motionDescription": "Controle efeitos de movimento para maior conforto visual.",
+    "speakingIndicator": {
+      "title": "Destacar indicador de fala",
+      "description": "Realça a borda do avatar de quem está falando nos canais de voz."
+    }
+  },
+  "languageTime": {
+    "title": "Idioma e Horário",
+    "subtitle": "Selecione seu idioma de preferência, formato de hora e fuso horário para carimbos de data.",
+    "timeFormat": {
+      "heading": "Formato de hora",
+      "description": "Escolha como as horas são exibidas nos carimbos das mensagens.",
+      "h24": {
+        "title": "Formato 24 horas (ex: 18:30)",
+        "description": "Padrão universal de 00:00 a 23:59."
+      },
+      "h12": {
+        "title": "Formato 12 horas (ex: 6:30 PM)",
+        "description": "Padrão com sufixos AM e PM."
+      }
+    },
+    "dateFormat": {
+      "heading": "Formato de data",
+      "description": "Escolha a ordenação de dia, mês e ano no Nuvio.",
+      "dmy": {
+        "title": "Dia / Mês / Ano (DD/MM/AAAA)",
+        "description": "Formato padrão brasileiro e europeu."
+      },
+      "mdy": {
+        "title": "Mês / Dia / Ano (MM/DD/AAAA)",
+        "description": "Formato padrão americano."
+      },
+      "ymd": {
+        "title": "Ano / Mês / Dia (AAAA-MM-DD)",
+        "description": "Formato internacional ISO 8601."
+      }
+    },
+    "timezone": {
+      "heading": "Fuso horário",
+      "description": "Defina a referência temporal para horários de eventos e mensagens.",
+      "auto": {
+        "title": "Automático (Detectado do dispositivo)",
+        "description": "Utiliza o fuso horário configurado no seu sistema operacional."
+      },
+      "utc": {
+        "title": "UTC (Tempo Universal Coordenado)",
+        "description": "Horário padrão global sem ajustes locais de verão."
+      }
+    }
+  },
+  "gamesApps": {
+    "title": "Jogos e apps",
+    "subtitle": "Gerencie detecção de jogos, privacidade de atividades, janela flutuante e integrações.",
+    "subsections": {
+      "registeredGames": "Jogos registrados",
+      "activityPrivacy": "Privacidade nas atividades",
+      "gameOverlay": "Sobreposição de jogo",
+      "connectedApps": "Apps conectados"
+    },
+    "registeredGames": {
+      "currentGameHeading": "Jogo em execução detectado",
+      "currentGameDescription": "O Nuvio identifica jogos em primeiro plano para exibir seu status aos amigos.",
+      "detectedStatus": "Em execução no momento",
+      "noCurrentGameTitle": "Nenhum jogo em execução detectado",
+      "noCurrentGameDescription": "Inicie um jogo compatível ou adicione um executável manualmente abaixo.",
+      "addedGamesHeading": "Jogos adicionados manualmente",
+      "addedGamesDescription": "Configure quais títulos têm detecção e sobreposição ativadas.",
+      "gameNamePlaceholder": "Nome do jogo (ex: Hollow Knight)",
+      "exePlaceholder": "Nome do executável (ex: hollow_knight.exe)",
+      "addButton": "Adicionar jogo",
+      "emptyList": "Você ainda não adicionou nenhum jogo manualmente.",
+      "detectionToggle": "Detecção de atividade ativa",
+      "overlayToggle": "Janela flutuante disponível"
+    },
+    "activityPrivacy": {
+      "whatShareHeading": "Quais atividades eu compartilho",
+      "whatShareDescription": "Defina quais detalhes das suas partidas são visíveis para outros usuários.",
+      "elapsedTime": {
+        "title": "Mostrar tempo decorrido de jogo",
+        "description": "Exibe há quantos minutos ou horas você está jogando a partida atual."
+      },
+      "whereShare": {
+        "heading": "Onde eu compartilho minhas atividades",
+        "description": "Escolha quais espaços e usuários podem ver o que você está jogando.",
+        "allSpaces": {
+          "title": "Em todos os espaços e com todos os amigos",
+          "description": "Qualquer membro dos seus espaços ou amigo vê seu status de jogo."
+        },
+        "smallSpaces": {
+          "title": "Apenas em espaços pequenos (até 200 membros)",
+          "description": "Oculta atividades em comunidades públicas muito grandes."
+        },
+        "friendsOnly": {
+          "title": "Somente com amigos diretos",
+          "description": "Apenas seus amigos confirmados na lista de contatos podem ver suas atividades."
+        }
+      },
+      "joining": {
+        "heading": "Quem pode entrar na minha atividade ou jogo",
+        "description": "Controle permissões para outros usuários se conectarem à sua sessão.",
+        "spaceAndFriends": {
+          "title": "Amigos e membros de espaços em comum",
+          "description": "Qualquer usuário compartilhado pode enviar solicitações de entrada."
+        },
+        "friendsOnly": {
+          "title": "Apenas amigos confirmados",
+          "description": "Apenas contatos da sua lista de amigos podem ingressar."
+        },
+        "nobody": {
+          "title": "Ninguém (Entrada fechada)",
+          "description": "Desativa convites e solicitações de entrada externa."
+        }
+      }
+    },
+    "gameOverlay": {
+      "architectureNoteTitle": "Janela Flutuante (PiP) Nativa do Nuvio",
+      "architectureNoteBody": "Para garantir estabilidade, segurança e evitar bloqueios por sistemas anti-cheat em jogos competitivos, o Nuvio utiliza sua janela flutuante arrastável com suporte a fixação sobre outras janelas.",
+      "overview": {
+        "heading": "Configuração da sobreposição",
+        "description": "Controle como a janela flutuante se comporta durante jogos.",
+        "enableOverlay": {
+          "title": "Ativar janela flutuante durante jogos",
+          "description": "Habilita a exibição da janela compacta enquanto um jogo estiver ativo."
+        },
+        "alwaysOnTop": {
+          "title": "Manter sempre no topo sobre jogos",
+          "description": "Mantém o miniplayer ou widget visível mesmo com o jogo em primeiro plano."
+        },
+        "autoOpenMinimize": {
+          "title": "Abrir automaticamente ao minimizar o Nuvio",
+          "description": "Ativa a janela flutuante ao minimizar o aplicativo principal durante uma chamada."
+        }
+      },
+      "widgets": {
+        "heading": "Posição e opacidade do widget",
+        "description": "Escolha o canto inicial da tela e a transparência do elemento flutuante.",
+        "cornerLabel": "Canto padrão na tela",
+        "corners": {
+          "topLeft": "Superior esquerdo",
+          "topRight": "Superior direito",
+          "bottomLeft": "Inferior esquerdo",
+          "bottomRight": "Inferior direito"
+        },
+        "opacityLabel": "Opacidade da janela flutuante"
+      },
+      "voiceWidget": {
+        "heading": "Widget de voz flutuante",
+        "description": "Mostra quem está falando no canal de voz atual enquanto você joga.",
+        "enable": {
+          "title": "Exibir participantes do canal de voz",
+          "description": "Mostra avatares luminosos dos colegas conectados na chamada."
+        },
+        "showAvatars": {
+          "title": "Exibir avatares dos membros",
+          "description": "Mostra a foto de perfil ao lado do indicador de voz."
+        },
+        "showNames": {
+          "title": "Exibir nomes de usuário",
+          "description": "Mostra o nome de exibição junto ao indicador de voz."
+        }
+      },
+      "notifications": {
+        "heading": "Alertas flutuantes durante o jogo",
+        "description": "Receba avisos discretos sem sair da tela do jogo.",
+        "showAlerts": {
+          "title": "Exibir notificações de mensagens diretas no jogo",
+          "description": "Mostra pequenos avisos no canto da tela ao receber menções urgentes."
+        }
+      }
+    },
+    "connectedApps": {
+      "authorizedHeading": "Aplicativos autorizados",
+      "authorizedDescription": "Serviços e integrações com permissão concedida para acessar dados da sua conta.",
+      "authorizedEmpty": "Nenhum aplicativo externo possui acesso autorizado no momento.",
+      "revokeAction": "Revogar acesso",
+      "scopes": {
+        "profile_read": "Leitura de perfil básico",
+        "spaces_read": "Listagem de espaços em comum",
+        "activity_status": "Atualização de status de atividade",
+        "stream_link": "Divulgação de canais de transmissão"
+      }
+    }
   }
 }

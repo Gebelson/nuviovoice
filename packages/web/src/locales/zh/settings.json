@@ -180,7 +180,51 @@
     "backToMenu": "返回设置菜单"
   },
   "appearance": {
-    "title": "外观"
+    "title": "外观",
+    "hubSubtitle": "自定义个人资料视觉风格、消息紧凑度以及 Nuvio 界面配色。",
+    "profileVisuals": {
+      "heading": "个人资料视觉设计",
+      "description": "自定在 Nuvio 各处展示给其他成员的主题强调色及头像色彩。",
+      "unsavedBadge": "有未保存的更改",
+      "previewLabel": "实时预览效果",
+      "saveButton": "保存视觉资料样式"
+    },
+    "themes": {
+      "heading": "界面表面主题",
+      "description": "选择 Nuvio 客户端的视觉对比度与背景风格。",
+      "obsidian": {
+        "title": "黑曜石（默认）",
+        "description": "细腻通透的深黑界面与精致微光质感。"
+      },
+      "midnight": {
+        "title": "高对比度午夜",
+        "description": "纯黑深邃背景，边缘清晰硬朗，对比度更高。"
+      },
+      "amethyst": {
+        "title": "紫晶磨砂玻璃",
+        "description": "典雅柔和的紫色调与毛玻璃景深效果。"
+      }
+    },
+    "density": {
+      "heading": "消息排版密度",
+      "description": "调整聊天界面中各条消息之间的纵向间距。",
+      "comfortable": {
+        "title": "宽松舒适（默认）",
+        "description": "更大间距与标准头像尺寸，适合舒适阅读。"
+      },
+      "balanced": {
+        "title": "匀称适中",
+        "description": "适中内边距，适合常规尺寸显示屏。"
+      },
+      "compact": {
+        "title": "紧凑紧密",
+        "description": "更低行高，同屏可查看更多历史文字。"
+      },
+      "showAvatarsCompact": {
+        "title": "紧凑模式下仍显示头像",
+        "description": "即使在紧凑模式下也在消息前保留小头像。"
+      }
+    }
   },
   "account": {
     "title": "我的账号",
@@ -299,6 +343,12 @@
         "spacesFailed": "处理空间失败",
         "deleteFailed": "注销账号失败"
       }
+    },
+    "hubSubtitle": "管理您的个人信息、登录凭据和公开身份资料。",
+    "visualMoved": {
+      "heading": "个人资料色彩与外观主题已整合至外观面板",
+      "description": "为让设置结构更清晰整洁，头像配色、横幅以及资料卡片实时预览已统一迁移至体验设置 → 外观。",
+      "action": "前往外观设置"
     }
   },
   "privacy": {
@@ -504,5 +554,605 @@
     },
     "version": "版本 {{version}}",
     "allReleases": "GitHub 上的所有版本"
+  },
+  "hub": {
+    "categories": {
+      "account": "账户",
+      "dataPrivacy": "数据与隐私",
+      "messagePermissions": "消息权限",
+      "notifications": "通知设置",
+      "experience": "体验设置",
+      "gamesApps": "游戏与应用"
+    }
+  },
+  "experience": {
+    "title": "体验设置",
+    "subtitle": "音频、视频、外观风格、无障碍辅助及键盘快捷键管理。",
+    "subsections": {
+      "voiceVideo": "语音与视频",
+      "appearance": "外观",
+      "accessibility": "无障碍",
+      "keybinds": "快捷键",
+      "desktop": "桌面客户端",
+      "languageTime": "语言与时间"
+    }
+  },
+  "dataPrivacy": {
+    "title": "数据与隐私",
+    "subtitle": "掌控数据使用方式、个人资料公开范围以及语音加密安全。",
+    "subsections": {
+      "dataUsage": "Nuvio 如何使用我的数据",
+      "profilePrivacy": "个人资料隐私",
+      "voiceEncryption": "端到端语音通话加密"
+    },
+    "dataUsage": {
+      "heading": "平台数据使用",
+      "description": "设定您允许 Nuvio 用于保障和改善服务的交互数据范围。",
+      "operate": {
+        "title": "必要运行诊断数据",
+        "description": "允许收集维系服务稳定性与消息推送送达的基础数据。"
+      },
+      "personalize": {
+        "title": "个性化体验推荐",
+        "description": "结合近期互动行为推荐最适合您的频道、快捷方式与空间。"
+      },
+      "sponsored": {
+        "title": "赞助与推荐空间",
+        "description": "允许展示经过官方认证的精选合作伙伴社区。"
+      },
+      "thirdParty": {
+        "title": "第三方平台集成数据",
+        "description": "在连接 Twitch、Kick 或 YouTube 时共享必要的最低元数据。"
+      },
+      "requestData": {
+        "heading": "数据导出下载",
+        "description": "获取并下载与您的 Nuvio 账户关联的完整记录副本。",
+        "cardTitle": "申请我的数据包",
+        "cardBody": "生成包含个人资料、所属空间以及个性化设置的安全文件。",
+        "requestedStatus": "近期已提交数据包申请",
+        "button": "申请数据备份包",
+        "toastSuccess": "数据导出申请已成功受理！"
+      },
+      "transparencyTitle": "我们对用户隐私的承诺",
+      "transparencyBody": "Nuvio 坚守隐私优先准则。私聊消息与语音流均有高规格加密保护，我们绝不向广告经纪商转售数据。"
+    },
+    "profilePrivacy": {
+      "visibility": {
+        "heading": "公开资料查看范围",
+        "description": "设定谁可以查看您的完整个人资料卡与实时状态。",
+        "all": {
+          "title": "所有好友及所在空间的成员",
+          "description": "好友以及任意共享空间中的成员都能查阅您的完整资料。"
+        },
+        "smallSpaces": {
+          "title": "好友与小型空间成员（不超过200人）",
+          "description": "在大型公共空间中隐藏详细资料，仅在小型私密圈子展示。"
+        },
+        "friendsOnly": {
+          "title": "仅限好友",
+          "description": "仅好友列表中的联系人可以查阅您的详细资料与状态。"
+        }
+      },
+      "notifyFriends": {
+        "title": "资料更新时通知好友",
+        "description": "在您更换头像或简介时向好友动态发送低调提醒。"
+      },
+      "related": {
+        "heading": "查找限制设置",
+        "description": "配置允许向您直接发送好友邀请的人员条件。",
+        "action": "前往好友邀请权限"
+      }
+    },
+    "voiceEncryption": {
+      "architectureTitle": "实时语音加密体系",
+      "architectureBody": "通话成员之间的语音传输采用 WebRTC SRTP 协议并由客户端生成临时密钥进行端到端加密保护。",
+      "heading": "语音通话安全与加密核验",
+      "description": "在加密语音频道中核查与验证通话安全指纹的辅助功能。",
+      "persistentCodes": {
+        "title": "持久化安全核验码",
+        "description": "保存通话参与者指纹，在密钥异常变更时及时报警提示。"
+      },
+      "verifiedPeersTitle": "已核验的通话成员与设备",
+      "protocolBadge": "原生端到端加密",
+      "verifiedPeersEmpty": "当前暂无已核验固定安全码的通话成员。"
+    }
+  },
+  "messagePermissions": {
+    "title": "消息权限",
+    "subtitle": "媒体内容过滤、防垃圾机制、私信交流规则以及联系人拉黑屏蔽。",
+    "subsections": {
+      "contentFilters": "内容过滤器",
+      "spamFilters": "垃圾消息过滤",
+      "directMessages": "私信管理",
+      "friendRequests": "好友邀请",
+      "connectedGames": "关联游戏",
+      "ignoreBlock": "忽略与黑名单"
+    },
+    "contentFilters": {
+      "sensitiveHeading": "敏感媒体内容",
+      "sensitiveDescription": "设定不同聊天场景下包含敏感内容的照片与视频展示方式。",
+      "graphicHeading": "血腥暴力等强烈刺激媒体",
+      "graphicDescription": "针对可能引起不适的内容设置安全防护等级。",
+      "actions": {
+        "show": "直接显示",
+        "blur": "模糊并显示警告",
+        "block": "完全屏蔽拦截"
+      },
+      "contexts": {
+        "friendsDm": {
+          "title": "来自好友的私聊消息",
+          "description": "针对已添加好友发来的媒体应用此过滤策略。"
+        },
+        "strangersDm": {
+          "title": "陌生人发送的私聊消息",
+          "description": "针对未添加好友的消息请求应用此过滤策略。"
+        },
+        "spaceChannels": {
+          "title": "公共空间文字频道",
+          "description": "针对社区空间公开频道中的媒体应用此过滤策略。"
+        }
+      },
+      "ageRestriction": {
+        "heading": "年龄受限频道",
+        "title": "允许浏览 18+ 频道",
+        "description": "开启后可进入标记为成年人内容的专门频道。"
+      },
+      "related": {
+        "heading": "自动化垃圾消息拦截",
+        "description": "配置针对未经请求的广告垃圾信息的自动过滤策略。",
+        "action": "配置垃圾消息过滤"
+      }
+    },
+    "spamFilters": {
+      "heading": "钓鱼网站与可疑链接保护",
+      "description": "Nuvio 自动识别消息中的欺诈钓鱼链接与自动化营销灌水。",
+      "recommendedBadge": "推荐开启",
+      "options": {
+        "all": {
+          "title": "过滤所有接收到的消息",
+          "description": "检测来自所有人的消息，包括已确认的好友。"
+        },
+        "nonFriends": {
+          "title": "仅过滤非好友发来的消息（推荐）",
+          "description": "不对已在您好友列表中的安全联系人进行筛查。"
+        },
+        "off": {
+          "title": "已关闭",
+          "description": "不执行任何自动垃圾消息与风险链接安全检测。"
+        }
+      }
+    },
+    "directMessages": {
+      "heading": "私聊消息（DM）规则",
+      "description": "设定谁可以直接向您发起私信聊天会话。",
+      "allowSpaceDms": {
+        "title": "允许空间成员向我发起私信",
+        "description": "加入新空间时的默认私聊接收设置。"
+      },
+      "messageRequests": {
+        "title": "启用消息请求收件箱",
+        "description": "将来自陌生人的初次私信归入单独的待审批请求列表中。"
+      },
+      "winksAutoplay": {
+        "title": "自动播放动态表情与 Wink 动画",
+        "description": "收到动态表情特效时自动播放，无需手动点击。"
+      },
+      "winksAudio": {
+        "title": "播放动态表情音效",
+        "description": "在播放 Wink 特效动画时同步伴随趣味音效。"
+      },
+      "winksVolume": "动态表情音效音量",
+      "winksReduceMotion": {
+        "title": "减弱消息特效动效幅度",
+        "description": "以轻柔渐变效果替代剧烈的视觉跳动特效。"
+      }
+    },
+    "friendRequests": {
+      "whoCanSendHeading": "谁可以向我发送好友邀请",
+      "whoCanSendDescription": "控制允许向您的账号提交好友申请的用户群体。",
+      "everyone": {
+        "title": "所有人",
+        "description": "Nuvio 平台上的任何成员均可向您发送好友申请。"
+      },
+      "mutualFriends": {
+        "title": "好友的好友",
+        "description": "仅限与您拥有至少一位共同好友的用户。"
+      },
+      "spaceMembers": {
+        "title": "共同空间的成员",
+        "description": "仅限与您加入同一空间的成员。"
+      },
+      "customMessages": {
+        "title": "允许在申请中附带自定义留言",
+        "description": "允许发起好友申请的人附上一小段简短说明文字。"
+      }
+    },
+    "connectedGames": {
+      "heading": "游戏内通信规则",
+      "description": "适配已连接游戏及对战环境下的通信权限。",
+      "allowFriendDms": {
+        "title": "在游戏比赛期间接收好友私聊",
+        "description": "在与好友连线游戏时仍可在聊天面板中接收提醒。"
+      },
+      "allowMatchInvites": {
+        "title": "允许组队与比赛房间邀请",
+        "description": "通过 Nuvio 通知直接接收对局组队邀请。"
+      },
+      "displayModesHeading": "游戏消息通知展示模式",
+      "displayModesDescription": "选择哪些游戏相关提醒会在游戏屏幕上弹出。",
+      "displayModes": {
+        "all": {
+          "title": "显示所有已连接游戏的提醒",
+          "description": "针对所有受支持的活跃游戏展示通知与组队邀请。"
+        },
+        "sameGame": {
+          "title": "仅显示当前正在运行的游戏提醒",
+          "description": "仅弹出与您此刻游玩的游戏相关的邀请信息。"
+        },
+        "none": {
+          "title": "隐藏全部游戏邀请",
+          "description": "在游戏对战过程中完全隐藏邀请弹窗打扰。"
+        }
+      },
+      "related": {
+        "heading": "管理关联服务与授权应用",
+        "description": "查阅已授权的第三方应用与已关联的直播频道。",
+        "action": "查看已连接应用"
+      }
+    },
+    "ignoreBlock": {
+      "blockedHeading": "已拉黑名单",
+      "blockedDescription": "被拉黑的用户无法给您发消息、进入同一通话或查看您的在线状态。",
+      "ignoredHeading": "已忽略名单",
+      "ignoredDescription": "来自已忽略用户的发言会在聊天界面中对您静默隐藏。",
+      "inputPlaceholder": "输入 @用户名…",
+      "blockAction": "拉黑用户",
+      "unblockAction": "解除拉黑",
+      "ignoreAction": "设为忽略",
+      "unignoreAction": "取消忽略",
+      "blockedEmpty": "当前没有任何被拉黑的用户。",
+      "ignoredEmpty": "当前没有任何被忽略的用户。"
+    }
+  },
+  "notifications": {
+    "title": "通知设置",
+    "subtitle": "管理桌面弹窗提醒、提示音效、未读标记徽标以及邮件摘要通报。",
+    "subsections": {
+      "overview": "概览",
+      "sounds": "声音",
+      "badges": "角标",
+      "email": "邮件",
+      "advanced": "高级"
+    },
+    "overview": {
+      "deliveryHeading": "通知送达形式",
+      "deliveryDescription": "自定 Nuvio 提示新消息与动态提醒的具体途径。",
+      "desktop": {
+        "title": "系统桌面通知",
+        "description": "在操作系统角落弹出横幅展示最新收到的消息。"
+      },
+      "taskbarFlash": {
+        "title": "任务栏图标闪烁",
+        "description": "收到未读提及提醒时使任务栏图标闪烁提示。"
+      },
+      "eventsHeading": "动态提醒事件",
+      "eventsDescription": "自定哪些社交动态会触发桌面通知。",
+      "friendOnline": {
+        "title": "好友上线提醒",
+        "description": "当好友列表中的好友开启新会话时提醒您。"
+      },
+      "friendProfile": {
+        "title": "好友资料变更提醒",
+        "description": "当好友更新头像或签名状态时发送通知。"
+      },
+      "spaceEvents": {
+        "title": "空间活动与直播开播",
+        "description": "在您所在空间的预定活动开始时收到提醒。"
+      },
+      "reactions": {
+        "title": "我的发言被添加表情回应时提醒",
+        "description": "当其他成员对您的文字消息附加表情时收到提示。"
+      },
+      "reactionScope": {
+        "label": "表情回应通知作用范围",
+        "description": "选择哪些聊天环境中的表情回应会触发弹窗提醒。",
+        "all": "所有对话（包括私信和空间频道）",
+        "dmsAndMentions": "仅在私信以及包含直接提及我的消息中",
+        "none": "完全不接收表情回应通知"
+      }
+    },
+    "sounds": {
+      "volumeHeading": "音量调节与试听",
+      "volumeDescription": "调整各种消息提示音的播放音量强度。",
+      "muteAll": {
+        "title": "静音所有提示音效",
+        "description": "完全关闭所有消息与来电的声音提醒。"
+      },
+      "volumeSliderLabel": "通知提示音量",
+      "previewButton": "试听通知音效",
+      "previewPlayedToast": "测试提示音播放完毕。",
+      "eventsHeading": "细分事件提示音",
+      "eventsDescription": "选择哪些事件会发出提示音效。",
+      "newMessage": {
+        "title": "新消息提示音",
+        "description": "收到新文字消息时发出提示音效。"
+      },
+      "currentChannel": {
+        "title": "当前打开的频道也播放提示音",
+        "description": "即使消息来自您当前正在查看的聊天频道也发出提示音。"
+      },
+      "incomingCall": {
+        "title": "来电响铃旋律",
+        "description": "收到语音或视频呼叫时播放响铃旋律。"
+      },
+      "voiceJoinLeave": {
+        "title": "进出语音频道提示音",
+        "description": "其他成员加入或离开当前语音通话时发出提示音。"
+      },
+      "related": {
+        "heading": "麦克风与扬声器硬件设置",
+        "description": "调试与选择您的音频输入输出硬件设备。",
+        "action": "前往语音与视频设置"
+      }
+    },
+    "badges": {
+      "heading": "视觉徽标与未读指示器",
+      "description": "配置侧边栏与列表中未读内容的标记展示。",
+      "unreadIndicator": {
+        "title": "未读红点指示器",
+        "description": "有未读消息的空间图标上显示小圆点提示。"
+      },
+      "mentionCount": {
+        "title": "提及未读数字徽标",
+        "description": "以具体数字显示您被直接点名提及的未读次数。"
+      },
+      "highlightChannels": {
+        "title": "高亮标亮有新消息的频道",
+        "description": "使包含未读新消息的频道名称字体更加明亮突出。"
+      }
+    },
+    "email": {
+      "heading": "电子邮件通知推送",
+      "description": "选择哪些动态通报会发送到您的注册邮箱中。",
+      "communication": {
+        "title": "私信消息与错过的提及",
+        "description": "在您离线超过24小时时发送精选汇总邮件。"
+      },
+      "social": {
+        "title": "社交动态与空间邀请",
+        "description": "关于新好友申请与受邀加入空间的电子邮件通报。"
+      },
+      "updates": {
+        "title": "Nuvio 功能更新与产品资讯",
+        "description": "获取最新版本动态与平台新功能介绍。"
+      },
+      "tips": {
+        "title": "使用技巧与操作指南",
+        "description": "助您充分探索 Nuvio 强大特性的实用建议。"
+      },
+      "recommendations": {
+        "title": "精选空间与内容推荐",
+        "description": "为您推荐可能感兴趣的公共空间与热门直播。"
+      },
+      "unsubscribeTitle": "营销与推广邮件退订",
+      "unsubscribeDescription": "您可以一键退订所有非必要的营销类邮件。",
+      "unsubscribeButton": "退订所有营销宣传邮件",
+      "unsubscribedToast": "偏好已保存：已退订所有推广邮件。"
+    },
+    "advanced": {
+      "heading": "专注模式与免打扰时段",
+      "description": "在专注工作或屏幕共享直播时避免受到弹窗干扰。",
+      "quietHours": {
+        "title": "启用免打扰静音时段",
+        "description": "在每天设定的指定时间段内暂停一切弹窗与提示音。",
+        "startLabel": "开始时间",
+        "endLabel": "结束时间"
+      },
+      "suppressOnStream": {
+        "title": "屏幕共享与推流时隐藏通知",
+        "description": "在进行屏幕共享时避免在画面中弹出私密聊天通知。"
+      }
+    }
+  },
+  "accessibility": {
+    "title": "无障碍",
+    "subtitle": "对比度强化、减弱动态效果与视觉引导优化。",
+    "contrastHeading": "对比度与文字易读性",
+    "contrastDescription": "微调界面配色以提升长时间专注阅读的舒适度。",
+    "highContrast": {
+      "title": "高对比度模式",
+      "description": "大幅强化全界面文字与背景底色之间的明暗分界线。"
+    },
+    "underlineLinks": {
+      "title": "始终为聊天中的超链接添加下划线",
+      "description": "使消息内容中的网址链接更加一目了然。"
+    },
+    "saturation": {
+      "title": "色彩饱和度调节",
+      "description": "调控界面整体配色的鲜艳与浓淡程度。"
+    },
+    "motionHeading": "动效与画面移动",
+    "motionDescription": "控制交互动画幅度以减轻视觉疲劳。",
+    "speakingIndicator": {
+      "title": "强化正在发言者的光圈高亮",
+      "description": "在语音频道中加粗加亮正在发言成员的头像外环。"
+    }
+  },
+  "languageTime": {
+    "title": "语言与时间",
+    "subtitle": "选择显示语言、时钟排版风格以及时间戳时区基准。",
+    "timeFormat": {
+      "heading": "时钟格式",
+      "description": "自定消息气泡旁时间戳的具体展示方式。",
+      "h24": {
+        "title": "24 小时制（例如 18:30）",
+        "description": "国际通用的 00:00 至 23:59 制式。"
+      },
+      "h12": {
+        "title": "12 小时制（例如 6:30 PM）",
+        "description": "带有 AM/PM 标识的十二小时制式。"
+      }
+    },
+    "dateFormat": {
+      "heading": "日期排列格式",
+      "description": "自定日志与消息列表中年、月、日的排列次序。",
+      "dmy": {
+        "title": "日 / 月 / 年（DD/MM/YYYY）",
+        "description": "国际与欧洲通用日期格式。"
+      },
+      "mdy": {
+        "title": "月 / 日 / 年（MM/DD/YYYY）",
+        "description": "美式排版格式。"
+      },
+      "ymd": {
+        "title": "年 / 月 / 日（YYYY-MM-DD）",
+        "description": "ISO 8601 国际标准化格式。"
+      }
+    },
+    "timezone": {
+      "heading": "时区基准",
+      "description": "用于展示所有事件与消息的时间基准点。",
+      "auto": {
+        "title": "自动检测（系统自动识别）",
+        "description": "根据操作系统当前配置的时区自动调整。"
+      },
+      "utc": {
+        "title": "UTC（协调世界时）",
+        "description": "全球统一标准时区，不进行夏令时调整。"
+      }
+    }
+  },
+  "gamesApps": {
+    "title": "游戏与应用",
+    "subtitle": "游戏状态识别、动态隐私、画中画悬浮窗与第三方应用授权。",
+    "subsections": {
+      "registeredGames": "已注册游戏",
+      "activityPrivacy": "游戏动态隐私",
+      "gameOverlay": "游戏画中画悬浮窗",
+      "connectedApps": "已连接应用"
+    },
+    "registeredGames": {
+      "currentGameHeading": "检测到正在运行的游戏",
+      "currentGameDescription": "Nuvio 可识别前台运行的游戏并向好友展示您的游玩状态。",
+      "detectedStatus": "正在游玩中",
+      "noCurrentGameTitle": "当前未检测到活跃游戏",
+      "noCurrentGameDescription": "启动兼容游戏或在下方手动登记游戏可执行文件路径。",
+      "addedGamesHeading": "手动添加的游戏",
+      "addedGamesDescription": "针对个别游戏配置状态检测与悬浮窗功能。",
+      "gameNamePlaceholder": "游戏名称（例如 空洞骑士）",
+      "exePlaceholder": "可执行文件名（例如 hollow_knight.exe）",
+      "addButton": "添加游戏",
+      "emptyList": "您尚未手动添加任何游戏。",
+      "detectionToggle": "状态检测开启",
+      "overlayToggle": "画中画悬浮窗开启"
+    },
+    "activityPrivacy": {
+      "whatShareHeading": "分享哪些活动详情",
+      "whatShareDescription": "控制他人可以获知关于您游玩过程的哪些信息。",
+      "elapsedTime": {
+        "title": "显示当前已游玩时长",
+        "description": "公开展示您在当前对局或游戏中已持续游玩的时间。"
+      },
+      "whereShare": {
+        "heading": "向谁公开我的活动动态",
+        "description": "设定能够查阅您正在玩什么游戏的圈子范围。",
+        "allSpaces": {
+          "title": "所有空间及所有好友",
+          "description": "任何共同空间成员及好友均可查阅。"
+        },
+        "smallSpaces": {
+          "title": "仅小型空间（不超过200人）",
+          "description": "在人数众多的大型公共空间中隐藏游玩状态。"
+        },
+        "friendsOnly": {
+          "title": "仅限好友",
+          "description": "严格仅对好友列表中的直接联系人公开。"
+        }
+      },
+      "joining": {
+        "heading": "谁可以加入我的游戏对局",
+        "description": "配置多人组队邀请与房间加入权限。",
+        "spaceAndFriends": {
+          "title": "好友及共同空间成员",
+          "description": "具有共同社交圈的用户均可申请加入对局。"
+        },
+        "friendsOnly": {
+          "title": "仅限好友",
+          "description": "仅允许好友直接加入您的当前游戏会话。"
+        },
+        "nobody": {
+          "title": "任何人不得加入（私密对局）",
+          "description": "关闭该游戏的外部加入申请与组队邀请通道。"
+        }
+      }
+    },
+    "gameOverlay": {
+      "architectureNoteTitle": "Nuvio 原生画中画（PiP）悬浮窗",
+      "architectureNoteBody": "为确保极致性能与绝对安全，并避免被反作弊系统误报，Nuvio 采用原生可拖拽画中画悬浮窗架构，支持任意置顶与透明度调节。",
+      "overview": {
+        "heading": "悬浮窗运行设置",
+        "description": "配置在运行游戏期间微型伴侣窗口的行为逻辑。",
+        "enableOverlay": {
+          "title": "运行游戏时开启画中画悬浮窗",
+          "description": "只要检测到活跃游戏便激活紧凑型浮窗。"
+        },
+        "alwaysOnTop": {
+          "title": "始终置顶在游戏画面之上",
+          "description": "使浮窗在游戏处于全屏或窗口模式时始终可见。"
+        },
+        "autoOpenMinimize": {
+          "title": "客户端最小化时自动激活浮窗",
+          "description": "在语音通话期间若最小化主窗口，自动切换至浮窗模式。"
+        }
+      },
+      "widgets": {
+        "heading": "悬浮窗停靠方位与不透明度",
+        "description": "设定浮窗初始屏幕停靠角落以及半透明程度。",
+        "cornerLabel": "默认停靠角落",
+        "corners": {
+          "topLeft": "左上角",
+          "topRight": "右上角",
+          "bottomLeft": "左下角",
+          "bottomRight": "右下角"
+        },
+        "opacityLabel": "悬浮窗口不透明度"
+      },
+      "voiceWidget": {
+        "heading": "语音对讲伴侣部件",
+        "description": "在游戏期间直观显示当前语音频道中正在说话的成员。",
+        "enable": {
+          "title": "显示语音频道在席成员",
+          "description": "展示带有音频发声发光波纹的成员头像列表。"
+        },
+        "showAvatars": {
+          "title": "显示成员头像",
+          "description": "在音频状态环旁渲染个人头像图片。"
+        },
+        "showNames": {
+          "title": "显示成员显示名称",
+          "description": "在头像旁同步呈现用户昵称文字。"
+        }
+      },
+      "notifications": {
+        "heading": "游戏内浮动提醒",
+        "description": "在不切出游戏画面的前提下接收轻量级通知提醒。",
+        "showAlerts": {
+          "title": "在游戏中显示私聊气泡提醒",
+          "description": "收到私聊与点名消息时在屏幕角落呈现小型气泡卡片。"
+        }
+      }
+    },
+    "connectedApps": {
+      "authorizedHeading": "已授权的外部应用",
+      "authorizedDescription": "已获得许可访问您账户部分数据的第三方服务与应用。",
+      "authorizedEmpty": "当前暂无任何已授权的第三方应用。",
+      "revokeAction": "撤销授权",
+      "scopes": {
+        "profile_read": "读取基本个人资料",
+        "spaces_read": "读取共同空间列表",
+        "activity_status": "同步更新游玩状态",
+        "stream_link": "展示关联的直播流信息"
+      }
+    }
   }
 }

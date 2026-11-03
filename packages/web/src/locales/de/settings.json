@@ -180,7 +180,51 @@
     "backToMenu": "Zurück zum Einstellungsmenü"
   },
   "appearance": {
-    "title": "Darstellung"
+    "title": "Darstellung",
+    "hubSubtitle": "Passe das visuelle Design deines Profils, Nachrichtendichte und Farben an.",
+    "profileVisuals": {
+      "heading": "Visuelle Profilidentität",
+      "description": "Wähle Akzentfarben und Avatar-Töne, die anderen Nutzern angezeigt werden.",
+      "unsavedBadge": "Nicht gespeicherte Änderungen",
+      "previewLabel": "Live-Vorschau",
+      "saveButton": "Profildesign speichern"
+    },
+    "themes": {
+      "heading": "Oberflächendesign",
+      "description": "Wähle den Kontrast- und Farbstil für Nuvio.",
+      "obsidian": {
+        "title": "Obsidian (Standard)",
+        "description": "Dunkle Oberfläche mit feinen Transparenzen und edlem Glanz."
+      },
+      "midnight": {
+        "title": "Mitternacht mit hohem Kontrast",
+        "description": "Tiefschwarzer Hintergrund mit scharfen Rändern und maximalem Kontrast."
+      },
+      "amethyst": {
+        "title": "Amethyst-Glas",
+        "description": "Violette Farbnuancen mit matter Glastiefe."
+      }
+    },
+    "density": {
+      "heading": "Nachrichtendichte",
+      "description": "Passe den vertikalen Abstand zwischen Nachrichten im Chat an.",
+      "comfortable": {
+        "title": "Komfortabel (Standard)",
+        "description": "Großzügige Abstände und Standard-Avatar-Größe."
+      },
+      "balanced": {
+        "title": "Ausgewogen",
+        "description": "Mittlerer Abstand, optimiert für Standard-Bildschirme."
+      },
+      "compact": {
+        "title": "Kompakt",
+        "description": "Geringe Zeilenhöhe, um mehr Nachrichten auf einmal zu sehen."
+      },
+      "showAvatarsCompact": {
+        "title": "Avatare im Kompaktmodus anzeigen",
+        "description": "Behält kleinere Avatare auch im kompakten Layout bei."
+      }
+    }
   },
   "account": {
     "title": "Mein Konto",
@@ -300,6 +344,12 @@
         "spacesFailed": "Spaces konnten nicht verarbeitet werden",
         "deleteFailed": "Konto konnte nicht gelöscht werden"
       }
+    },
+    "hubSubtitle": "Verwalte deine persönlichen Daten, Anmeldedaten und öffentliche Identität.",
+    "visualMoved": {
+      "heading": "Profilfarben und visuelles Design befinden sich jetzt in Erscheinungsbild",
+      "description": "Um die Einstellungen übersichtlich zu halten, wurden Profilfarben, Banner und Vorschau unter Erlebnis → Erscheinungsbild zusammengefasst.",
+      "action": "Zu Erscheinungsbild wechseln"
     }
   },
   "privacy": {
@@ -505,5 +555,605 @@
     },
     "version": "Version {{version}}",
     "allReleases": "Alle Versionen auf GitHub"
+  },
+  "hub": {
+    "categories": {
+      "account": "Konto",
+      "dataPrivacy": "Daten & Datenschutz",
+      "messagePermissions": "Nachrichtenberechtigungen",
+      "notifications": "Benachrichtigungen",
+      "experience": "Erlebnis",
+      "gamesApps": "Spiele & Apps"
+    }
+  },
+  "experience": {
+    "title": "Erlebnis",
+    "subtitle": "Einstellungen für Audio, Video, Erscheinungsbild, Barrierefreiheit und Tastenbelegungen.",
+    "subsections": {
+      "voiceVideo": "Sprache & Video",
+      "appearance": "Erscheinungsbild",
+      "accessibility": "Barrierefreiheit",
+      "keybinds": "Tastenbelegungen",
+      "desktop": "Desktop",
+      "languageTime": "Sprache & Zeit"
+    }
+  },
+  "dataPrivacy": {
+    "title": "Daten & Datenschutz",
+    "subtitle": "Kontrolliere Datennutzung, Profilsichtbarkeit und Sprachverschlüsselung.",
+    "subsections": {
+      "dataUsage": "Wie Nuvio meine Daten nutzt",
+      "profilePrivacy": "Profil-Privatsphäre",
+      "voiceEncryption": "Ende-zu-Ende-Sprachverschlüsselung"
+    },
+    "dataUsage": {
+      "heading": "Datennutzung der Plattform",
+      "description": "Bestimme, welche Telemetrie- und Nutzungsdaten Nuvio verarbeiten darf.",
+      "operate": {
+        "title": "Erforderliche Betriebsdaten",
+        "description": "Erlaubt grundlegende Diagnosedaten für Stabilität und zuverlässige Zustellung."
+      },
+      "personalize": {
+        "title": "Personalisierung des Erlebnisses",
+        "description": "Nutzt kürzliche Aktivitäten für Empfehlungen relevanter Kanäle und Räume."
+      },
+      "sponsored": {
+        "title": "Geförderte Community-Räume",
+        "description": "Erlaubt die Anzeige von hervorgehobenen Partner-Räumen."
+      },
+      "thirdParty": {
+        "title": "Daten von Drittanbieter-Integrationen",
+        "description": "Teilt minimale Metadaten mit externen Plattformen wie Twitch, Kick und YouTube."
+      },
+      "requestData": {
+        "heading": "Datenexport",
+        "description": "Lade ein Archiv deiner Kontodaten und gespeicherten Einstellungen herunter.",
+        "cardTitle": "Datenarchiv anfordern",
+        "cardBody": "Erstellt eine sichere Datei mit Profilangaben, Raummitgliedschaften und Optionen.",
+        "requestedStatus": "Datenarchiv kürzlich angefordert",
+        "button": "Datenpaket anfordern",
+        "toastSuccess": "Exportanfrage erfolgreich registriert!"
+      },
+      "transparencyTitle": "Unser Datenschutzversprechen",
+      "transparencyBody": "Nuvio schützt deine Privatsphäre. Direktnachrichten und Sprachanrufe sind verschlüsselt und wir verkaufen keine Daten an Werbetreibende."
+    },
+    "profilePrivacy": {
+      "visibility": {
+        "heading": "Öffentliche Profilsichtbarkeit",
+        "description": "Lege fest, wer deine vollständigen Profildetails sehen kann.",
+        "all": {
+          "title": "Alle Freunde und Mitglieder meiner Räume",
+          "description": "Dein volles Profil ist für Freunde und Mitglieder gemeinsamer Räume sichtbar."
+        },
+        "smallSpaces": {
+          "title": "Freunde und kleine Räume (bis zu 200 Mitglieder)",
+          "description": "Verbirgt erweiterte Angaben in großen öffentlichen Räumen."
+        },
+        "friendsOnly": {
+          "title": "Nur Freunde",
+          "description": "Nur bestätigte Kontakte in deiner Freundesliste können Profildetails sehen."
+        }
+      },
+      "notifyFriends": {
+        "title": "Freunde bei Profiländerungen benachrichtigen",
+        "description": "Sendet einen dezenten Hinweis, wenn du deinen Avatar oder deine Biografie änderst."
+      },
+      "related": {
+        "heading": "Wer kann dich finden",
+        "description": "Bestimme, wer dir direkte Freundschaftsanfragen senden darf.",
+        "action": "Anfrageberechtigungen anzeigen"
+      }
+    },
+    "voiceEncryption": {
+      "architectureTitle": "Echtzeit-Sprachverschlüsselung",
+      "architectureBody": "Audiodaten zwischen Teilnehmern werden über WebRTC SRTP mit kurzlebigen Schlüsseln Ende-zu-Ende geschützt.",
+      "heading": "Sprachsicherheit & Kryptografische Prüfungen",
+      "description": "Werkzeuge zur Überprüfung der Verschlüsselungsintegrität in Sprachkanälen.",
+      "persistentCodes": {
+        "title": "Dauerhafte Sicherheitscodes",
+        "description": "Speichert Schlüssel-Fingerabdrücke, um bei unerwarteten Änderungen zu warnen."
+      },
+      "verifiedPeersTitle": "Verifizierte Teilnehmer",
+      "protocolBadge": "Natives E2EE",
+      "verifiedPeersEmpty": "Derzeit sind keine Teilnehmer mit festem Sicherheitscode hinterlegt."
+    }
+  },
+  "messagePermissions": {
+    "title": "Nachrichtenberechtigungen",
+    "subtitle": "Inhaltsfilter, Spamschutz, Direktnachrichten und Kontaktverwaltung anpassen.",
+    "subsections": {
+      "contentFilters": "Inhaltsfilter",
+      "spamFilters": "Spamfilter",
+      "directMessages": "Direktnachrichten",
+      "friendRequests": "Freundschaftsanfragen",
+      "connectedGames": "Verbundene Spiele",
+      "ignoreBlock": "Ignorieren & Blockieren"
+    },
+    "contentFilters": {
+      "sensitiveHeading": "Sensible Medien",
+      "sensitiveDescription": "Wähle Anzeigeeinstellungen für als sensibel markierte Bilder und Videos.",
+      "graphicHeading": "Gewalttätige oder explizite Inhalte",
+      "graphicDescription": "Definiere Schutzmaßnahmen für potenziell verstörende Medieninhalte.",
+      "actions": {
+        "show": "Direkt anzeigen",
+        "blur": "Mit Warnung weichzeichnen",
+        "block": "Vollständig blockieren"
+      },
+      "contexts": {
+        "friendsDm": {
+          "title": "Direktnachrichten von Freunden",
+          "description": "Filtert Medien in Direktnachrichten von Kontakten deiner Freundesliste."
+        },
+        "strangersDm": {
+          "title": "Direktnachrichten von Fremden",
+          "description": "Filtert Medien in Nachrichtenanfragen von unbekannten Konten."
+        },
+        "spaceChannels": {
+          "title": "Kanäle in öffentlichen Räumen",
+          "description": "Filtert Medien in Textkanälen geteilter Community-Räume."
+        }
+      },
+      "ageRestriction": {
+        "heading": "Altersbeschränkte Räume",
+        "title": "Zugang zu 18+-Kanälen erlauben",
+        "description": "Ermöglicht den Beitritt zu Kanälen für Erwachsene."
+      },
+      "related": {
+        "heading": "Automatischer Spamschutz",
+        "description": "Regeln zur automatischen Überprüfung unerwünschter Nachrichten anpassen.",
+        "action": "Spamfilter konfigurieren"
+      }
+    },
+    "spamFilters": {
+      "heading": "Schutz vor verdächtigen Links und Phishing",
+      "description": "Nuvio überprüft Nachrichten automatisch auf Betrug und automatisierten Spam.",
+      "recommendedBadge": "Empfohlen",
+      "options": {
+        "all": {
+          "title": "Alle Nachrichten scannen",
+          "description": "Überprüft eingehende Nachrichten aller Nutzer, auch von Freunden."
+        },
+        "nonFriends": {
+          "title": "Nur Nachrichten von Nicht-Freunden scannen (Empfohlen)",
+          "description": "Überspringt die Prüfung für bestätigte Kontakte aus deiner Freundesliste."
+        },
+        "off": {
+          "title": "Deaktiviert",
+          "description": "Keine automatische Erkennung von Spam oder zweifelhaften Links."
+        }
+      }
+    },
+    "directMessages": {
+      "heading": "Regeln für Direktnachrichten (DMs)",
+      "description": "Bestimme, wer dich direkt kontaktieren darf.",
+      "allowSpaceDms": {
+        "title": "Direktnachrichten von Raummitgliedern erlauben",
+        "description": "Standardeinstellung für neue Räume, denen du beitrittst."
+      },
+      "messageRequests": {
+        "title": "Nachrichtenanfragen aktivieren",
+        "description": "Leitet Nachrichten von unbekannten Personen in ein separates Postfach weiter."
+      },
+      "winksAutoplay": {
+        "title": "Chat-Animationen und Winks automatisch abspielen",
+        "description": "Spielt empfangene Winks sofort ab, ohne darauf klicken zu müssen."
+      },
+      "winksAudio": {
+        "title": "Soundeffekte bei Winks abspielen",
+        "description": "Gibt passende Geräusche synchron zu den Animationen wieder."
+      },
+      "winksVolume": "Lautstärke der Wink-Effekte",
+      "winksReduceMotion": {
+        "title": "Bewegungen in Chat-Animationen reduzieren",
+        "description": "Ersetzt schnelle Animationen durch sanfte Einblendungen."
+      }
+    },
+    "friendRequests": {
+      "whoCanSendHeading": "Wer darf dir Freundschaftsanfragen senden",
+      "whoCanSendDescription": "Lege fest, wer eine Verbindung zu deinem Konto anfragen kann.",
+      "everyone": {
+        "title": "Jeder",
+        "description": "Alle Nutzer auf Nuvio können dir Anfragen schicken."
+      },
+      "mutualFriends": {
+        "title": "Freunde von Freunden",
+        "description": "Nur Nutzer, die bereits mindestens einen gemeinsamen Freund haben."
+      },
+      "spaceMembers": {
+        "title": "Mitglieder gemeinsamer Räume",
+        "description": "Nur Personen, die in mindestens einem deiner Räume sind."
+      },
+      "customMessages": {
+        "title": "Eigene Nachricht bei Anfrage erlauben",
+        "description": "Erlaubt dem Absender, einen kurzen Begleittext mitzusenden."
+      }
+    },
+    "connectedGames": {
+      "heading": "Kommunikation während des Spielens",
+      "description": "Nachrichtenoptionen für registrierte Spiele und Lobbys.",
+      "allowFriendDms": {
+        "title": "DMs von Freunden im Match erlauben",
+        "description": "Empfange Nachrichten während aktiver Partien mit Freunden."
+      },
+      "allowMatchInvites": {
+        "title": "Match- und Party-Einladungen zulassen",
+        "description": "Erhalte Spieleinladungen direkt über Nuvio-Benachrichtigungen."
+      },
+      "displayModesHeading": "Benachrichtigungsmodus für Spiele",
+      "displayModesDescription": "Bestimme, welche Spielmitteilungen auf dem Bildschirm erscheinen.",
+      "displayModes": {
+        "all": {
+          "title": "Für alle verbundenen Spiele anzeigen",
+          "description": "Zeigt Einladungen für jedes aktive unterstützte Spiel an."
+        },
+        "sameGame": {
+          "title": "Nur für dasselbe aktive Spiel anzeigen",
+          "description": "Beschränkt Hinweise nur auf das Spiel, das du gerade spielst."
+        },
+        "none": {
+          "title": "Spielmitteilungen unterdrücken",
+          "description": "Blendet Spieleinladungen während laufender Matches aus."
+        }
+      },
+      "related": {
+        "heading": "Verbundene Dienste verwalten",
+        "description": "Autorisierte externe Plattformen und Streaming-Links ansehen.",
+        "action": "Verbundene Apps ansehen"
+      }
+    },
+    "ignoreBlock": {
+      "blockedHeading": "Blockierte Konten",
+      "blockedDescription": "Blockierte Nutzer können dir keine Nachrichten senden und deine Anwesenheit nicht sehen.",
+      "ignoredHeading": "Ignorierte Konten",
+      "ignoredDescription": "Nachrichten ignorierter Konten werden im Chat für dich unbemerkt ausgeblendet.",
+      "inputPlaceholder": "@benutzername eingeben…",
+      "blockAction": "Konto blockieren",
+      "unblockAction": "Entblocken",
+      "ignoreAction": "Ignorieren",
+      "unignoreAction": "Nicht mehr ignorieren",
+      "blockedEmpty": "Du hast derzeit keine Konten blockiert.",
+      "ignoredEmpty": "Keine Konten auf deiner Ignorieren-Liste."
+    }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "subtitle": "Desktop-Hinweise, Signaltöne, Zählerabzeichen und E-Mail-Mitteilungen verwalten.",
+    "subsections": {
+      "overview": "Übersicht",
+      "sounds": "Töne",
+      "badges": "Abzeichen",
+      "email": "E-Mail",
+      "advanced": "Erweitert"
+    },
+    "overview": {
+      "deliveryHeading": "Zustellung von Benachrichtigungen",
+      "deliveryDescription": "Wähle, wie Nuvio dich über Neuigkeiten informiert.",
+      "desktop": {
+        "title": "Desktop-Benachrichtigungen",
+        "description": "Zeigt Banner deines Betriebssystems an, wenn neue Nachrichten eintreffen."
+      },
+      "taskbarFlash": {
+        "title": "Symbol in der Taskleiste blinken lassen",
+        "description": "Lässt das Nuvio-Symbol bei ungelesenen Erwähnungen aufleuchten."
+      },
+      "eventsHeading": "Aktivitätsereignisse",
+      "eventsDescription": "Wähle aus, bei welchen Ereignissen Hinweise erzeugt werden.",
+      "friendOnline": {
+        "title": "Wenn Freunde online gehen",
+        "description": "Gibt Bescheid, sobald ein Kontakt eine neue Sitzung startet."
+      },
+      "friendProfile": {
+        "title": "Profilaktualisierungen von Freunden",
+        "description": "Benachrichtigt dich, wenn ein Freund Avatar oder Status ändert."
+      },
+      "spaceEvents": {
+        "title": "Ereignisse und Übertragungen in Räumen",
+        "description": "Erhalte Erinnerungen zu geplanten Community-Events."
+      },
+      "reactions": {
+        "title": "Reaktionen auf meine Nachrichten melden",
+        "description": "Gibt Bescheid, wenn andere auf deine Mitteilungen mit Emojis reagieren."
+      },
+      "reactionScope": {
+        "label": "Umfang der Reaktionsbenachrichtigungen",
+        "description": "Bestimme, für welche Konversationen Reaktionen gemeldet werden.",
+        "all": "In allen Kanälen (DMs und Räume)",
+        "dmsAndMentions": "Nur in Direktnachrichten und bei direkter Erwähnung",
+        "none": "Keine Reaktionsmeldungen"
+      }
+    },
+    "sounds": {
+      "volumeHeading": "Signaltöne & Klangprobe",
+      "volumeDescription": "Passe die Lautstärke der akustischen Benachrichtigungen an.",
+      "muteAll": {
+        "title": "Alle Benachrichtigungstöne stummschalten",
+        "description": "Deaktiviert alle Klänge für eingehende Nachrichten und Anrufe."
+      },
+      "volumeSliderLabel": "Lautstärke der Signaltöne",
+      "previewButton": "Signalton testen",
+      "previewPlayedToast": "Testsignal erfolgreich abgespielt.",
+      "eventsHeading": "Töne für bestimmte Ereignisse",
+      "eventsDescription": "Wähle, welche Aktionen ein akustisches Signal auslösen.",
+      "newMessage": {
+        "title": "Ton bei neuer Nachricht",
+        "description": "Spielt einen Ton ab, wenn eine Textnachricht empfangen wird."
+      },
+      "currentChannel": {
+        "title": "Ton im aktuell geöffneten Kanal",
+        "description": "Gibt Töne auch im gerade aktiven Konversationskanal wieder."
+      },
+      "incomingCall": {
+        "title": "Klingelton bei eingehendem Anruf",
+        "description": "Spielt eine Melodie bei eingehenden Sprach- und Videoanrufen."
+      },
+      "voiceJoinLeave": {
+        "title": "Töne beim Betreten und Verlassen des Sprachkanals",
+        "description": "Signalisiert akustisch, wenn Nutzer dem Gespräch beitreten oder es verlassen."
+      },
+      "related": {
+        "heading": "Geräte für Mikrofon und Lautsprecher",
+        "description": "Wähle deine Audioeingabe- und Ausgabegeräte aus.",
+        "action": "Sprache & Video konfigurieren"
+      }
+    },
+    "badges": {
+      "heading": "Optische Markierungen & Zähler",
+      "description": "Stelle visuelle Symbole für ungelesene Inhalte in der Navigation ein.",
+      "unreadIndicator": {
+        "title": "Punkt für ungelesene Nachrichten",
+        "description": "Zeigt einen kleinen Punkt auf Raumsymbolen mit neuen Mitteilungen an."
+      },
+      "mentionCount": {
+        "title": "Zähler für direkte Erwähnungen",
+        "description": "Zeigt die genaue Anzahl an, wie oft du erwähnt wurdest."
+      },
+      "highlightChannels": {
+        "title": "Kanäle mit neuen Nachrichten hervorheben",
+        "description": "Stellt Kanalnamen mit neuen Inhalten heller dar."
+      }
+    },
+    "email": {
+      "heading": "E-Mail-Benachrichtigungen",
+      "description": "Lege fest, welche Zusammenfassungen an deine Adresse gesendet werden.",
+      "communication": {
+        "title": "Direktnachrichten & verpasste Erwähnungen",
+        "description": "Erhalte Übersichten, wenn du länger als 24 Stunden inaktiv warst."
+      },
+      "social": {
+        "title": "Freundschaftsanfragen & Einladungen",
+        "description": "Mitteilungen über Einladungen zu neuen Räumen und Kontakten."
+      },
+      "updates": {
+        "title": "Neuigkeiten und Produktupdates",
+        "description": "Erfahre von neuen Nuvio-Versionen und nützlichen Funktionen."
+      },
+      "tips": {
+        "title": "Hilfestellungen und Anleitungen",
+        "description": "Tipps zur optimalen Bedienung der Nuvio-Plattform."
+      },
+      "recommendations": {
+        "title": "Persönliche Empfehlungen",
+        "description": "Vorschläge für Community-Räume und interessante Live-Streams."
+      },
+      "unsubscribeTitle": "Abmeldung von Werbe-E-Mails",
+      "unsubscribeDescription": "Du kannst unverbindliche Mitteilungen mit einem Klick abbestellen.",
+      "unsubscribeButton": "Alle Marketing-E-Mails abbestellen",
+      "unsubscribedToast": "Einstellung gespeichert: Marketing-Mails wurden abbestellt."
+    },
+    "advanced": {
+      "heading": "Fokusmodus & Ruhezeiten",
+      "description": "Vermeide Störungen während wichtiger Aufgaben oder Übertragungen.",
+      "quietHours": {
+        "title": "Feste Ruhezeiten aktivieren",
+        "description": "Pausiert optische und akustische Hinweise im festgelegten Zeitraum.",
+        "startLabel": "Beginn",
+        "endLabel": "Ende"
+      },
+      "suppressOnStream": {
+        "title": "Hinweise bei Bildschirmübertragung verbergen",
+        "description": "Verhindert das Einblenden privater Nachrichten während Präsentationen."
+      }
+    }
+  },
+  "accessibility": {
+    "title": "Barrierefreiheit",
+    "subtitle": "Optionen für Kontrast, Bewegungsreduktion und optische Hervorhebung.",
+    "contrastHeading": "Kontrast und Lesbarkeit",
+    "contrastDescription": "Passe Farben zur besseren Lesbarkeit und Konzentration an.",
+    "highContrast": {
+      "title": "Hoher Kontrastmodus",
+      "description": "Verstärkt Kanten und Textunterschiede auf allen Oberflächen."
+    },
+    "underlineLinks": {
+      "title": "Links im Chat immer unterstreichen",
+      "description": "Macht anklickbare Webadressen im Chattext deutlicher erkennbar."
+    },
+    "saturation": {
+      "title": "Farbsättigung",
+      "description": "Reguliere die Farbintensität über alle Bedienelemente hinweg."
+    },
+    "motionHeading": "Bewegung & Animationen",
+    "motionDescription": "Optimiere Animationen für ein ruhiges Seherlebnis.",
+    "speakingIndicator": {
+      "title": "Sprecher-Rahmen deutlich hervorheben",
+      "description": "Betont die Umrandung des sprechenden Mitglieds im Sprachkanal."
+    }
+  },
+  "languageTime": {
+    "title": "Sprache & Zeit",
+    "subtitle": "Wähle Anzeigesprache, Uhrzeitformat und Zeitzone für Zeitstempel.",
+    "timeFormat": {
+      "heading": "Uhrzeitformat",
+      "description": "Bestimme, wie Uhrzeiten bei Nachrichten formatiert werden.",
+      "h24": {
+        "title": "24-Stunden-Format (z. B. 18:30)",
+        "description": "Standardmäßiges 24-Stunden-Format."
+      },
+      "h12": {
+        "title": "12-Stunden-Format (z. B. 6:30 PM)",
+        "description": "Klassisches Format mit AM/PM-Kennzeichnung."
+      }
+    },
+    "dateFormat": {
+      "heading": "Datumsformat",
+      "description": "Wähle die Reihenfolge von Tag, Monat und Jahr.",
+      "dmy": {
+        "title": "Tag / Monat / Jahr (TT.MM.JJJJ)",
+        "description": "Europäisches Standardformat."
+      },
+      "mdy": {
+        "title": "Monat / Tag / Jahr (MM/TT/JJJJ)",
+        "description": "Amerikanisches Format."
+      },
+      "ymd": {
+        "title": "Jahr / Monat / Tag (JJJJ-MM-TT)",
+        "description": "Internationaler Standard ISO 8601."
+      }
+    },
+    "timezone": {
+      "heading": "Zeitzone",
+      "description": "Wähle den Zeitbezugspunkt für Konversationszeitstempel.",
+      "auto": {
+        "title": "Automatisch (Vom System erkannt)",
+        "description": "Verwendet die Zeitzone deines Betriebssystems."
+      },
+      "utc": {
+        "title": "UTC (Koordinierte Weltzeit)",
+        "description": "Universelle Zeitreferenz ohne Sommerzeitanpassung."
+      }
+    }
+  },
+  "gamesApps": {
+    "title": "Spiele & Apps",
+    "subtitle": "Spielerkennung, Privatsphäre, schwebende Fenster und App-Verknüpfungen.",
+    "subsections": {
+      "registeredGames": "Registrierte Spiele",
+      "activityPrivacy": "Aktivitäts-Datenschutz",
+      "gameOverlay": "Spiel-Überlagerung",
+      "connectedApps": "Verbundene Apps"
+    },
+    "registeredGames": {
+      "currentGameHeading": "Laufendes Spiel erkannt",
+      "currentGameDescription": "Nuvio erkennt Spiele im Vordergrund, um deinen Freunden deinen Status anzuzeigen.",
+      "detectedStatus": "Wird aktuell gespielt",
+      "noCurrentGameTitle": "Kein laufendes Spiel erkannt",
+      "noCurrentGameDescription": "Starte ein Spiel oder trage manuell einen Dateinamen unten ein.",
+      "addedGamesHeading": "Manuell hinzugefügte Spiele",
+      "addedGamesDescription": "Lege fest, für welche Titel Erkennung und Miniaturfenster aktiv sind.",
+      "gameNamePlaceholder": "Spielname (z. B. Hollow Knight)",
+      "exePlaceholder": "Dateiname der EXE (z. B. hollow_knight.exe)",
+      "addButton": "Spiel hinzufügen",
+      "emptyList": "Du hast noch keine benutzerdefinierten Spiele hinzugefügt.",
+      "detectionToggle": "Aktivitätserkennung aktiv",
+      "overlayToggle": "Schwebendes Fenster aktiv"
+    },
+    "activityPrivacy": {
+      "whatShareHeading": "Welche Spieldetails ich teile",
+      "whatShareDescription": "Bestimme, welche Informationen für andere sichtbar sind.",
+      "elapsedTime": {
+        "title": "Vergangene Spielzeit anzeigen",
+        "description": "Zeigt an, wie lange du die aktuelle Spielsitzung schon ausführst."
+      },
+      "whereShare": {
+        "heading": "Wo ich meine Aktivitäten teile",
+        "description": "Wähle aus, welche Gruppen deinen Spielstatus einsehen dürfen.",
+        "allSpaces": {
+          "title": "In allen Räumen und mit allen Freunden",
+          "description": "Sichtbar für Freunde und alle gemeinsamen Raummitglieder."
+        },
+        "smallSpaces": {
+          "title": "Nur in kleinen Räumen (bis zu 200 Mitglieder)",
+          "description": "Verbirgt deinen Spielstatus in sehr großen Communitys."
+        },
+        "friendsOnly": {
+          "title": "Nur für Freunde",
+          "description": "Beschränkt die Sichtbarkeit auf deine Freundesliste."
+        }
+      },
+      "joining": {
+        "heading": "Wer meiner Spielsitzung beitreten darf",
+        "description": "Verwalte Beitrittsberechtigungen für Matches und Partys.",
+        "spaceAndFriends": {
+          "title": "Freunde und Mitglieder gemeinsamer Räume",
+          "description": "Erlaubt Anfragen von Freunden und Raumkollegen."
+        },
+        "friendsOnly": {
+          "title": "Nur Freunde",
+          "description": "Nur bestätigte Freunde können deiner Sitzung beitreten."
+        },
+        "nobody": {
+          "title": "Niemand (Geschlossene Sitzung)",
+          "description": "Deaktiviert Beitrittsanfragen für deine Spielrunden."
+        }
+      }
+    },
+    "gameOverlay": {
+      "architectureNoteTitle": "Natives schwebendes Fenster (PiP) von Nuvio",
+      "architectureNoteBody": "Um Stabilität zu garantieren und Probleme mit Anti-Cheat-Programmen zu vermeiden, nutzt Nuvio ein frei bewegliches schwebendes Fenster mit Pin-Funktion im Vordergrund.",
+      "overview": {
+        "heading": "Fenster-Konfiguration",
+        "description": "Passe das Verhalten des Begleitfensters während des Spielens an.",
+        "enableOverlay": {
+          "title": "Schwebendes Fenster bei Spielen aktivieren",
+          "description": "Zeigt das kompakte Begleitfenster bei aktivem Spiel an."
+        },
+        "alwaysOnTop": {
+          "title": "Immer im Vordergrund anheften",
+          "description": "Hält das schwebende Fenster über Vollbild- und Fensterspielen sichtbar."
+        },
+        "autoOpenMinimize": {
+          "title": "Beim Minimieren automatisch öffnen",
+          "description": "Öffnet das Mini-Fenster, wenn Nuvio während eines Anrufs minimiert wird."
+        }
+      },
+      "widgets": {
+        "heading": "Position und Transparenz",
+        "description": "Wähle die Start-Ecke und die Deckkraft des schwebenden Fensters.",
+        "cornerLabel": "Standard-Bildschirmecke",
+        "corners": {
+          "topLeft": "Oben links",
+          "topRight": "Oben rechts",
+          "bottomLeft": "Unten links",
+          "bottomRight": "Unten rechts"
+        },
+        "opacityLabel": "Deckkraft des Begleitfensters"
+      },
+      "voiceWidget": {
+        "heading": "Sprachaktivitäts-Anzeige",
+        "description": "Zeigt an, wer im aktuellen Sprachkanal spricht, während du spielst.",
+        "enable": {
+          "title": "Teilnehmer des Sprachkanals anzeigen",
+          "description": "Zeigt Avatare mit Leuchtringen für Sprachaktivität."
+        },
+        "showAvatars": {
+          "title": "Avatare der Teilnehmer anzeigen",
+          "description": "Zeigt Profilbilder neben der Sprachanzeige."
+        },
+        "showNames": {
+          "title": "Anzeigenamen einblenden",
+          "description": "Zeigt den Namen des Teilnehmers neben seinem Avatar an."
+        }
+      },
+      "notifications": {
+        "heading": "Hinweise im Spiel",
+        "description": "Erhalte dezente Benachrichtigungen ohne Unterbrechung deines Spiels.",
+        "showAlerts": {
+          "title": "Direktnachrichten im Spiel anzeigen",
+          "description": "Zeigt kleine Benachrichtigungsbanner bei dringenden Mitteilungen."
+        }
+      }
+    },
+    "connectedApps": {
+      "authorizedHeading": "Autorisierte Anwendungen",
+      "authorizedDescription": "Externe Dienste mit Berechtigung zum Zugriff auf Kontoinformationen.",
+      "authorizedEmpty": "Derzeit sind keine externen Apps autorisiert.",
+      "revokeAction": "Zugriff entziehen",
+      "scopes": {
+        "profile_read": "Grundlegende Profildaten lesen",
+        "spaces_read": "Gemeinsame Räume abrufen",
+        "activity_status": "Aktivitätsstatus aktualisieren",
+        "stream_link": "Verknüpfte Live-Streams präsentieren"
+      }
+    }
   }
 }

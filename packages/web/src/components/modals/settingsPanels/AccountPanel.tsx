@@ -10,17 +10,22 @@ import { DeleteAccountModal } from '../DeleteAccountModal';
 import { api } from '../../../api/client';
 import { useTransferStore } from '../../../stores/transferStore';
 import { waitForTransferAttachment } from '../../../utils/waitForTransfer';
-import { getAvatarGradient, adjustColor, mutedGradient, AVATAR_GRADIENT_MAP, BANNER_COLOR_PRESETS } from '../../../utils/gradients';
-import { AVATAR_COLORS, detachedHomeOf } from '@concord/shared';
+import { getAvatarGradient, adjustColor, mutedGradient } from '../../../utils/gradients';
+import { detachedHomeOf } from '@concord/shared';
 import { PASSWORD_MIN_LENGTH } from '@concord/shared/src/constants';
-import type { User, ChosenUserStatus, AvatarColor } from '@concord/shared';
+import type { User, ChosenUserStatus } from '@concord/shared';
 import { describeError } from '../../../i18n/errors';
 import { resolveUploadUrl } from '../../../utils/assetUrls';
 import { VerificationSection } from './VerificationSection';
+import { SettingsRelatedShortcut } from './_shared/SettingsPrimitives';
 
 const BIO_MAX_LENGTH = 190;
 
-export function AccountPanel() {
+interface AccountPanelProps {
+  onNavigateToAppearance?: () => void;
+}
+
+export function AccountPanel({ onNavigateToAppearance }: AccountPanelProps = {}) {
   const { t } = useTranslation(['settings', 'common']);
   const user = useAuthStore((s) => s.user);
   // The chosen status lives on the account that owns it, which is not this
@@ -32,9 +37,6 @@ export function AccountPanel() {
   const [customStatus, setCustomStatus] = useState(user?.customStatus ?? '');
   const [status, setStatus] = useState<ChosenUserStatus>(savedStatus);
   const [bio, setBio] = useState(user?.bio ?? '');
-  const [accentColor, setAccentColor] = useState<string | null>(user?.accentColor ?? null);
-  const [avatarColorState, setAvatarColorState] = useState<AvatarColor | null>(user?.avatarColor ?? null);
-  const [customHex, setCustomHex] = useState(user?.accentColor ?? '');
 
   // Avatar upload state
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -60,9 +62,6 @@ export function AccountPanel() {
       setCustomStatus(user.customStatus ?? '');
       setStatus(savedStatus);
       setBio(user.bio ?? '');
-      setAccentColor(user.accentColor ?? null);
-      setAvatarColorState(user.avatarColor ?? null);
-      setCustomHex(user.accentColor ?? '');
       // Reset upload state
       if (avatarPreview) URL.revokeObjectURL(avatarPreview);
       if (bannerPreview) URL.revokeObjectURL(bannerPreview);
@@ -71,7 +70,7 @@ export function AccountPanel() {
       setBannerPreview(null);
       setBannerFilename(null);
     }
-  }, [user?.displayName, user?.customStatus, savedStatus, user?.bio, user?.accentColor, user?.avatarColor, user?.avatar, user?.banner]);
+  }, [user?.displayName, user?.customStatus, savedStatus, user?.bio, user?.avatar, user?.banner]);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
@@ -89,15 +88,10 @@ export function AccountPanel() {
   const changePassword = useAuthStore((s) => s.changePassword);
 
   // ── Detached-account re-attach (fallback path, re-attach spec §3.4) ──
-  // Explicit action shown only when this client also holds an active connection
-  // to the account's home domain. Two-step armed confirm names both identities
-  // before minting the proof. The primary/automatic path lives in instanceStore.
   const [reattachArmed, setReattachArmed] = useState(false);
   const [reattaching, setReattaching] = useState(false);
   const [reattachError, setReattachError] = useState<string | null>(null);
 
-  // The home a detached account was federated from. A detached account is
-  // homed on this instance, so `homeInstance` is null and only this names it.
   const formerHome = user ? detachedHomeOf(user) : null;
 
   const homeConnection = useMemo(() => {
@@ -105,8 +99,6 @@ export function AccountPanel() {
     const homeDomain = formerHome.replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase();
     return instances.find(
       (i) => i.status === 'connected'
-        // Portless hostname — must agree with the server's extractDomain
-        // (new URL(origin).hostname) so a ported home instance still matches.
         && new URL(i.origin).hostname.toLowerCase() === homeDomain,
     ) ?? null;
   }, [instances, formerHome]);
@@ -120,14 +112,9 @@ export function AccountPanel() {
     setReattaching(true);
     setReattachError(null);
     try {
-      // Target domain = THIS instance (where the detached account lives).
-      // Portless hostname to match the server's extractDomain contract.
       const { token } = await homeConnection.api.auth.attachProof(window.location.hostname);
       const res = await api.users.reattach({ token });
       useAuthStore.getState().setUser(res.user);
-      // Re-attach reconciled this (home) account's 1-on-1 DM federatedIds on the
-      // server; refetch the home DM list so the split conversation collapses
-      // without a reload.
       try { await useSpaceStore.getState().reloadDmsForOrigin(''); } catch { /* non-fatal */ }
       addToast(t('settings:account.detached.reattached', { username: homeConnection.username }), 'success', 3000);
     } catch (err) {
@@ -141,8 +128,8 @@ export function AccountPanel() {
   if (!user) return null;
 
   const effectiveDisplayName = displayName.trim() || user.username;
-  const effectiveAccent = accentColor;
-  const effectiveAvatarColor = avatarColorState;
+  const effectiveAccent = user.accentColor ?? null;
+  const effectiveAvatarColor = user.avatarColor ?? null;
 
   // Change detection
   const hasChanges =
@@ -150,8 +137,6 @@ export function AccountPanel() {
     customStatus !== (user.customStatus ?? '') ||
     status !== savedStatus ||
     bio !== (user.bio ?? '') ||
-    accentColor !== (user.accentColor ?? null) ||
-    avatarColorState !== (user.avatarColor ?? null) ||
     avatarFilename !== null ||
     bannerFilename !== null;
 
@@ -163,7 +148,7 @@ export function AccountPanel() {
   const currentAvatarSrc = resolveUploadUrl(user.avatar);
   const displayAvatarSrc = avatarPreview ?? (avatarFilename === '' ? null : currentAvatarSrc);
 
-  // Banner fallback: accent gradient or avatar gradient (alpha baked into gradient colors)
+  // Banner fallback
   const bannerFallback = effectiveAccent
     ? mutedGradient(effectiveAccent, adjustColor(effectiveAccent, -40))
     : (() => {
@@ -260,8 +245,6 @@ export function AccountPanel() {
       if (customStatus !== (user.customStatus ?? '')) updates.customStatus = customStatus.trim();
       if (status !== savedStatus) updates.status = status;
       if (bio !== (user.bio ?? '')) updates.bio = bio.trim();
-      if (accentColor !== (user.accentColor ?? null)) updates.accentColor = accentColor ?? '';
-      if (avatarColorState !== (user.avatarColor ?? null)) updates.avatarColor = avatarColorState ?? '';
       if (avatarFilename !== null) updates.avatar = avatarFilename;
       if (bannerFilename !== null) updates.banner = bannerFilename;
 
@@ -315,9 +298,6 @@ export function AccountPanel() {
     setCustomStatus(user.customStatus ?? '');
     setStatus(savedStatus);
     setBio(user.bio ?? '');
-    setAccentColor(user.accentColor ?? null);
-    setAvatarColorState(user.avatarColor ?? null);
-    setCustomHex(user.accentColor ?? '');
     if (avatarPreview) URL.revokeObjectURL(avatarPreview);
     if (bannerPreview) URL.revokeObjectURL(bannerPreview);
     setAvatarPreview(null);
@@ -327,9 +307,18 @@ export function AccountPanel() {
     setError('');
   };
 
+  const handleNavigateAppearance = () => {
+    if (onNavigateToAppearance) {
+      onNavigateToAppearance();
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-txt-primary mb-6">{t('settings:account.title')}</h2>
+      <div>
+        <h2 className="text-lg font-semibold text-txt-primary">{t('settings:account.title')}</h2>
+        <p className="text-xs text-txt-secondary mt-1">{t('settings:account.hubSubtitle')}</p>
+      </div>
       {formerHome && (
         <div className="rounded-lg bg-accent-amber/10 border border-accent-amber/25 px-3.5 py-3 text-xs text-txt-secondary leading-relaxed mb-4">
           <span className="font-medium text-txt-primary">{t('settings:account.detached.notice')}</span>{' '}
@@ -354,13 +343,13 @@ export function AccountPanel() {
           )}
         </div>
       )}
-      {/* ── Profile Customization ── */}
+      {/* ── Profile Identity (Images & Bio — Visual Colors moved to Appearance) ── */}
       <div>
         <div className="text-[11px] font-semibold text-txt-tertiary uppercase tracking-wider mb-1.5">
           {t('settings:account.profile.sectionTitle')}
         </div>
 
-        {/* Live Preview Card */}
+        {/* Identity Summary Card */}
         <div className="rounded-lg overflow-hidden border border-white/[0.06] mb-4 bg-surface-channel">
           {/* Banner area */}
           <div
@@ -381,9 +370,7 @@ export function AccountPanel() {
               ring={{ width: 4, color: 'var(--color-surface-channel, #1e1e2a)' }}
               className="mt-[-32px] mb-2"
             />
-            <div
-              className="font-semibold text-[15px] leading-tight text-txt-primary"
-            >
+            <div className="font-semibold text-[15px] leading-tight text-txt-primary">
               {effectiveDisplayName}
             </div>
             <div className="text-[12px] text-txt-tertiary">@{user.username}</div>
@@ -527,88 +514,6 @@ export function AccountPanel() {
             />
           </div>
 
-          {/* Avatar Color */}
-          <div>
-            <label className="block text-xs text-txt-secondary mb-1.5">{t('settings:account.profile.avatarColor.label')}</label>
-            <div className="flex gap-2">
-              {AVATAR_COLORS.map((key) => {
-                const entry = AVATAR_GRADIENT_MAP[key];
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setAvatarColorState(key)}
-                    className="w-7 h-7 rounded-full border-2 transition-all hover:scale-110"
-                    style={{
-                      background: entry.gradient,
-                      borderColor: avatarColorState === key ? 'white' : 'transparent',
-                      boxShadow: avatarColorState === key ? `0 0 0 2px ${entry.glow}40` : 'none',
-                    }}
-                    title={t(`common:colors.${key}`)}
-                    aria-label={t(`common:colors.${key}`)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Banner Color */}
-          <div>
-            <label className="block text-xs text-txt-secondary mb-1.5">{t('settings:account.profile.bannerColor.label')}</label>
-            <div className="grid grid-cols-7 gap-1.5 mb-2">
-              {[0, 1, 2].map((row) =>
-                BANNER_COLOR_PRESETS.map((family) => {
-                  const color = family[row]!;
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => { setAccentColor(color); setCustomHex(color); }}
-                      className="w-7 h-7 rounded-full border-2 transition-all hover:scale-110"
-                      style={{
-                        backgroundColor: color,
-                        borderColor: accentColor === color ? 'white' : 'transparent',
-                        boxShadow: accentColor === color ? `0 0 0 2px ${color}40` : 'none',
-                      }}
-                      title={color}
-                    />
-                  );
-                })
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={customHex}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCustomHex(val);
-                  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
-                    setAccentColor(val);
-                  }
-                }}
-                placeholder={t('settings:account.profile.bannerColor.hexPlaceholder')}
-                className="input-standard w-24 px-2 py-1.5 text-xs font-mono"
-                maxLength={7}
-              />
-              {accentColor && (
-                <div
-                  className="w-6 h-6 rounded-full border border-white/10 flex-shrink-0"
-                  style={{ backgroundColor: accentColor }}
-                />
-              )}
-              {accentColor && (
-                <button
-                  type="button"
-                  onClick={() => { setAccentColor(null); setCustomHex(''); }}
-                  className="text-xs text-txt-tertiary hover:text-txt-secondary transition-colors"
-                >
-                  {t('common:actions.clear')}
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Bio */}
           <div>
             <label className="block text-xs text-txt-secondary mb-1.5">{t('settings:account.profile.bio.label')}</label>
@@ -630,6 +535,14 @@ export function AccountPanel() {
           </div>
         </div>
       </div>
+
+      {/* Shortcut to Experience -> Appearance for Visual Colors & Themes */}
+      <SettingsRelatedShortcut
+        heading={t('settings:account.visualMoved.heading')}
+        description={t('settings:account.visualMoved.description')}
+        actionText={t('settings:account.visualMoved.action')}
+        onClick={handleNavigateAppearance}
+      />
 
       {/* ── Account ── */}
       <div>

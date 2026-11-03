@@ -88,9 +88,16 @@ vi.mock('../../stores/updateStore', () => ({
   useUpdateStore: (selector: (s: typeof mocks.update) => unknown) => selector(mocks.update),
 }));
 
-vi.mock('../../api/client', () => ({
-  api: { instance: { info: () => Promise.resolve(mocks.instanceInfo) } },
-}));
+vi.mock('../../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/client')>();
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      instance: { info: () => Promise.resolve(mocks.instanceInfo) },
+    },
+  };
+});
 
 // Only the two Desktop panels are exercised here, so every other panel and the
 // transfer tray are stubbed out.
@@ -152,7 +159,7 @@ describe('MobileSettingsScreen Desktop entry', () => {
     // The version reaches the panel, so the links name release assets.
     expect(await screen.findByRole('link', { name: 'Download for Windows' })).toHaveAttribute(
       'href',
-      'https://github.com/TheZwiss/backspace/releases/download/v1.2.1/Backspace-1.2.1-win-x64.exe',
+      'https://github.com/Gebelson/nuviovoice/releases/download/v1.2.1/Backspace-1.2.1-win-x64.exe',
     );
     // The Electron-only panel stays out of the browser.
     expect(screen.queryByRole('button', { name: 'Change Instance' })).not.toBeInTheDocument();
