@@ -319,7 +319,12 @@ function DesktopSubmenuItem({ item, close }: DesktopSubmenuItemProps) {
         onMouseLeave={handleTriggerLeave}
       >
         {item.icon && <span className="w-4 h-4">{item.icon}</span>}
-        <span className="flex-1">{item.label}</span>
+        <span className="flex-1 flex flex-col items-start min-w-0">
+          <span className="truncate">{item.label}</span>
+          {item.sublabel && (
+            <span className="text-[11px] leading-tight text-txt-tertiary group-hover:text-white/80 truncate">{item.sublabel}</span>
+          )}
+        </span>
         <span className="text-txt-tertiary text-xs ml-auto">{'\u203A'}</span>
       </button>
       {isOpen && (
@@ -566,7 +571,12 @@ function MobileMenu({ items, close }: MobileMenuProps) {
                   }}
                 >
                   {item.icon && <span className="w-5 h-5">{item.icon}</span>}
-                  <span className="flex-1">{item.label}</span>
+                  <span className="flex-1 flex flex-col items-start min-w-0">
+          <span className="truncate">{item.label}</span>
+          {item.sublabel && (
+            <span className="text-[11px] leading-tight text-txt-tertiary group-hover:text-white/80 truncate">{item.sublabel}</span>
+          )}
+        </span>
                   <span className="text-txt-tertiary text-sm">{'\u203A'}</span>
                 </button>
               );

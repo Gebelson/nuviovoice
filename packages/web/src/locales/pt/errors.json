@@ -234,5 +234,7 @@
   "file_required": "Um arquivo de vídeo é obrigatório.",
   "body_required": "O corpo da requisição é obrigatório.",
   "winks_disabled_by_recipient": "Não foi possível enviar este Wink. O destinatário não está aceitando Winks.",
-  "winks_disabled_in_group": "Não foi possível enviar o Wink nesta conversa."
+  "winks_disabled_in_group": "Não foi possível enviar o Wink nesta conversa.",
+  "space_dms_disabled": "Este membro desativou mensagens diretas originadas deste espaço.",
+  "space_friend_requests_disabled": "Este membro desativou solicitações de amizade originadas deste espaço."
 }

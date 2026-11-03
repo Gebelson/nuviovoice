@@ -101,6 +101,9 @@ export const spaceMembers = sqliteTable('space_members', {
   spaceId: text('space_id').notNull().references(() => spaces.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   nickname: text('nickname'),
+  avatar: text('avatar'),
+  allowDms: integer('allow_dms').default(1).notNull(),
+  allowFriendRequests: integer('allow_friend_requests').default(1).notNull(),
   joinedAt: integer('joined_at').notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.spaceId, table.userId] }),

@@ -12,6 +12,7 @@ import { getHierarchyStanding } from '../utils/roleHierarchy.js';
 import { memberRolesView } from '../utils/permissionDataView.js';
 import { connectionManager } from '../ws/handler.js';
 import { checkVoicePermissions } from '../ws/events.js';
+import { isValidAssetUrl } from './users.js';
 
 /**
  * Held-bits rule for handing out a role (permissions.md, "Held-bits rule"):
@@ -128,10 +129,24 @@ function validateNicknameUpdate(context: MemberUpdateContext, nickname: unknown)
   return stored;
 }
 
-/** What a valid PATCH writes: the role set and the nickname in its stored form, each only when sent. */
+/** What a valid PATCH writes: the role set, nickname, and avatar in their stored form, each only when sent. */
+function validateAvatarUpdate(context: MemberUpdateContext, avatar: unknown): string | null | undefined {
+  const { actorId, targetId, reply } = context;
+  if (actorId !== targetId) {
+    sendError(reply, 403, 'forbidden');
+    return undefined;
+  }
+  if (avatar === null || avatar === '') return null;
+  if (typeof avatar !== 'string' || !isValidAssetUrl(avatar)) {
+    sendError(reply, 400, 'avatar_url_invalid');
+    return undefined;
+  }
+  return avatar.trim() || null;
+}
 interface MemberWrite {
   roleIds?: string[];
   nickname?: string | null;
+  avatar?: string | null;
 }
 
 /**
@@ -140,8 +155,8 @@ interface MemberWrite {
  * null after sending a refusal.
  */
 function validateMemberPatch(context: MemberUpdateContext, patch: UpdateMemberRequest): MemberWrite | null {
-  const { roleIds, nickname } = patch;
-  if (roleIds === undefined && nickname === undefined) {
+  const { roleIds, nickname, avatar } = patch;
+  if (roleIds === undefined && nickname === undefined && avatar === undefined) {
     sendError(context.reply, 400, 'validation_failed');
     return null;
   }
@@ -155,12 +170,17 @@ function validateMemberPatch(context: MemberUpdateContext, patch: UpdateMemberRe
     if (stored === undefined) return null;
     write.nickname = stored;
   }
+  if (avatar !== undefined) {
+    const storedAvatar = validateAvatarUpdate(context, avatar);
+    if (storedAvatar === undefined) return null;
+    write.avatar = storedAvatar;
+  }
   return write;
 }
 
 function persistMemberUpdate(target: { spaceId: string; userId: string }, write: MemberWrite): void {
   const { spaceId: id, userId: uid } = target;
-  const { roleIds, nickname } = write;
+  const { roleIds, nickname, avatar } = write;
   const db = getDb();
   db.transaction((tx) => {
     if (roleIds !== undefined) {
@@ -172,6 +192,10 @@ function persistMemberUpdate(target: { spaceId: string; userId: string }, write:
     }
     if (nickname !== undefined) {
       tx.update(schema.spaceMembers).set({ nickname })
+        .where(and(eq(schema.spaceMembers.spaceId, id), eq(schema.spaceMembers.userId, uid))).run();
+    }
+    if (avatar !== undefined) {
+      tx.update(schema.spaceMembers).set({ avatar })
         .where(and(eq(schema.spaceMembers.spaceId, id), eq(schema.spaceMembers.userId, uid))).run();
     }
   });
@@ -250,6 +274,7 @@ function publishUpdatedMember(id: string, uid: string, reply: FastifyReply) {
     spaceId: updatedMember.spaceId,
     userId: updatedMember.userId,
     nickname: updatedMember.nickname,
+    avatar: updatedMember.avatar ?? null,
     joinedAt: updatedMember.joinedAt,
     user: sanitizeUser(user),
     roles: memberRolesView(allRoles, new Set(updatedRoleIds)),

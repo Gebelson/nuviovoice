@@ -284,6 +284,8 @@ export const ERROR_CODES = [
   'body_required',
   'winks_disabled_by_recipient',
   'winks_disabled_in_group',
+  'space_dms_disabled',
+  'space_friend_requests_disabled',
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

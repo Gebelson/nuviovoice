@@ -424,6 +424,7 @@ export interface Member {
   spaceId: string;
   userId: string;
   nickname: string | null;
+  avatar?: string | null;
   joinedAt: number;
 }
 
@@ -1122,6 +1123,16 @@ export function isPublicSpace(space: {
   return space.visibility === 'public' || space.visibility === 'request';
 }
 
+export interface SpacePrivacySettings {
+  allowDms: boolean;
+  allowFriendRequests: boolean;
+}
+
+export interface UpdateSpacePrivacyRequest {
+  allowDms?: boolean;
+  allowFriendRequests?: boolean;
+}
+
 export interface UpdateUserRequest {
   displayName?: string;
   avatar?: string;
@@ -1144,6 +1155,8 @@ export interface UpdateMemberRequest {
   roleIds?: string[];
   /** Space-local name; null explicitly restores the account display name. */
   nickname?: string | null;
+  /** Space-local avatar image URL; null explicitly restores the account avatar. */
+  avatar?: string | null;
 }
 
 export interface CreateMessageRequest {

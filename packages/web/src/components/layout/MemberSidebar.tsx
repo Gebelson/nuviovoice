@@ -14,6 +14,7 @@ import { ActivityCard, hasRichActivity, getActivityAccentClass } from '../ui/Act
 import { getPrimaryActivity } from '@concord/shared/src/activities.js';
 import { parseFederatedUsername, isFederationGlobeApplicable, spaceMemberName } from '../../utils/identity';
 import { useSpaceOrigin } from '../../hooks/useSpaceOrigin';
+import { resolveAssetUrl } from '../../utils/assetUrls';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { groupMembers, memberNameColor, type MemberGroupKind } from '../../utils/memberGroups';
@@ -74,7 +75,7 @@ function MemberSidebarRow({
       className={rowClass}
     >
       <Avatar
-        src={canonical.avatar}
+        src={member.avatar ? resolveAssetUrl(member.avatar, origin) : canonical.avatar}
         name={displayName}
         size={32}
         status={isOffline ? 'offline' : canonical.status}

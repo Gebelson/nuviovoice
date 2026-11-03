@@ -9,7 +9,7 @@ export function applySpaceMemberUpdate(origin: string, member: MemberWithUser): 
   useSpaceStore.setState({
     members: state.members.map(existing => existing.spaceId === member.spaceId && existing.userId === member.userId
       // Profile/presence have their own live events; a database snapshot must not overwrite them.
-      ? { ...existing, nickname: member.nickname, roles: member.roles }
+      ? { ...existing, nickname: member.nickname, avatar: member.avatar !== undefined ? member.avatar : existing.avatar, roles: member.roles }
       : existing),
   });
 }

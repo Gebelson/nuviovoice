@@ -234,5 +234,7 @@
   "file_required": "Eine Videodatei ist erforderlich.",
   "body_required": "Anfragetext ist erforderlich.",
   "winks_disabled_by_recipient": "Dieser Wink konnte nicht gesendet werden. Der Empfänger akzeptiert keine Winks.",
-  "winks_disabled_in_group": "Der Wink konnte in dieser Unterhaltung nicht gesendet werden."
+  "winks_disabled_in_group": "Der Wink konnte in dieser Unterhaltung nicht gesendet werden.",
+  "space_dms_disabled": "Dieses Mitglied hat Direktnachrichten von Mitgliedern dieses Bereichs deaktiviert.",
+  "space_friend_requests_disabled": "Dieses Mitglied hat Freundschaftsanfragen von Mitgliedern dieses Bereichs deaktiviert."
 }

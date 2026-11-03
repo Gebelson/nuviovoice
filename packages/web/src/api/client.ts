@@ -29,6 +29,8 @@ import type {
   UpdateUserRequest,
   JoinSpaceRequest,
   UpdateMemberRequest,
+  SpacePrivacySettings,
+  UpdateSpacePrivacyRequest,
   LiveKitTokenResponse,
   CreateDmRequest,
   AddDmMemberRequest,
@@ -315,6 +317,9 @@ export class BackspaceApiClient {
     transferOwnership: (spaceId: string, newOwnerId: string) => Promise<Space>;
     invitePreview: (code: string) => Promise<InvitePreview>;
     getAuditLogs: (spaceId: string) => Promise<{ auditLogs: AuditLogItem[] }>;
+    ack: (spaceId: string) => Promise<{ success: boolean; ackedChannels: { channelId: string; messageId: string }[] }>;
+    getPrivacy: (spaceId: string) => Promise<SpacePrivacySettings>;
+    updatePrivacy: (spaceId: string, data: UpdateSpacePrivacyRequest) => Promise<SpacePrivacySettings>;
   };
 
   readonly channels: {
@@ -878,6 +883,12 @@ export class BackspaceApiClient {
         request<InvitePreview>('GET', `/spaces/invite/${encodeURIComponent(code)}/preview`, undefined, false),
       getAuditLogs: (spaceId: string) =>
         request<{ auditLogs: AuditLogItem[] }>('GET', `/spaces/${spaceId}/audit-logs`),
+      ack: (spaceId: string) =>
+        request<{ success: boolean; ackedChannels: { channelId: string; messageId: string }[] }>('POST', `/spaces/${spaceId}/ack`),
+      getPrivacy: (spaceId: string) =>
+        request<SpacePrivacySettings>('GET', `/spaces/${spaceId}/privacy`),
+      updatePrivacy: (spaceId: string, data: UpdateSpacePrivacyRequest) =>
+        request<SpacePrivacySettings>('PATCH', `/spaces/${spaceId}/privacy`, data),
     };
 
     this.channels = {

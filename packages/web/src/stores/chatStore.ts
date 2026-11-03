@@ -7,6 +7,7 @@ import { isMe, myRowForOrigin } from './authStore';
 import { normalizeMessageAssets } from '../utils/assetUrls';
 import { updateIsAboutRowId, withUserUpdate, type IdentityFields } from '../utils/identity';
 import { usePendingMessageStore } from './pendingMessageStore';
+import { useUnreadCountStore } from './unreadCountStore';
 import { useUIStore } from './uiStore';
 import { describeError } from '../i18n/errors';
 import type { ScrollAnchor } from '../components/chat/scrollAnchor';
@@ -318,6 +319,7 @@ interface ChatState {
   markChannelUnread: (channelId: string) => void;
   markUnread: (channelId: string, messageId: string) => void;
   ackChannel: (channelId: string) => void;
+  ackSpace: (spaceId: string) => Promise<void>;
   onChannelAck: (channelId: string, messageId: string) => void;
   onMarkUnread: (channelId: string, messageId: string) => void;
   removeChannelStates: (channelIds: Set<string>) => void;
@@ -1333,6 +1335,84 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // Send to the correct instance
     const origin = getChannelOrigin(channelId);
     wsSend({ type: 'channel_ack', channelId, messageId: ackedId }, origin);
+  },
+
+  ackSpace: async (spaceId: string) => {
+    const spaceStore = useSpaceStore.getState();
+    const space = spaceStore.spaces.find((s) => s.id === spaceId);
+    if (!space) return;
+    const origin = space._instanceOrigin ?? '';
+    const channelIds: string[] = [];
+    for (const [chId, spId] of spaceStore.channelToSpaceMap) {
+      if (spId === spaceId) channelIds.push(chId);
+    }
+    const channelLastMsgMap = new Map<string, string | null>();
+    if (spaceStore.currentSpaceId === spaceId) {
+      for (const ch of spaceStore.channels) {
+        if (!channelIds.includes(ch.id)) channelIds.push(ch.id);
+        channelLastMsgMap.set(ch.id, ch.lastMessageId ?? null);
+      }
+    }
+
+    const zeroCounts: Record<string, number> = {};
+    const wsAcks: { channelId: string; messageId: string }[] = [];
+
+    if (channelIds.length > 0) {
+      set((state) => {
+        const newReadStates = new Map(state.readStates);
+        const newUnread = new Set(state.unreadChannels);
+
+        for (const chId of channelIds) {
+          newUnread.delete(chId);
+          zeroCounts[chId] = 0;
+
+          const msgs = state.messages.get(chId);
+          const latestCachedId = msgs && msgs.length > 0 ? greatestServerId(msgs) : null;
+          const lastMsgId = channelLastMsgMap.get(chId) ?? null;
+          const candidateId =
+            latestCachedId && lastMsgId
+              ? isNewerId(latestCachedId, lastMsgId)
+                ? latestCachedId
+                : lastMsgId
+              : latestCachedId ?? lastMsgId ?? null;
+
+          if (candidateId && isNewerId(candidateId, newReadStates.get(chId))) {
+            newReadStates.set(chId, candidateId);
+            wsAcks.push({ channelId: chId, messageId: candidateId });
+          }
+        }
+
+        return { readStates: newReadStates, unreadChannels: newUnread };
+      });
+    }
+
+    const unreadStore = useUnreadCountStore.getState();
+    if (origin in unreadStore.counts) {
+      unreadStore.updateCounts(origin, zeroCounts);
+    }
+
+    for (const ack of wsAcks) {
+      wsSend({ type: 'channel_ack', channelId: ack.channelId, messageId: ack.messageId }, origin);
+    }
+
+    try {
+      const res = await getApiForOrigin(origin).spaces.ack(spaceId);
+      if (res?.ackedChannels?.length) {
+        set((state) => {
+          const newReadStates = new Map(state.readStates);
+          const newUnread = new Set(state.unreadChannels);
+          for (const ack of res.ackedChannels) {
+            newUnread.delete(ack.channelId);
+            if (isNewerId(ack.messageId, newReadStates.get(ack.channelId))) {
+              newReadStates.set(ack.channelId, ack.messageId);
+            }
+          }
+          return { readStates: newReadStates, unreadChannels: newUnread };
+        });
+      }
+    } catch {
+      // Fallback: local state + WS acks already updated
+    }
   },
 
   onChannelAck: (channelId: string, messageId: string) => {

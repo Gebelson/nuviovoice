@@ -1226,4 +1226,24 @@ export function migrateExistingSpacesSeparation(
     CREATE UNIQUE INDEX IF NOT EXISTS idx_streamer_channels_platform_channel ON streamer_channels(platform, channel_name);
   `);
 
+  // 18. Ensure space_members custom profile and privacy columns exist
+  try {
+    const memberCols = db.prepare('PRAGMA table_info(space_members)').all() as Array<{ name: string }>;
+    if (memberCols.length > 0) {
+      if (!memberCols.some((c) => c.name === 'avatar')) {
+        db.prepare('ALTER TABLE space_members ADD COLUMN avatar TEXT').run();
+      }
+      if (!memberCols.some((c) => c.name === 'allow_dms')) {
+        db.prepare('ALTER TABLE space_members ADD COLUMN allow_dms INTEGER NOT NULL DEFAULT 1').run();
+      }
+      if (!memberCols.some((c) => c.name === 'allow_friend_requests')) {
+        db.prepare('ALTER TABLE space_members ADD COLUMN allow_friend_requests INTEGER NOT NULL DEFAULT 1').run();
+      }
+    }
+  } catch (err) {
+    console.warn('[defaults] space_members columns check:', err);
+  }
+  db.exec(`
+  `);
+
 }

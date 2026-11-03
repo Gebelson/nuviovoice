@@ -861,6 +861,34 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 400, 'cannot_dm_self');
     }
 
+    // Enforce per-space DM privacy when users share spaces and are not friends
+    const isFriendWithTarget = db.select().from(schema.friends).where(or(
+      and(eq(schema.friends.userId, request.userId), eq(schema.friends.friendId, targetUserId)),
+      and(eq(schema.friends.userId, targetUserId), eq(schema.friends.friendId, request.userId)),
+    )).get();
+    if (!isFriendWithTarget) {
+      const callerSpaces = db.select({ spaceId: schema.spaceMembers.spaceId })
+        .from(schema.spaceMembers)
+        .where(eq(schema.spaceMembers.userId, request.userId))
+        .all()
+        .map(m => m.spaceId);
+      if (callerSpaces.length > 0) {
+        const targetSharedMemberships = db.select({ allowDms: schema.spaceMembers.allowDms })
+          .from(schema.spaceMembers)
+          .where(and(
+            eq(schema.spaceMembers.userId, targetUserId),
+            inArray(schema.spaceMembers.spaceId, callerSpaces),
+          ))
+          .all();
+        if (
+          targetSharedMemberships.length > 0 &&
+          targetSharedMemberships.every(m => m.allowDms === 0)
+        ) {
+          return sendError(reply, 403, 'space_dms_disabled');
+        }
+      }
+    }
+
     const opened = openOneOnOne(request.userId, targetUser, db);
     const result = loadDmChannelWire(db, opened.channelId);
     if (!result) {

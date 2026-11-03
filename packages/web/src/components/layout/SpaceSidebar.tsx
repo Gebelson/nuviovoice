@@ -18,7 +18,13 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { TransferOwnershipModal } from '../modals/TransferOwnershipModal';
 import { NotificationSettingsModal, type NotificationSettingsModalTarget } from '../notifications/NotificationSettingsModal';
 import { FolderSettingsModal } from '../modals/FolderSettingsModal';
-import { isPublicSpace, type SpaceLayoutItem, type SpaceFolder, type LiveStreamInfo } from '@concord/shared';
+import { isPublicSpace, DEFAULT_NOTIFICATION_LEVEL, isMuteActive, type NotificationLevel, type NotificationMuteDuration, type SpaceLayoutItem, type SpaceFolder, type LiveStreamInfo } from '@concord/shared';
+import { selectNotificationSetting, useNotificationSettingsStore } from '../../stores/notificationSettingsStore';
+import { useSpacePreferencesStore } from '../../stores/spacePreferencesStore';
+import { hasPermissionBit, PermissionBits } from '../../utils/permissions';
+import { SpacePrivacyModal } from '../modals/SpacePrivacyModal';
+import { SpaceProfileModal } from '../modals/SpaceProfileModal';
+import { buildSpaceContextMenuItems } from './spaceContextMenuItems';
 import { useLiveStreamStore } from '../../stores/liveStreamStore';
 import { LiveStreamSidebarItem } from '../live/LiveStreamSidebarItem';
 
@@ -73,6 +79,11 @@ function SidebarItem({ id, name, icon, avatarColor, active, onClick, onContextMe
   const { t } = useTranslation(['spaces', 'common']);
   const [isHovered, setIsHovered] = useState(false);
   const firstLetter = name.charAt(0).toUpperCase();
+  const spaceNotifSetting = useNotificationSettingsStore((s) =>
+    type === 'space' ? selectNotificationSetting(s, spaceOrigin, { spaceId: id, channelId: null }) : undefined
+  );
+  useNotificationSettingsStore((s) => (type === 'space' ? s.clock : 0));
+  const isSpaceMuted = type === 'space' && isMuteActive(spaceNotifSetting, Date.now());
 
   const getPillHeight = () => {
     if (active) return 'h-8';
@@ -152,6 +163,17 @@ function SidebarItem({ id, name, icon, avatarColor, active, onClick, onContextMe
     <div className={`relative ${dropIndicator === 'merge' ? 'scale-110 ring-2 ring-accent-mint/60 rounded-full' : ''} transition-transform duration-150`}>
       {buttonContent}
       {type === 'space' && <SpaceUnreadBadge spaceId={id} />}
+      {type === 'space' && isSpaceMuted && (
+        <div
+          data-testid="space-muted-indicator"
+          title={t('spaces:notifications.mutedIndicator')}
+          className={`absolute -bottom-0.5 ${federationBadge ? '-left-0.5' : '-right-0.5'} w-[15px] h-[15px] rounded-full bg-surface-base flex items-center justify-center text-txt-tertiary/80 pointer-events-none`}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68c-.24.06-.47.14-.69.22L18 13.1V16zM5.41 3.35 4 4.76l2.81 2.81C6.29 8.57 6 9.73 6 11v5l-2 2v1h14.24l1.74 1.74 1.41-1.41L5.41 3.35z" />
+          </svg>
+        </div>
+      )}
       {type === 'dm' && <DmUnreadBadge />}
       {federationBadge && (
         <div className="absolute -bottom-0.5 -right-0.5 w-[14px] h-[14px] rounded-full bg-surface-base flex items-center justify-center">
@@ -707,6 +729,8 @@ export function SpaceSidebar() {
   const [notificationTarget, setNotificationTarget] = useState<NotificationSettingsModalTarget | null>(null);
   const [leaveConfirmSpaceId, setLeaveConfirmSpaceId] = useState<string | null>(null);
   const [folderSettingsModalTarget, setFolderSettingsModalTarget] = useState<SpaceFolder | null>(null);
+  const [privacyModalSpace, setPrivacyModalSpace] = useState<TaggedSpace | null>(null);
+  const [profileModalSpace, setProfileModalSpace] = useState<TaggedSpace | null>(null);
 
   // DnD state
   const [dragState, setDragState] = useState<{ dragId: string; dragType: 'space' | 'folder'; sourceFolderId?: string } | null>(null);
@@ -908,7 +932,7 @@ export function SpaceSidebar() {
     addToast(t('spaces:sidebar.folder.removed', 'Removido da pasta'), 'info', 2000);
   }, [resolvedLayout, spaceMap, persistLayout, addToast, t]);
 
-  const handleMoveToFolder = useCallback((spaceId: string, targetFolderId: string) => {
+  const handleMoveToFolder = useCallback((spaceId: string, targetFolderId: string, sourceFolderId?: string) => {
     const space = spaceMap.get(spaceId);
     if (!space) return;
 
@@ -920,7 +944,17 @@ export function SpaceSidebar() {
     }) as ResolvedSpaceLayoutItem[];
 
     // Remove standalone space
-    newLayout = newLayout.filter(i => !(i.type === 'space' && i.space.id === spaceId));
+    // Remove standalone space or from source folder
+    if (sourceFolderId) {
+      const srcFolder = newLayout.find(i => i.type === 'folder' && i.folder.id === sourceFolderId) as (ResolvedSpaceLayoutItem & { type: 'folder' }) | undefined;
+      if (srcFolder) {
+        srcFolder.spaces = srcFolder.spaces.filter(s => s.id !== spaceId);
+        srcFolder.folder = { ...srcFolder.folder, spaceIds: srcFolder.spaces.map(s => s.id) };
+      }
+      newLayout = newLayout.filter(i => !(i.type === 'folder' && i.spaces.length === 0));
+    } else {
+      newLayout = newLayout.filter(i => !(i.type === 'space' && i.space.id === spaceId));
+    }
 
     // Append to target folder
     const targetFolder = newLayout.find(i => i.type === 'folder' && i.folder.id === targetFolderId) as (ResolvedSpaceLayoutItem & { type: 'folder' }) | undefined;
@@ -955,7 +989,95 @@ export function SpaceSidebar() {
     addToast(t('common:states.saved', 'Alterações salvas'), 'success', 2000);
   }, [resolvedLayout, persistLayout, addToast, t]);
 
+  const handleCreateFolderWithSpace = useCallback((spaceId: string, sourceFolderId?: string) => {
+    const space = spaceMap.get(spaceId);
+    if (!space) return;
+
+    let newLayout = resolvedLayout.map(item => {
+      if (item.type === 'folder') {
+        return { ...item, spaces: [...item.spaces], folder: { ...item.folder } };
+      }
+      return { ...item };
+    }) as ResolvedSpaceLayoutItem[];
+
+    const tempId = `new:${Date.now()}`;
+    const newFolderItem: ResolvedSpaceLayoutItem = {
+      type: 'folder',
+      folder: {
+        id: tempId,
+        userId: '',
+        name: null,
+        color: null,
+        position: 0,
+        spaceIds: [space.id],
+      },
+      spaces: [space],
+    };
+
+    if (sourceFolderId) {
+      const srcIdx = newLayout.findIndex(i => i.type === 'folder' && i.folder.id === sourceFolderId);
+      if (srcIdx !== -1) {
+        const srcFolder = newLayout[srcIdx] as ResolvedSpaceLayoutItem & { type: 'folder' };
+        srcFolder.spaces = srcFolder.spaces.filter(s => s.id !== spaceId);
+        srcFolder.folder = { ...srcFolder.folder, spaceIds: srcFolder.spaces.map(s => s.id) };
+        newLayout.splice(srcIdx + 1, 0, newFolderItem);
+        newLayout = newLayout.filter(i => !(i.type === 'folder' && i.spaces.length === 0));
+      } else {
+        newLayout.push(newFolderItem);
+      }
+    } else {
+      const spaceIdx = newLayout.findIndex(i => i.type === 'space' && i.space.id === spaceId);
+      if (spaceIdx !== -1) {
+        newLayout[spaceIdx] = newFolderItem;
+      } else {
+        newLayout.push(newFolderItem);
+      }
+    }
+
+    setExpandedFolderIds(prev => new Set(prev).add(tempId));
+    persistLayout(newLayout);
+    addToast(t('spaces:spaceMenu.folderCreated', 'Nova pasta criada'), 'success', 2000);
+  }, [resolvedLayout, spaceMap, persistLayout, addToast, t]);
+
   const handleSpaceContextMenu = useCallback((spaceId: string, e: React.MouseEvent, folderId?: string) => {
+    e.preventDefault();
+    const space = useSpaceStore.getState().spaces.find(sp => sp.id === spaceId);
+    if (!space) return;
+    const spaceRegion = isPublicSpace(space) ? 'public' : 'private';
+    const candidateFolders = resolvedLayout
+      .filter((i): i is ResolvedSpaceLayoutItem & { type: 'folder' } =>
+        i.type === 'folder' &&
+        i.folder.id !== folderId &&
+        (spaceRegion === 'public' ? i.spaces.every(s => isPublicSpace(s)) : !i.spaces.every(s => isPublicSpace(s)))
+      )
+      .map(i => i.folder);
+
+    const items = buildSpaceContextMenuItems({
+      space: space as TaggedSpace,
+      folderId,
+      candidateFolders,
+      t,
+      onOpenNotificationsModal: () => setNotificationTarget({
+        kind: 'space',
+        origin: (space as TaggedSpace)._instanceOrigin ?? '',
+        spaceId,
+        spaceName: space.name,
+      }),
+      onOpenPrivacyModal: () => setPrivacyModalSpace(space as TaggedSpace),
+      onOpenProfileModal: () => setProfileModalSpace(space as TaggedSpace),
+      onRemoveFromFolder: handleRemoveFromFolder,
+      onMoveToFolder: handleMoveToFolder,
+      onCreateFolderWithSpace: handleCreateFolderWithSpace,
+      onOpenSpaceSettings: () => {
+        setCurrentSpace(spaceId);
+        setShowDms(false);
+        openModal('spaceSettings');
+      },
+      onOpenTransferModal: () => setTransferModalSpaceId(spaceId),
+      onOpenLeaveConfirm: () => setLeaveConfirmSpaceId(spaceId),
+    });
+    openContextMenu({ x: e.clientX, y: e.clientY }, items);
+    /*
     e.preventDefault();
     const space = useSpaceStore.getState().spaces.find(sp => sp.id === spaceId);
     if (!space) return;
@@ -1070,7 +1192,9 @@ export function SpaceSidebar() {
     );
 
     openContextMenu({ x: e.clientX, y: e.clientY }, items);
-  }, [openContextMenu, resolvedLayout, handleRemoveFromFolder, handleMoveToFolder, t]);
+    }
+    */
+  }, [openContextMenu, resolvedLayout, handleRemoveFromFolder, handleMoveToFolder, handleCreateFolderWithSpace, setCurrentSpace, setShowDms, openModal, t]);
 
   const handleFolderContextMenu = useCallback((folder: SpaceFolder, isExpanded: boolean, e: React.MouseEvent) => {
     e.preventDefault();
@@ -1547,7 +1671,7 @@ export function SpaceSidebar() {
             title={space ? t('spaces:sidebar.space.leaveConfirm.titleNamed', { name: space.name }) : t('spaces:sidebar.space.leaveConfirm.title')}
             description={t('spaces:sidebar.space.leaveConfirm.description')}
             variant="danger"
-            confirmLabel={t('common:actions.leave')}
+            confirmLabel={t('spaces:sidebar.space.leave')}
           />
         );
       })()}
@@ -1557,6 +1681,26 @@ export function SpaceSidebar() {
           folder={folderSettingsModalTarget}
           onClose={() => setFolderSettingsModalTarget(null)}
           onSave={handleFolderSave}
+        />
+      )}
+      {privacyModalSpace && (
+        <SpacePrivacyModal
+          target={{
+            origin: privacyModalSpace._instanceOrigin ?? '',
+            spaceId: privacyModalSpace.id,
+            spaceName: privacyModalSpace.name,
+          }}
+          onClose={() => setPrivacyModalSpace(null)}
+        />
+      )}
+      {profileModalSpace && (
+        <SpaceProfileModal
+          target={{
+            origin: profileModalSpace._instanceOrigin ?? '',
+            spaceId: profileModalSpace.id,
+            spaceName: profileModalSpace.name,
+          }}
+          onClose={() => setProfileModalSpace(null)}
         />
       )}
     </nav>

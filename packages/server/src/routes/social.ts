@@ -100,6 +100,28 @@ async function handleLocalFriendRequest(
     return sendError(reply, 400, 'already_friends');
   }
 
+  // Enforce per-space friend request privacy when users share spaces
+  const senderSpaces = db.select({ spaceId: schema.spaceMembers.spaceId })
+    .from(schema.spaceMembers)
+    .where(eq(schema.spaceMembers.userId, request.userId))
+    .all()
+    .map(m => m.spaceId);
+  if (senderSpaces.length > 0) {
+    const targetSharedMemberships = db.select({ allowFriendRequests: schema.spaceMembers.allowFriendRequests })
+      .from(schema.spaceMembers)
+      .where(and(
+        eq(schema.spaceMembers.userId, targetUser.id),
+        inArray(schema.spaceMembers.spaceId, senderSpaces),
+      ))
+      .all();
+    if (
+      targetSharedMemberships.length > 0 &&
+      targetSharedMemberships.every(m => m.allowFriendRequests === 0)
+    ) {
+      return sendError(reply, 403, 'space_friend_requests_disabled');
+    }
+  }
+
   // Check for existing pending request
   const existingRequest = db.select().from(schema.friendRequests).where(and(
     or(

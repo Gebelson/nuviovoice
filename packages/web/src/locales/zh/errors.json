@@ -234,5 +234,7 @@
   "file_required": "需要视频文件。",
   "body_required": "请求正文为必填项。",
   "winks_disabled_by_recipient": "无法发送此 Wink。收件人未接收 Wink。",
-  "winks_disabled_in_group": "无法在此对话中发送 Wink。"
+  "winks_disabled_in_group": "无法在此对话中发送 Wink。",
+  "space_dms_disabled": "该成员已关闭来自此空间成员的私信。",
+  "space_friend_requests_disabled": "该成员已关闭来自此空间成员的好友请求。"
 }

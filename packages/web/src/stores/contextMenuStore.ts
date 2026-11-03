@@ -48,6 +48,7 @@ export type ContextMenuLeafItem =
   | ContextMenuSeparator;
 
 export interface ContextMenuSubmenu extends ContextMenuItemBase {
+  sublabel?: string;
   type: 'submenu';
   label: string;
   icon?: ReactNode;

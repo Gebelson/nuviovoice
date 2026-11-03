@@ -816,5 +816,53 @@
     "mockupAlt": "笔记本与显示器上的 Nuvio",
     "comingSoon": "Nuvio Windows 版即将推出。",
     "versionLabel": "版本 {{version}} · Windows 10 / 11 (64 位)"
+  },
+  "spaceMenu": {
+    "markAsRead": "标为已读",
+    "markedAsRead": "空间已标为已读。",
+    "invite": "邀请加入空间",
+    "muteSpace": "静音空间",
+    "unmuteSpace": "取消静音空间",
+    "notificationSettings": "通知设置",
+    "openFullNotifications": "高级设置…",
+    "hideMutedChannels": "隐藏已静音的频道",
+    "showMutedChannelsTemp_other": "显示 {{count}} 个已静音的频道",
+    "hideMutedChannelsNow_other": "隐藏 {{count}} 个已静音的频道",
+    "privacySettings": "隐私设置",
+    "editSpaceProfile": "编辑此空间个人资料",
+    "moveTo": "移动到...",
+    "createNewFolder": "新建文件夹",
+    "folderCreated": "已创建新文件夹",
+    "copyId": "复制空间 ID",
+    "idCopied": "已复制空间 ID。",
+    "idCopyFailed": "无法复制空间 ID。",
+    "privacyModal": {
+      "title": "隐私设置 — {{spaceName}}",
+      "subtitle": "控制此空间的其他成员如何与您互动。",
+      "loadFailed": "无法加载此空间的隐私设置。",
+      "saveFailed": "无法更新隐私设置。",
+      "allowDmsLabel": "允许来自此空间成员的私信",
+      "allowDmsDesc": "启用后，其他成员可根据您的全局隐私设置向您发送私信。禁用后，此空间不会作为允许陌生人私信的共同空间依据。",
+      "allowFriendRequestsLabel": "允许来自此空间成员的好友请求",
+      "allowFriendRequestsDesc": "控制源于此空间共同成员身份的好友请求，同时遵循您的全局隐私设置。",
+      "globalNotice": "这些设置不会绕过屏蔽或您的全局隐私偏好。始终以最严格的设置为准。"
+    },
+    "profileModal": {
+      "title": "编辑此空间个人资料",
+      "subtitle": "自定义您在 {{spaceName}} 中的展示形象，而不会更改您的 Nuvio 全局资料。",
+      "previewLabel": "空间内预览",
+      "nicknameLabel": "此空间昵称",
+      "nicknameHint": "仅在 {{spaceName}} 中显示。留空则使用全局显示名称。",
+      "avatarLabel": "此空间头像",
+      "avatarHint": "上传此空间专属头像或使用全局头像。",
+      "uploadAvatar": "更改空间头像",
+      "useGlobalAvatar": "使用全局头像",
+      "invalidImageType": "请上传 PNG、JPEG、WebP 或 GIF 图像。",
+      "imageTooLarge": "图像大小不得超过 {{max}} MB。",
+      "cropTitle": "裁剪空间头像",
+      "restoreGlobal": "恢复全局资料数据",
+      "saved": "空间个人资料已更新。",
+      "saveFailed": "更新空间个人资料失败。"
+    }
   }
 }

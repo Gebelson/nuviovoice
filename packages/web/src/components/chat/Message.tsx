@@ -1,4 +1,5 @@
 import { isStickerMessage } from '../../utils/stickerMessages';
+import { resolveAssetUrl } from '../../utils/assetUrls';
 import { isWinkContent } from '@concord/shared/src/winks';
 import { WinkMessageCard } from './WinkMessageCard';
 import { StickerMessage } from './StickerMessage';
@@ -532,7 +533,7 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
         {isFirstInGroup || message.replyTo || message.replyToId ? (
           <div className="mt-0.5 relative" data-poke-user={message.userId} onContextMenu={handleAuthorMenu}>
             <ProfileAvatar
-              src={displayIdentity.avatar}
+              src={spaceMemberOf(message.userId)?.avatar ? resolveAssetUrl(spaceMemberOf(message.userId)?.avatar, messageOrigin) : displayIdentity.avatar}
               name={displayName}
               size={40}
               user={displayIdentity}

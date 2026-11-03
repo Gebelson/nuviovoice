@@ -1676,7 +1676,7 @@ export function buildReadyPayload(userId: string): {
         .all();
 
       const members: MemberWithUser[] = memberRows
-        .map(m => {
+        .map((m): MemberWithUser | null => {
           const u = userMap.get(m.userId);
           if (!u) return null;
 
@@ -1688,6 +1688,7 @@ export function buildReadyPayload(userId: string): {
             spaceId: m.spaceId,
             userId: m.userId,
             nickname: m.nickname,
+            avatar: m.avatar ?? null,
             joinedAt: m.joinedAt,
             user: sanitizeUser(u),
             roles: memberRolesView(roles, assignedRoleIds),

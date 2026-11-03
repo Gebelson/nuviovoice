@@ -38,6 +38,9 @@ import { isElectron } from '../../platform/platform';
 import { useUpdateStore } from '../../stores/updateStore';
 import { VoiceInvitePopover } from '../voice/VoiceInvitePopover';
 import { VerificationBadge } from '../ui/VerificationBadge';
+import { isMuteActive } from '@concord/shared';
+import { selectNotificationSetting, useNotificationSettingsStore } from '../../stores/notificationSettingsStore';
+import { useSpacePreferencesStore } from '../../stores/spacePreferencesStore';
 
 export function ChannelSidebar() {
   const { t } = useTranslation(['spaces', 'common', 'project']);
@@ -165,9 +168,33 @@ export function ChannelSidebar() {
 
   // Filter channels by VIEW_CHANNEL (defense-in-depth — server already filters,
   // but this catches transient races where channels and permissions are briefly out of sync)
-  const visibleChannels = useMemo(() =>
+  const permFilteredChannels = useMemo(() =>
     channels.filter(ch => hasPermissionBit(channelPermissions.get(ch.id), PermissionBits.VIEW_CHANNEL)),
     [channels, channelPermissions]);
+
+  const notifSettings = useNotificationSettingsStore((s) => s.settings);
+  const notifClock = useNotificationSettingsStore((s) => s.clock);
+  const hideMuted = useSpacePreferencesStore((s) => s.isHideMuted(currentSpaceId));
+  const temporarilyRevealed = useSpacePreferencesStore((s) => s.isTemporarilyRevealed(currentSpaceId));
+  const toggleTemporarilyRevealed = useSpacePreferencesStore((s) => s.toggleTemporarilyRevealed);
+  const spaceOrigin = (space as any)?._instanceOrigin ?? '';
+
+  const isChannelOwnMuted = useCallback((channelId: string) => {
+    if (!currentSpaceId) return false;
+    const setting = selectNotificationSetting({ settings: notifSettings }, spaceOrigin, { spaceId: currentSpaceId, channelId });
+    return isMuteActive(setting, Date.now());
+  }, [currentSpaceId, notifSettings, spaceOrigin, notifClock]);
+
+  const mutedChannelCount = useMemo(() =>
+    permFilteredChannels.filter(ch => isChannelOwnMuted(ch.id)).length,
+    [permFilteredChannels, isChannelOwnMuted]);
+
+  const visibleChannels = useMemo(() => {
+    if (!hideMuted || temporarilyRevealed) return permFilteredChannels;
+    return permFilteredChannels.filter(ch =>
+      !isChannelOwnMuted(ch.id) || ch.id === currentChannelId || ch.id === currentVoiceChannelId
+    );
+  }, [permFilteredChannels, hideMuted, temporarilyRevealed, isChannelOwnMuted, currentChannelId, currentVoiceChannelId]);
 
   // Group channels by category
   const sortedCategories = useMemo(() =>
@@ -1002,6 +1029,34 @@ export function ChannelSidebar() {
                 <path d="M8 2a.5.5 0 01.5.5v5h5a.5.5 0 010 1h-5v5a.5.5 0 01-1 0v-5h-5a.5.5 0 010-1h5v-5A.5.5 0 018 2z" />
               </svg>
               <span className="text-[12px]">{t('spaces:channels.createCategory')}</span>
+            </button>
+          </div>
+        )}
+        {hideMuted && mutedChannelCount > 0 && currentSpaceId && (
+          <div className="px-1 mt-2">
+            <button
+              type="button"
+              onClick={() => toggleTemporarilyRevealed(currentSpaceId)}
+              className="w-full flex items-center justify-between gap-1.5 px-[10px] py-1.5 rounded-[6px] text-[12px] text-txt-tertiary hover:text-txt-secondary hover:bg-interactive-hover transition-colors"
+            >
+              <span className="truncate">
+                {temporarilyRevealed
+                  ? t('spaces:spaceMenu.hideMutedChannelsNow', { count: mutedChannelCount })
+                  : t('spaces:spaceMenu.showMutedChannelsTemp', { count: mutedChannelCount })}
+              </span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 opacity-70">
+                {temporarilyRevealed ? (
+                  <>
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </>
+                )}
+              </svg>
             </button>
           </div>
         )}

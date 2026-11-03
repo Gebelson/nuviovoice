@@ -2,7 +2,7 @@ import { MAX_OWNER_TITLE_LENGTH, normalizeOwnerTitle } from '@concord/shared/src
 import { updateSpaceMemberRoutes, roleGrantRefusal } from './spaceMemberUpdate.js';
 import path from 'path';
 import type { FastifyInstance } from 'fastify';
-import { eq, and, inArray, desc } from 'drizzle-orm';
+import { eq, and, inArray, desc, sql } from 'drizzle-orm';
 import { getDb, getRawDb, schema } from '../db/index.js';
 import { authenticate } from '../utils/auth.js';
 import { markDirectoryDirty } from '../directory/state.js';
@@ -25,6 +25,8 @@ import type {
   MemberWithUser,
   SpaceWithChannelsAndMembers,
   Role,
+  SpacePrivacySettings,
+  UpdateSpacePrivacyRequest,
 } from '@concord/shared';
 import { AVATAR_COLORS, SPACE_CATEGORIES } from '@concord/shared';
 import { sanitizeUser } from '../utils/sanitize.js';
@@ -787,7 +789,7 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
       .all();
 
     const members: MemberWithUser[] = memberRows
-      .map(m => {
+      .map((m): MemberWithUser | null => {
         const user = userMap.get(m.userId);
         if (!user) return null;
 
@@ -799,6 +801,7 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
           spaceId: m.spaceId,
           userId: m.userId,
           nickname: m.nickname,
+          avatar: m.avatar ?? null,
           joinedAt: m.joinedAt,
           user: sanitizeUser(user),
           roles: memberRolesView(roles, assignedRoleIds),
@@ -1327,7 +1330,7 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
       .all();
 
     const members: MemberWithUser[] = memberRows
-      .map(m => {
+      .map((m): MemberWithUser | null => {
         const user = userMap.get(m.userId);
         if (!user) return null;
 
@@ -1339,6 +1342,7 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
           spaceId: m.spaceId,
           userId: m.userId,
           nickname: m.nickname,
+          avatar: m.avatar ?? null,
           joinedAt: m.joinedAt,
           user: sanitizeUser(user),
           roles: memberRolesView(roles, assignedRoleIds),
@@ -1350,6 +1354,172 @@ export async function spaceRoutes(app: FastifyInstance): Promise<void> {
   });
 
   updateSpaceMemberRoutes(app);
+
+  // POST /api/spaces/:id/ack - Mark all accessible channels in the space as read
+  app.post<{ Params: { id: string } }>('/api/spaces/:id/ack', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const server = db.select().from(schema.spaces).where(eq(schema.spaces.id, id)).get();
+    if (!server) {
+      return sendError(reply, 404, 'space_not_found');
+    }
+    if (!isMember(id, request.userId)) {
+      return sendError(reply, 403, 'not_space_member');
+    }
+
+    const channels = db.select().from(schema.channels).where(eq(schema.channels.spaceId, id)).all();
+    const accessibleChannelIds: string[] = [];
+    for (const ch of channels) {
+      const perms = computePermissions(request.userId, id, ch.id);
+      if ((perms & PermissionBits.VIEW_CHANNEL) !== 0n || (perms & PermissionBits.ADMINISTRATOR) !== 0n) {
+        accessibleChannelIds.push(ch.id);
+      }
+    }
+
+    const ackedChannels: { channelId: string; messageId: string }[] = [];
+    if (accessibleChannelIds.length > 0) {
+      const lastMsgRows = db.select({
+        channelId: schema.messages.channelId,
+        lastId: sql<string>`max(${schema.messages.id})`,
+      })
+        .from(schema.messages)
+        .where(inArray(schema.messages.channelId, accessibleChannelIds))
+        .groupBy(schema.messages.channelId)
+        .all();
+
+      const now = Date.now();
+      db.transaction((tx) => {
+        for (const row of lastMsgRows) {
+          if (!row.lastId) continue;
+          const existing = tx.select()
+            .from(schema.readStates)
+            .where(and(
+              eq(schema.readStates.userId, request.userId),
+              eq(schema.readStates.channelId, row.channelId),
+            ))
+            .get();
+
+          if (existing) {
+            if (BigInt(row.lastId) > BigInt(existing.lastReadMessageId)) {
+              tx.update(schema.readStates)
+                .set({ lastReadMessageId: row.lastId, updatedAt: now })
+                .where(and(
+                  eq(schema.readStates.userId, request.userId),
+                  eq(schema.readStates.channelId, row.channelId),
+                ))
+                .run();
+            }
+          } else {
+            tx.insert(schema.readStates).values({
+              userId: request.userId,
+              channelId: row.channelId,
+              lastReadMessageId: row.lastId,
+              updatedAt: now,
+            }).run();
+          }
+          ackedChannels.push({ channelId: row.channelId, messageId: row.lastId });
+        }
+      });
+
+      for (const ack of ackedChannels) {
+        connectionManager.sendToUser(request.userId, {
+          type: 'channel_ack',
+          channelId: ack.channelId,
+          messageId: ack.messageId,
+        });
+      }
+    }
+
+    return reply.code(200).send({ success: true, ackedChannels });
+  });
+
+  // GET /api/spaces/:id/privacy - Get current user's privacy preferences in this space
+  app.get<{ Params: { id: string } }>('/api/spaces/:id/privacy', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const db = getDb();
+
+    const server = db.select().from(schema.spaces).where(eq(schema.spaces.id, id)).get();
+    if (!server) {
+      return sendError(reply, 404, 'space_not_found');
+    }
+
+    const member = db.select()
+      .from(schema.spaceMembers)
+      .where(and(eq(schema.spaceMembers.spaceId, id), eq(schema.spaceMembers.userId, request.userId)))
+      .get();
+
+    if (!member) {
+      return sendError(reply, 403, 'not_space_member');
+    }
+
+    const result: SpacePrivacySettings = {
+      allowDms: member.allowDms !== 0,
+      allowFriendRequests: member.allowFriendRequests !== 0,
+    };
+    return reply.code(200).send(result);
+  });
+
+  // PATCH /api/spaces/:id/privacy - Update current user's privacy preferences in this space
+  app.patch<{ Params: { id: string }; Body: UpdateSpacePrivacyRequest }>('/api/spaces/:id/privacy', {
+    preHandler: authenticate,
+  }, async (request, reply) => {
+    const { id } = request.params;
+    const { allowDms, allowFriendRequests } = request.body ?? {};
+    const db = getDb();
+
+    const server = db.select().from(schema.spaces).where(eq(schema.spaces.id, id)).get();
+    if (!server) {
+      return sendError(reply, 404, 'space_not_found');
+    }
+
+    const member = db.select()
+      .from(schema.spaceMembers)
+      .where(and(eq(schema.spaceMembers.spaceId, id), eq(schema.spaceMembers.userId, request.userId)))
+      .get();
+
+    if (!member) {
+      return sendError(reply, 403, 'not_space_member');
+    }
+
+    const updates: Partial<typeof schema.spaceMembers.$inferInsert> = {};
+    if (allowDms !== undefined) {
+      if (typeof allowDms !== 'boolean') {
+        return sendError(reply, 400, 'field_not_boolean', { field: 'allowDms' });
+      }
+      updates.allowDms = allowDms ? 1 : 0;
+    }
+    if (allowFriendRequests !== undefined) {
+      if (typeof allowFriendRequests !== 'boolean') {
+        return sendError(reply, 400, 'field_not_boolean', { field: 'allowFriendRequests' });
+      }
+      updates.allowFriendRequests = allowFriendRequests ? 1 : 0;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return sendError(reply, 400, 'no_fields_to_update');
+    }
+
+    db.update(schema.spaceMembers)
+      .set(updates)
+      .where(and(eq(schema.spaceMembers.spaceId, id), eq(schema.spaceMembers.userId, request.userId)))
+      .run();
+
+    const updated = db.select()
+      .from(schema.spaceMembers)
+      .where(and(eq(schema.spaceMembers.spaceId, id), eq(schema.spaceMembers.userId, request.userId)))
+      .get();
+
+    const result: SpacePrivacySettings = {
+      allowDms: (updated?.allowDms ?? 1) !== 0,
+      allowFriendRequests: (updated?.allowFriendRequests ?? 1) !== 0,
+    };
+    return reply.code(200).send(result);
+  });
 
   // DELETE /api/spaces/:id/members/:uid - Kick member (owner) or leave (self)
   app.delete<{ Params: { id: string; uid: string } }>('/api/spaces/:id/members/:uid', {

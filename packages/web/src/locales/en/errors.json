@@ -234,5 +234,7 @@
   "file_required": "A video file is required.",
   "body_required": "Request body is required.",
   "winks_disabled_by_recipient": "Could not send this Wink. The recipient is not accepting Winks.",
-  "winks_disabled_in_group": "Could not send the Wink in this conversation."
+  "winks_disabled_in_group": "Could not send the Wink in this conversation.",
+  "space_dms_disabled": "This member has disabled direct messages from members of this space.",
+  "space_friend_requests_disabled": "This member has disabled friend requests from members of this space."
 }
