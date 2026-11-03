@@ -199,6 +199,7 @@ export function buildDmMessageWithUser(
       playable: a.playable ?? null,
       federationStatus: a.federationStatus ?? null,
       federationMeta: a.federationMeta ?? null,
+      waveform: a.waveform ?? null,
       createdAt: a.createdAt,
     })),
     embeds: embedRows.map(e => embedRowToEmbed(e)),

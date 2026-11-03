@@ -15,7 +15,8 @@
     "files_few": "📎 {{count}} файла",
     "files_many": "📎 {{count}} файлов",
     "files_other": "📎 {{count}} файла",
-    "withSender": "{{name}}: {{text}}"
+    "withSender": "{{name}}: {{text}}",
+    "voiceMessage": "Голосовое сообщение"
   },
   "system": {
     "spaceInviteNamed": "📨 Приглашение в {{spaceName}}",

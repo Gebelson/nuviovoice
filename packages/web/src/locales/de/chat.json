@@ -223,5 +223,27 @@
     "action": "Anstupsen",
     "received": "{{actor}} hat {{target}} angestupst",
     "disconnected": "Verbindung getrennt. Anstupsen wurde nicht gesendet."
+  },
+  "voice": {
+    "record": "Sprachnachricht aufnehmen",
+    "recording": "Audio aufnehmen…",
+    "paused": "Aufnahme pausiert",
+    "pause": "Aufnahme pausieren",
+    "resume": "Aufnahme fortsetzen",
+    "cancel": "Aufnahme abbrechen",
+    "slideToCancel": "< Wischen zum Abbrechen",
+    "slideUpToLock": "Nach oben wischen zum Sperren",
+    "review": "Aufnahme anhören",
+    "send": "Sprachnachricht senden",
+    "discard": "Aufnahme verwerfen",
+    "permissionDenied": "Mikrofonberechtigung verweigert. Bitte erlaube den Mikrofonzugriff in den Einstellungen.",
+    "notFound": "Kein Mikrofon gefunden. Bitte schließe ein Mikrofon an.",
+    "tooShort": "Aufnahme ist zu kurz zum Senden.",
+    "error": "Audio konnte nicht aufgenommen werden. Bitte erneut versuchen.",
+    "voiceMessage": "Sprachnachricht",
+    "playbackSpeed": "Wiedergabegeschwindigkeit",
+    "play": "Abspielen",
+    "pausePlayback": "Pausieren",
+    "unavailable": "Audio nicht verfügbar"
   }
 }

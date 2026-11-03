@@ -74,6 +74,10 @@ import { getDesktopLanguage, isDesktopLanguage, saveStoredLanguage, translateDes
 // package name. Must run before any app.getPath('userData') consumer.
 app.setName('Nuvio');
 
+// Enable media autoplay in Electron without requiring a user gesture
+// This guarantees incoming call ringtones, Winks, and audio cues play reliably
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 // Register custom scheme 'nuvio-app' as privileged before app is ready
 protocol.registerSchemesAsPrivileged([
   {
@@ -498,6 +502,7 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false,
     },
   });
 

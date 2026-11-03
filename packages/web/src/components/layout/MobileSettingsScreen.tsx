@@ -25,6 +25,7 @@ import { MobileScreenHeader } from './MobileScreenHeader';
 import { TransferIndicator } from './TransferIndicator';
 import { isElectron } from '../../platform/platform';
 import { useInstanceUpdateBadge } from '../../hooks/useInstanceUpdateBadge';
+import { usePwaInstallStore } from '../../stores/pwaInstallStore';
 
 interface MobileSettingsScreenProps {
   initialPanel?: string;
@@ -137,6 +138,12 @@ const sectionIcons: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z" />
     </svg>
   ),
+  'install-pwa': (
+    <svg className="w-5 h-5 text-accent-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="5" y="2" width="14" height="20" rx="3" strokeWidth={1.5} />
+      <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth={2} strokeLinecap="round" />
+    </svg>
+  ),
   desktop: (
     <svg className="w-5 h-5 text-txt-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a9 9 0 01-9 9m0 0a9 9 0 01-9-9" />
@@ -190,6 +197,7 @@ export function MobileSettingsScreen({ initialPanel }: MobileSettingsScreenProps
     { id: 'privacy', label: t('settings:nav.tabs.privacy') },
     { id: 'connections', label: t('settings:nav.tabs.connections') },
     ...(isElectron() ? [{ id: 'keybinds', label: t('settings:nav.tabs.keybinds') }] : []),
+    ...(!isElectron() ? [{ id: 'install-pwa', label: 'Instalar Nuvio no celular' }] : []),
     { id: 'desktop', label: t('settings:nav.tabs.desktop') },
     ...(isAdmin ? [{ id: 'instance', label: t('settings:nav.tabs.instance'), dot: updateBadge }] : []),
   ];
@@ -201,7 +209,13 @@ export function MobileSettingsScreen({ initialPanel }: MobileSettingsScreenProps
         {sections.map((section) => (
           <button
             key={section.id}
-            onClick={() => pushMobileScreen(`settings-${section.id}`)}
+            onClick={() => {
+              if (section.id === 'install-pwa') {
+                usePwaInstallStore.getState().openInstallModal('settings');
+              } else {
+                pushMobileScreen(`settings-${section.id}`);
+              }
+            }}
             className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-interactive-hover text-left transition-colors"
           >
             {sectionIcons[section.id]}

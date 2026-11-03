@@ -123,6 +123,10 @@ export const useWinkStore = create<WinkState>()(
         } catch {
           // If server call fails, fallback strictly to the 3 new winks
           set({ publishedWinks: [...OFFICIAL_WINKS], isLoadingPublished: false });
+        } finally {
+          try {
+            AudioManager.getInstance().preloadWinkSounds();
+          } catch {}
         }
       },
 

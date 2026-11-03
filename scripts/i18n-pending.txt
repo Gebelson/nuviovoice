@@ -32,11 +32,13 @@ packages/web/src/components/modals/instanceSettingsPanels/VerificationsPanel.tsx
 packages/web/src/components/modals/instanceSettingsPanels/WinkPreviewModal.tsx
 packages/web/src/components/modals/instanceSettingsPanels/WinkUploadModal.tsx
 packages/web/src/components/modals/settingsPanels/ChatPanel.tsx
+packages/web/src/components/modals/settingsPanels/DesktopDownloadPanel.tsx
 packages/web/src/components/modals/settingsPanels/StreamerChannelsSection.tsx
 packages/web/src/components/modals/settingsPanels/VerificationSection.tsx
 packages/web/src/components/modals/spaceSettingsPanels/AuditLogsPanel.tsx
 packages/web/src/components/modals/spaceSettingsPanels/IntegrationsPanel.tsx
 packages/web/src/components/modals/spaceSettingsPanels/SpaceVerificationSection.tsx
+packages/web/src/components/pwa/PwaInstallModal.tsx
 packages/web/src/components/store/ProductDetailPage.tsx
 packages/web/src/components/store/ProductEditorPage.tsx
 packages/web/src/components/store/SellerDashboard.tsx

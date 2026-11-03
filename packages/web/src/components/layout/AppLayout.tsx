@@ -43,6 +43,8 @@ import { UpdateToast } from '../ui/UpdateToast';
 import { InstanceUpdateToast } from '../ui/InstanceUpdateToast';
 import { ContextMenuRenderer } from '../ui/ContextMenuRenderer';
 import { GlobalWinkOverlay } from '../chat/GlobalWinkOverlay';
+import { PwaInstallController } from '../pwa/PwaInstallController';
+import { PwaInstallModal } from '../pwa/PwaInstallModal';
 import { useAuth } from '../../hooks/useAuth';
 import { useDelayedLoading } from '../../hooks/useDelayedLoading';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -464,6 +466,8 @@ export function AppLayout() {
         <FriendRequestToastContainer />
         <ContextMenuRenderer />
         <GlobalWinkOverlay />
+        <PwaInstallController />
+        <PwaInstallModal />
       </>
     );
   }
@@ -523,6 +527,8 @@ export function AppLayout() {
       <FriendRequestToastContainer />
       <ContextMenuRenderer />
       <GlobalWinkOverlay />
+      <PwaInstallController />
+      <PwaInstallModal />
     </div>
   );
 }

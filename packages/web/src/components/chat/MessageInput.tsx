@@ -29,6 +29,8 @@ import { useAuthStore, myRowForOrigin } from '../../stores/authStore';
 import { WinkPickerPopover } from './WinkPickerPopover';
 import { useWinkStore } from '../../stores/winkStore';
 import { SparklesIcon } from '../ui/icons';
+import { VoiceRecorderBar } from './VoiceRecorderBar';
+import { VoiceRecordButton } from './VoiceRecordButton';
 import type { OfficialWink } from '@concord/shared/src/winks';
 import type { BotCommand } from '@concord/shared';
 
@@ -75,6 +77,11 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
   // UI-only state stays local
   const [activePopover, setActivePopover] = useState<InputPopoverTab | null>(null);
   const [winksOpen, setWinksOpen] = useState(false);
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+
+  useEffect(() => {
+    setIsVoiceRecording(false);
+  }, [channelId]);
   const winksButtonRef = useRef<HTMLButtonElement>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,6 +110,7 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
   const setEditingMessage = useChatStore((s) => s.setEditingMessage);
 
   const addToast = useUIStore((s) => s.addToast);
+  const isMobile = useUIStore((s) => s.isMobile);
   const appendBubble = usePendingMessageStore((s) => s.append);
 
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -198,10 +206,12 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
     textareaRef.current?.focus();
   }, [channelId, setDraft]);
 
-  // Auto-focus textarea on channel navigation
+  // Auto-focus textarea on channel navigation (desktop only to prevent mobile keyboard pop)
   useEffect(() => {
-    textareaRef.current?.focus();
-  }, [channelId]);
+    if (!isMobile) {
+      textareaRef.current?.focus();
+    }
+  }, [channelId, isMobile]);
 
   // Auto-focus textarea when replying (chatStore is the live source of truth)
   useEffect(() => {
@@ -215,9 +225,10 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
     if (!editingMessageId) textareaRef.current?.focus();
   }, [editingMessageId]);
 
-  // Close popover on channel change
+  // Close popovers on channel change
   useEffect(() => {
     setActivePopover(null);
+    setWinksOpen(false);
     setMentionState(null);
   }, [channelId, setMentionState]);
 
@@ -654,19 +665,35 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
     [channelId, sendMessage, addToast],
   );
 
-  const togglePopover = useCallback((tab: InputPopoverTab) => {
-    setWinksOpen(false);
-    setActivePopover((prev) => (prev === tab ? null : tab));
+  const dismissKeyboardsAndActiveInputs = useCallback(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    textareaRef.current?.blur();
   }, []);
 
-  const handleToggleWinks = useCallback(() => {
+  const togglePopover = useCallback((tab: InputPopoverTab) => {
+    setWinksOpen(false);
+    dismissKeyboardsAndActiveInputs();
+    setActivePopover((prev) => (prev === tab ? null : tab));
+  }, [dismissKeyboardsAndActiveInputs]);
+
+  const handleWinksPointerDown = useCallback((e: React.PointerEvent) => {
+    // Proactively dismiss virtual keyboard on touch/pointer down before click synthesizes
+    dismissKeyboardsAndActiveInputs();
+  }, [dismissKeyboardsAndActiveInputs]);
+
+  const handleToggleWinks = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    dismissKeyboardsAndActiveInputs();
     setActivePopover(null);
     setWinksOpen((prev) => !prev);
-  }, []);
+  }, [dismissKeyboardsAndActiveInputs]);
 
   const handleWinkSelect = useCallback(
     async (wink: OfficialWink) => {
       setWinksOpen(false);
+      dismissKeyboardsAndActiveInputs();
       try {
         const origin = getChannelOrigin(channelId);
         const client = getApiForOrigin(origin);
@@ -686,7 +713,7 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
         addToast(describeError(err), 'warning');
       }
     },
-    [channelId, addToast],
+    [channelId, addToast, dismissKeyboardsAndActiveInputs],
   );
 
   // anyActiveOrQueued: a visual indicator something is in flight; pending/paused
@@ -736,7 +763,6 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
   //
   // `z-[110]` keeps the bubble above any in-chat overlays (mention popover,
   // staged-attachment tiles) but below modals (`z-[300]+`).
-  const isMobile = useUIStore((s) => s.isMobile);
   const { keyboardOpen, textInputFocused } = useVisualViewportInset();
   // iOS PWA standalone shrinks the *layout viewport* itself for the keyboard
   // (interactive-widget=resizes-content / native standalone behavior), so
@@ -972,6 +998,18 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
             anchorRef={textareaRef}
           />
         )}
+        {isVoiceRecording ? (
+          <VoiceRecorderBar
+            channelId={channelId}
+            origin={getChannelOrigin(channelId)}
+            onCancel={() => setIsVoiceRecording(false)}
+            onSendVoice={async (attachment) => {
+              setIsVoiceRecording(false);
+              await sendMessage(channelId, '', [attachment.id], [attachment]);
+            }}
+          />
+        ) : (
+          <>
 
         <StagedTransferTiles
           stagedTransfers={stagedTransfers}
@@ -1016,6 +1054,14 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={canAttachFiles ? handlePaste : undefined}
+            onFocus={() => {
+              setWinksOpen(false);
+              setActivePopover(null);
+            }}
+            onTouchStart={() => {
+              if (winksOpen) setWinksOpen(false);
+              if (activePopover) setActivePopover(null);
+            }}
             placeholder={
               placeholder ??
               (channelName.startsWith('@')
@@ -1076,6 +1122,7 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
             <button
               ref={winksButtonRef}
               type="button"
+              onPointerDown={handleWinksPointerDown}
               onClick={handleToggleWinks}
               className={`w-10 h-10 desktop:w-[34px] desktop:h-[34px] flex items-center justify-center rounded-[6px] transition-colors flex-shrink-0 ${
                 winksOpen ? 'text-accent-primary' : 'text-txt-tertiary hover:text-txt-secondary'
@@ -1101,8 +1148,8 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
             </svg>
           </button>
 
-          {/* Send button — appears when there's content/attachments to send */}
-          {canSend && (
+          {/* Send button when typing/attachments present, Voice Record button when empty */}
+          {canSend ? (
             <button
               onClick={() => void handleSubmit()}
               disabled={anyUnshippable}
@@ -1114,8 +1161,14 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
                 <path d="M3.4 20.4l17.45-7.48a1 1 0 000-1.84L3.4 3.6a.993.993 0 00-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z" />
               </svg>
             </button>
-          )}
+          ) : canSendMessages && canAttachFiles ? (
+            <VoiceRecordButton
+              onStartRecording={() => setIsVoiceRecording(true)}
+            />
+          ) : null}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

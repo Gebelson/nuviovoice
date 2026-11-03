@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { AudioManager } from '../../audio/AudioManager';
+import { useUserPreferencesStore } from '../../stores/userPreferencesStore';
+import { useVoiceStore } from '../../stores/voiceStore';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useWinkStore } from '../../stores/winkStore';
@@ -24,6 +27,9 @@ export function GlobalWinkOverlay() {
   const setAutoplayBlocked = useWinkStore((s) => s.setAutoplayBlocked);
   const unlockAudio = useWinkStore((s) => s.unlockAudio);
   const audioUnlocked = useWinkStore((s) => s.audioUnlocked);
+  const muteAllNotificationSounds = useUserPreferencesStore((s) => s.muteAllNotificationSounds);
+  const soundEffectVolume = useVoiceStore((s) => s.soundEffectVolume);
+  const hasAudioStartedRef = useRef(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const webglRef = useRef<WinkWebGLRendererHandle>(null);
@@ -44,6 +50,14 @@ export function GlobalWinkOverlay() {
 
   const wink = activeWink ? useWinkStore.getState().getWink(activeWink.winkId) : null;
 
+  const activeMediaSrc = wink
+    ? engine === 'webm'
+      ? wink.webmUrl || `/winks/${wink.id}.webm`
+      : engine === 'webgl-alpha'
+      ? wink.alphaMp4Url || `/winks/${wink.id}_alpha.mp4`
+      : wink.mp4Url || `/winks/${wink.id}.mp4`
+    : '';
+
   // Reset engine and error states when a new active wink begins
   useEffect(() => {
     setEngine(isSafari ? 'webgl-alpha' : 'webm');
@@ -51,44 +65,47 @@ export function GlobalWinkOverlay() {
     setMediaError(null);
   }, [activeWink?.winkId, activeWink?.startedAt, isSafari]);
 
-  // Audio configuration
+  // Audio configuration with respect to global notifications and wink settings
   const effectiveVolume = useMemo(() => {
-    if (!wink) return 0.8;
-    return Math.min(1, Math.max(0, (volume / 100) * (wink.defaultVolume ?? 1.0)));
-  }, [wink, volume]);
+    if (!wink || muteAllNotificationSounds) return 0;
+    const baseVolume = (volume / 100) * (wink.defaultVolume ?? 1.0);
+    const globalSfxMultiplier = typeof soundEffectVolume === 'number' ? soundEffectVolume : 1.0;
+    return Math.min(1, Math.max(0, baseVolume * globalSfxMultiplier));
+  }, [wink, volume, muteAllNotificationSounds, soundEffectVolume]);
 
   const shouldMute = useMemo(() => {
-    if (!playAudio || !wink?.hasAudio || effectiveVolume === 0) return true;
+    if (!playAudio || !wink?.hasAudio || effectiveVolume === 0 || muteAllNotificationSounds) return true;
     if (isAutoplayBlocked && !audioUnlocked) return true;
     return false;
-  }, [playAudio, wink?.hasAudio, effectiveVolume, isAutoplayBlocked, audioUnlocked]);
+  }, [playAudio, wink?.hasAudio, effectiveVolume, isAutoplayBlocked, audioUnlocked, muteAllNotificationSounds]);
 
-  // Handle native video playback when using 'webm' or 'mp4-standard'
+  // Stop any active wink sound when activeWink changes or unmounts
+  useEffect(() => {
+    hasAudioStartedRef.current = false;
+    return () => {
+      AudioManager.getInstance().stopWinkSound();
+    };
+  }, [activeWink?.startedAt, activeWink?.winkId]);
+
+  // Native video playback: kept muted so video.play() NEVER rejects with NotAllowedError regardless of channel/focus
   useEffect(() => {
     if (engine === 'webgl-alpha') return;
     const video = videoRef.current;
     if (!video || !wink || mediaError) return;
 
-    video.volume = effectiveVolume;
-    video.muted = shouldMute;
+    video.volume = 0;
+    video.muted = true;
 
     video.load();
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        if (err.name === 'NotAllowedError') {
-          // Autoplay with audio was blocked by browser
-          setAutoplayBlocked(true);
-          video.muted = true;
-          video.play().catch(() => {});
-        } else {
-          console.warn('[GlobalWink] Play error:', err);
-        }
+        console.warn('[GlobalWink] Video play error:', err);
       });
     }
-  }, [wink?.id, activeWink?.startedAt, engine, effectiveVolume, shouldMute, mediaError, setAutoplayBlocked]);
+  }, [wink?.id, activeWink?.startedAt, engine, mediaError]);
 
-  // Handle WebGL renderer play and autoplay rejection
+  // WebGL renderer play: kept muted
   useEffect(() => {
     if (engine !== 'webgl-alpha') return;
     const webgl = webglRef.current;
@@ -98,17 +115,29 @@ export function GlobalWinkOverlay() {
     const playPromise = webgl.play();
     if (playPromise !== undefined) {
       playPromise.catch((err: any) => {
-        if (err?.name === 'NotAllowedError') {
-          setAutoplayBlocked(true);
-          const v = webgl.getVideo();
-          if (v) {
-            v.muted = true;
-            v.play().catch(() => {});
-          }
-        }
+        console.warn('[GlobalWink WebGL] Play error:', err);
       });
     }
-  }, [wink?.id, activeWink?.startedAt, engine, mediaError, setAutoplayBlocked]);
+  }, [wink?.id, activeWink?.startedAt, engine, mediaError]);
+
+  const playWinkAudio = useCallback(async () => {
+    if (!wink || !wink.hasAudio || shouldMute) return;
+    try {
+      const source = await AudioManager.getInstance().playWinkSound(wink.id, {
+        volume: effectiveVolume,
+        fallbackUrl: activeMediaSrc,
+      });
+      if (!source) {
+        setAutoplayBlocked(true);
+      } else {
+        hasAudioStartedRef.current = true;
+        setAutoplayBlocked(false);
+      }
+    } catch (err) {
+      console.warn('[GlobalWink] Audio playback error:', err);
+      setAutoplayBlocked(true);
+    }
+  }, [wink, shouldMute, effectiveVolume, activeMediaSrc, setAutoplayBlocked]);
 
   if (!activeWink || !wink) return null;
 
@@ -121,14 +150,23 @@ export function GlobalWinkOverlay() {
   const handlePlaying = () => {
     // Browser confirmed video playback has started -> start safe duration timer
     startWinkPlaybackTimer(wink.durationMs);
+    if (!hasAudioStartedRef.current) {
+      void playWinkAudio();
+    }
   };
 
   const handleEnded = () => {
-    // Animation reached its natural end
+    AudioManager.getInstance().stopWinkSound();
+    dismissActiveWink();
+  };
+
+  const handleDismiss = () => {
+    AudioManager.getInstance().stopWinkSound();
     dismissActiveWink();
   };
 
   const handleError = () => {
+    AudioManager.getInstance().stopWinkSound();
     console.warn(`[GlobalWink] Error on engine ${engine} for ${wink.id}`);
 
     // If WebM or WebGL-Alpha failed, fallback to standard MP4
@@ -142,33 +180,29 @@ export function GlobalWinkOverlay() {
     setMediaError(`Não foi possível carregar a animação "${wink.name}". Verifique sua conexão.`);
   };
 
-  const handleManualUnmute = () => {
+  const handleManualUnmute = async () => {
     unlockAudio();
-    if (engine === 'webgl-alpha') {
-      const v = webglRef.current?.getVideo();
-      if (v) {
-        v.muted = false;
-        v.volume = effectiveVolume;
+    if (wink) {
+      const source = await AudioManager.getInstance().playWinkSound(wink.id, {
+        volume: effectiveVolume,
+        fallbackUrl: activeMediaSrc,
+      });
+      if (source) {
+        hasAudioStartedRef.current = true;
+        setAutoplayBlocked(false);
       }
-    } else if (videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.volume = effectiveVolume;
     }
   };
 
   const handleViewConversation = () => {
     if (activeWink.channelId) {
+      AudioManager.getInstance().stopWinkSound();
       dismissActiveWink();
       navigate(`/channels/@me/${activeWink.channelId}`);
     }
   };
 
-  const activeMediaSrc =
-    engine === 'webm'
-      ? wink.webmUrl || `/winks/${wink.id}.webm`
-      : engine === 'webgl-alpha'
-      ? wink.alphaMp4Url || `/winks/${wink.id}_alpha.mp4`
-      : wink.mp4Url || `/winks/${wink.id}.mp4`;
+
 
   const overlayContent = (
     <div
@@ -226,7 +260,7 @@ export function GlobalWinkOverlay() {
         {/* Close button */}
         <button
           type="button"
-          onClick={dismissActiveWink}
+          onClick={handleDismiss}
           className="ml-2 pl-2 border-l border-white/15 text-txt-tertiary hover:text-white transition-colors text-[11px] font-medium flex items-center gap-1 cursor-pointer shrink-0"
           title="Fechar Wink"
         >
@@ -244,7 +278,7 @@ export function GlobalWinkOverlay() {
           </svg>
           <span>{mediaError}</span>
           <button
-            onClick={dismissActiveWink}
+            onClick={handleDismiss}
             className="ml-2 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-medium transition-colors cursor-pointer"
           >
             Fechar
@@ -271,8 +305,8 @@ export function GlobalWinkOverlay() {
               <WinkWebGLRenderer
                 ref={webglRef}
                 src={activeMediaSrc}
-                volume={effectiveVolume}
-                muted={shouldMute}
+                volume={0}
+                muted={true}
                 onLoadedMetadata={handleLoadedMetadata}
                 onCanPlay={() => {}}
                 onPlaying={handlePlaying}

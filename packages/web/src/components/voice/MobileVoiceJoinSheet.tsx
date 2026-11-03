@@ -557,7 +557,8 @@ export function MobileVoiceJoinSheet({
                 return (
                   <div key={userId} className="py-1.5 rounded-lg">
                     <VoiceUserRow
-                      userId={member?.user.homeUserId ?? userId}
+                      userId={userId}
+                      homeUserId={member?.user.homeUserId ?? undefined}
                       displayName={displayName}
                       avatar={avatar}
                       avatarColor={avatarColor ?? undefined}

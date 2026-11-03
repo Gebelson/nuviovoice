@@ -215,5 +215,27 @@
     "action": "戳一戳",
     "received": "{{actor}} 戳了戳 {{target}}",
     "disconnected": "连接已断开，戳一戳未发送"
+  },
+  "voice": {
+    "record": "录制语音消息",
+    "recording": "正在录音…",
+    "paused": "录音已暂停",
+    "pause": "暂停录音",
+    "resume": "继续录音",
+    "cancel": "取消录音",
+    "slideToCancel": "< 滑动取消",
+    "slideUpToLock": "向上滑动锁定",
+    "review": "预览录音",
+    "send": "发送语音消息",
+    "discard": "放弃录音",
+    "permissionDenied": "麦克风权限被拒绝。请在设置中允许访问麦克风。",
+    "notFound": "未找到麦克风。请连接麦克风以进行录音。",
+    "tooShort": "录音时间过短，无法发送。",
+    "error": "无法录制音频，请重试。",
+    "voiceMessage": "语音消息",
+    "playbackSpeed": "播放速度",
+    "play": "播放",
+    "pausePlayback": "暂停",
+    "unavailable": "音频不可用"
   }
 }

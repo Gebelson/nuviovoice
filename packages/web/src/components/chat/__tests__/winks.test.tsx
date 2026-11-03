@@ -14,14 +14,26 @@ import { WinkAnimationPlayer } from '../WinkAnimationPlayer';
 import { WinkPickerPopover } from '../WinkPickerPopover';
 
 vi.mock('../../../hooks/useWebSocket', () => ({ wsSend: vi.fn() }));
-vi.mock('../../../audio/AudioManager', () => ({
-  AudioManager: {
-    getInstance: vi.fn().mockReturnValue({
-      setOutputDevice: vi.fn(),
-      setVolume: vi.fn(),
-    }),
-  },
-}));
+vi.mock('../../../audio/AudioManager', () => {
+  const mockSource = { stop: vi.fn(), disconnect: vi.fn() };
+  const mockInstance = {
+    setOutputDevice: vi.fn(),
+    setVolume: vi.fn(),
+    loadSound: vi.fn().mockResolvedValue(null),
+    playSound: vi.fn().mockResolvedValue(null),
+    loadWinkSound: vi.fn().mockResolvedValue({}),
+    playWinkSound: vi.fn().mockResolvedValue(mockSource),
+    stopWinkSound: vi.fn(),
+    resumeContext: vi.fn().mockResolvedValue(undefined),
+    preloadWinkSounds: vi.fn(),
+    getContext: vi.fn().mockReturnValue({ state: 'running' }),
+  };
+  return {
+    AudioManager: {
+      getInstance: vi.fn().mockReturnValue(mockInstance),
+    },
+  };
+});
 
 const me: User = {
   id: 'user-me',

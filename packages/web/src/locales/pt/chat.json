@@ -231,5 +231,27 @@
     "action": "Cutucar",
     "received": "{{actor}} cutucou {{target}}",
     "disconnected": "Não foi possível cutucar: sem conexão com o servidor"
+  },
+  "voice": {
+    "record": "Gravar mensagem de voz",
+    "recording": "Gravando áudio…",
+    "paused": "Gravação pausada",
+    "pause": "Pausar gravação",
+    "resume": "Retomar gravação",
+    "cancel": "Cancelar gravação",
+    "slideToCancel": "< Deslize para cancelar",
+    "slideUpToLock": "Deslize para cima para travar",
+    "review": "Ouvir gravação",
+    "send": "Enviar áudio",
+    "discard": "Descartar gravação",
+    "permissionDenied": "Permissão de microfone negada. Permita o acesso ao microfone nas configurações.",
+    "notFound": "Nenhum microfone encontrado. Conecte um microfone para gravar.",
+    "tooShort": "Gravação muito curta para ser enviada.",
+    "error": "Não foi possível gravar o áudio. Tente novamente.",
+    "voiceMessage": "Mensagem de voz",
+    "playbackSpeed": "Velocidade de reprodução",
+    "play": "Reproduzir",
+    "pausePlayback": "Pausar",
+    "unavailable": "Áudio indisponível"
   }
 }

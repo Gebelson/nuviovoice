@@ -13,7 +13,8 @@
     "you": "(du)"
   },
   "preview": {
-    "loading": "Stream wird geladen...",
+    "loading": "Vorschau wird geladen...",
+    "connecting": "Verbindung zum Stream wird hergestellt...",
     "ended": "Dieser Stream wurde beendet.",
     "noPermission": "Du hast keine Berechtigung, diesen Stream anzusehen.",
     "failed": "Vorschau konnte nicht geladen werden.",

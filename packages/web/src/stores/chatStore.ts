@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MessageWithUser, Reaction, ReadState, User } from '@concord/shared';
+import type { Attachment, MessageWithUser, Reaction, ReadState, User } from '@concord/shared';
 import { wsSend } from '../hooks/useWebSocket';
 import { HttpError } from '../api/client';
 import { isDmChannel, getChannelOrigin, getApiForOrigin, useSpaceStore } from './spaceStore';
@@ -284,7 +284,7 @@ interface ChatState {
    * true when the channel is attached (it already was, or the load worked).
    */
   returnToPresent: (channelId: string) => Promise<boolean>;
-  sendMessage: (channelId: string, content: string, attachmentIds?: string[]) => Promise<void>;
+  sendMessage: (channelId: string, content: string, attachmentIds?: string[], optimisticAttachments?: Attachment[]) => Promise<void>;
   editMessage: (messageId: string, content: string, channelId: string) => Promise<void>;
   deleteMessage: (messageId: string, channelId: string) => Promise<void>;
   hideMessage: (messageId: string, channelId: string) => Promise<void>;
@@ -742,7 +742,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     return 'loaded';
   },
 
-  sendMessage: async (channelId: string, content: string, attachmentIds?: string[]) => {
+  sendMessage: async (channelId: string, content: string, attachmentIds?: string[], optimisticAttachments?: Attachment[]) => {
     // Only this channel's reply: a target from another channel would be
     // refused by the server and the send rolled back.
     const replyTarget = get().replyTargets.get(channelId) ?? null;
@@ -770,7 +770,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         editedAt: null,
         createdAt: Date.now(),
         user: myRow,
-        attachments: [],
+        attachments: optimisticAttachments ?? [],
         embeds: [],
         reactions: [],
         replyTo: replyTarget ?? undefined,

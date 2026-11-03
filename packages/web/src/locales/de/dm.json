@@ -13,7 +13,8 @@
     "audio": "Audiodatei",
     "files_one": "📎 {{count}} Datei",
     "files_other": "📎 {{count}} Dateien",
-    "withSender": "{{name}}: {{text}}"
+    "withSender": "{{name}}: {{text}}",
+    "voiceMessage": "Sprachnachricht"
   },
   "system": {
     "spaceInviteNamed": "📨 Einladung zu {{spaceName}} gesendet",

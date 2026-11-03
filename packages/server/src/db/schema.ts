@@ -178,6 +178,7 @@ export const attachments = sqliteTable('attachments', {
   sourceUrl: text('source_url'),
   federationStatus: text('federation_status'),
   federationMeta: text('federation_meta'),
+  waveform: text('waveform'),
   createdAt: integer('created_at').notNull(),
 }, (table) => ({
   messageIdx: index('idx_attachments_message_id').on(table.messageId),

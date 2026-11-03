@@ -33,6 +33,8 @@ export class AudioManager {
   
   private listeners: Set<() => void> = new Set();
   private soundBuffers: Map<string, AudioBuffer> = new Map();
+  private winkBuffers: Map<string, AudioBuffer> = new Map();
+  private currentWinkSource: AudioBufferSourceNode | null = null;
   private voiceEchoCancellation = true;
   private voiceNoiseSuppression = false;
   private voiceAutoGainControl = true;
@@ -271,6 +273,91 @@ export class AudioManager {
 
     source.start(now);
     return source;
+  }
+
+  async loadWinkSound(winkId: string, fallbackUrl?: string | null): Promise<AudioBuffer | null> {
+    if (this.winkBuffers.has(winkId)) {
+      return this.winkBuffers.get(winkId)!;
+    }
+
+    if (!this.ctx) this.initContext();
+
+    const candidates = [
+      `/winks/${winkId}.ogg`,
+      fallbackUrl,
+      `/winks/${winkId}.mp4`,
+      `/winks/${winkId}.webm`,
+    ].filter(Boolean) as string[];
+
+    for (const url of candidates) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) continue;
+        const arrayBuffer = await response.arrayBuffer();
+        if (!this.ctx) break;
+        const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+        this.winkBuffers.set(winkId, audioBuffer);
+        return audioBuffer;
+      } catch {
+        // Continue to next candidate
+      }
+    }
+    return null;
+  }
+
+  async playWinkSound(
+    winkId: string,
+    options: { volume?: number; fallbackUrl?: string | null } = {}
+  ): Promise<AudioBufferSourceNode | null> {
+    await this.resumeContext();
+    if (!this.ctx || this.ctx.state !== 'running') {
+      return null;
+    }
+
+    this.stopWinkSound();
+
+    const buffer = await this.loadWinkSound(winkId, options.fallbackUrl);
+    if (!buffer || !this.ctx || this.ctx.state !== 'running') {
+      return null;
+    }
+
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = false;
+
+    const gainNode = this.ctx.createGain();
+    const targetVolume = Math.min(1, Math.max(0, options.volume ?? 0.8));
+    gainNode.gain.setValueAtTime(targetVolume, this.ctx.currentTime);
+
+    source.connect(gainNode);
+    gainNode.connect(this.masterBoost!);
+
+    source.start(this.ctx.currentTime);
+    this.currentWinkSource = source;
+
+    source.onended = () => {
+      if (this.currentWinkSource === source) {
+        this.currentWinkSource = null;
+      }
+    };
+
+    return source;
+  }
+
+  stopWinkSound(): void {
+    if (this.currentWinkSource) {
+      try {
+        this.currentWinkSource.stop();
+        this.currentWinkSource.disconnect();
+      } catch {}
+      this.currentWinkSource = null;
+    }
+  }
+
+  preloadWinkSounds(): void {
+    ['diabravinho', 'bolsogado', 'nikole'].forEach((id) => {
+      void this.loadWinkSound(id);
+    });
   }
 
   /**

@@ -894,6 +894,10 @@
         "heading": "Geräte für Mikrofon und Lautsprecher",
         "description": "Wähle deine Audioeingabe- und Ausgabegeräte aus.",
         "action": "Sprache & Video konfigurieren"
+      },
+      "winks": {
+        "title": "Wink-Töne",
+        "description": "Spielt Audio und Toneffekte für eingehende Wink-Animationen ab."
       }
     },
     "badges": {

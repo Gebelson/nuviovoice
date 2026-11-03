@@ -33,6 +33,7 @@ export interface Transfer {
   fileHandleId?: string;
   attachmentId?: string;
   attachmentFilename?: string;
+  attachment?: Attachment;
   uploaderUserId?: string;
 
   // Download-specific
@@ -69,10 +70,10 @@ interface TransferStoreActions {
   updateProgress: (id: string, loaded: number) => void;
   setError: (id: string, error: TransferError) => void;
   setTusUrl: (id: string, url: string, expiresAt: number) => void;
-  setAttachmentRef: (id: string, attachmentId: string, filename: string) => void;
+  setAttachmentRef: (id: string, attachmentId: string, filename: string, attachment?: Attachment) => void;
   remove: (id: string) => void;
 
-  startUpload: (file: Blob, opts: { channelId?: string; tray?: boolean; origin?: string; fileHandleId?: string }) => Promise<string>;
+  startUpload: (file: Blob, opts: { channelId?: string; tray?: boolean; origin?: string; fileHandleId?: string; duration?: number; waveform?: number[] }) => Promise<string>;
   abortUpload: (id: string) => void;
   pauseUpload: (id: string) => void;
   resumeUpload: (id: string) => Promise<void>;
@@ -212,11 +213,11 @@ export const useTransferStore = create<TransferStore>()(
         return { transfers: next };
       }),
 
-      setAttachmentRef: (id, attachmentId, filename) => set((s) => {
+      setAttachmentRef: (id, attachmentId, filename, attachment) => set((s) => {
         const t = s.transfers.get(id);
         if (!t) return s;
         const next = new Map(s.transfers);
-        next.set(id, { ...t, attachmentId, attachmentFilename: filename });
+        next.set(id, { ...t, attachmentId, attachmentFilename: filename, attachment });
         return { transfers: next };
       }),
 
@@ -231,7 +232,7 @@ export const useTransferStore = create<TransferStore>()(
         });
       },
 
-      startUpload: async (file, opts) => {
+      startUpload: async (file, opts: { channelId?: string; tray?: boolean; origin?: string; fileHandleId?: string; duration?: number; waveform?: number[] }) => {
         const isHome = !opts.origin || !opts.origin.trim();
         const token =
           getTokenForOrigin(opts.origin ?? '') ??
@@ -261,6 +262,8 @@ export const useTransferStore = create<TransferStore>()(
           metadata: {
             filename: fileLike.name,
             filetype: fileLike.mimetype,
+            ...(opts.duration ? { duration: opts.duration.toFixed(2) } : {}),
+            ...(opts.waveform ? { waveform: JSON.stringify(opts.waveform) } : {}),
           },
           chunkSize: 5 * 1024 * 1024,
           headers: { Authorization: `Bearer ${token}` },
@@ -282,7 +285,7 @@ export const useTransferStore = create<TransferStore>()(
             try {
               const body = payload.lastResponse?.getBody?.() ?? '';
               const att = JSON.parse(body) as Attachment;
-              get().setAttachmentRef(id, att.id, att.filename);
+              get().setAttachmentRef(id, att.id, att.filename, att);
               get().setState_(id, 'completed');
               get().updateProgress(id, fileLike.size);
             } catch (e) {
@@ -451,7 +454,7 @@ export const useTransferStore = create<TransferStore>()(
             try {
               const body = payload.lastResponse?.getBody?.() ?? '';
               const att = JSON.parse(body) as Attachment;
-              get().setAttachmentRef(id, att.id, att.filename);
+              get().setAttachmentRef(id, att.id, att.filename, att);
               get().setState_(id, 'completed');
               get().updateProgress(id, blob!.size);
             } catch (e) {

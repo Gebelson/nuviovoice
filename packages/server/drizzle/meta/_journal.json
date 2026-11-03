@@ -288,6 +288,13 @@
       "when": 1792510000000,
       "tag": "0040_space_member_profile_and_privacy",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1792520000000,
+      "tag": "0041_voice_messages_waveform",
+      "breakpoints": true
     }
   ]
 }

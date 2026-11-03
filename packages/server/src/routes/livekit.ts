@@ -44,7 +44,7 @@ export async function livekitRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: LiveKitTokenRequest & { dmChannelId?: string } }>('/api/livekit/token', {
     preHandler: authenticate,
   }, async (request, reply) => {
-    if (!config.livekit.apiKey || !config.livekit.apiSecret) {
+    if (!config.livekit.apiKey || !config.livekit.apiSecret || !config.livekit.url) {
       return sendError(reply, 503, 'voice_disabled');
     }
 
@@ -130,36 +130,50 @@ export async function livekitRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: { channelId?: string; dmChannelId?: string } }>('/api/livekit/preview-token', {
     preHandler: authenticate,
   }, async (request, reply) => {
-    if (!config.livekit.apiKey || !config.livekit.apiSecret) {
+    if (!config.livekit.apiKey || !config.livekit.apiSecret || !config.livekit.url) {
       return sendError(reply, 503, 'voice_disabled');
     }
 
     const { channelId, dmChannelId } = request.body ?? {};
+    let targetDmId = (dmChannelId && typeof dmChannelId === 'string') ? dmChannelId : undefined;
+    let targetChannelId = (channelId && typeof channelId === 'string') ? channelId : undefined;
+
+    if (targetChannelId && !targetDmId) {
+      const spaceId = getChannelSpaceId(targetChannelId);
+      if (!spaceId) {
+        const db = getDb();
+        const dm = db.select({ id: schema.dmChannels.id }).from(schema.dmChannels).where(eq(schema.dmChannels.id, targetChannelId)).get();
+        if (dm) {
+          targetDmId = targetChannelId;
+          targetChannelId = undefined;
+        }
+      }
+    }
     let roomName: string;
 
-    if (dmChannelId && typeof dmChannelId === 'string') {
-      if (!isDmMember(dmChannelId, request.userId)) {
+    if (targetDmId) {
+      if (!isDmMember(targetDmId, request.userId)) {
         return sendError(reply, 403, 'not_dm_member');
       }
 
       const db = getDb();
       const channel = db.select({ federatedId: schema.dmChannels.federatedId })
         .from(schema.dmChannels)
-        .where(eq(schema.dmChannels.id, dmChannelId))
+        .where(eq(schema.dmChannels.id, targetDmId))
         .get();
 
-      roomName = channel?.federatedId ? channel.federatedId : `dm-${dmChannelId}`;
-    } else if (channelId && typeof channelId === 'string') {
-      const spaceId = getChannelSpaceId(channelId);
+      roomName = channel?.federatedId ? channel.federatedId : `dm-${targetDmId}`;
+    } else if (targetChannelId) {
+      const spaceId = getChannelSpaceId(targetChannelId);
       if (!spaceId) {
         return sendError(reply, 404, 'channel_not_found');
       }
-      const hasView = hasPermission(request.userId, spaceId, PermissionBits.VIEW_CHANNEL, channelId);
-      const hasConnect = hasPermission(request.userId, spaceId, PermissionBits.CONNECT, channelId);
+      const hasView = hasPermission(request.userId, spaceId, PermissionBits.VIEW_CHANNEL, targetChannelId);
+      const hasConnect = hasPermission(request.userId, spaceId, PermissionBits.CONNECT, targetChannelId);
       if (!hasView && !hasConnect) {
         return sendError(reply, 403, 'voice_connect_forbidden');
       }
-      roomName = channelId;
+      roomName = targetChannelId;
     } else {
       return sendError(reply, 400, 'validation_failed');
     }

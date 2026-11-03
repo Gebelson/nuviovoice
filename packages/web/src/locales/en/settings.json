@@ -894,6 +894,10 @@
         "heading": "Microphone & speaker configuration",
         "description": "Test and select your physical audio input and output devices.",
         "action": "Configure voice & video"
+      },
+      "winks": {
+        "title": "Wink sounds",
+        "description": "Plays audio and sound effects for incoming Wink animations."
       }
     },
     "badges": {

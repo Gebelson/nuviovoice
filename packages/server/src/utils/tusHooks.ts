@@ -59,11 +59,15 @@ export function buildTusMetadata(input: {
   snowflakeId: string;
   userId: string;
   originalName: string;
+  duration?: string;
+  waveform?: string;
 }): UploadMetadata {
   return {
     snowflakeId: input.snowflakeId,
     userId: input.userId,
     originalName: input.originalName,
+    duration: input.duration,
+    waveform: input.waveform,
   };
 }
 

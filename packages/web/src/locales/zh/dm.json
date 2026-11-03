@@ -12,7 +12,8 @@
     "video": "视频",
     "audio": "音频",
     "files_other": "📎 {{count}} 个文件",
-    "withSender": "{{name}}：{{text}}"
+    "withSender": "{{name}}：{{text}}",
+    "voiceMessage": "语音消息"
   },
   "system": {
     "spaceInviteNamed": "📨 发送了 {{spaceName}} 的空间邀请",

@@ -715,6 +715,8 @@ export interface Attachment {
   playable?: boolean | null;
   federationStatus?: string | null;
   federationMeta?: string | null;
+  /** Serialized waveform data for audio/voice message attachments (e.g. JSON array of normalized peaks). */
+  waveform?: string | null;
   createdAt: number;
 }
 
@@ -1979,6 +1981,7 @@ export interface FederationRelayAttachment {
   // Propagated so the receiving instance need not re-probe the codec.
   playable?: boolean | null;
   thumbnailFilename?: string;
+  waveform?: string;
   sourceUrl: string;
 }
 

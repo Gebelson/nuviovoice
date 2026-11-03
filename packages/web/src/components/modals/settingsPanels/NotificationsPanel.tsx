@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useVoiceStore } from '../../../stores/voiceStore';
+import { useWinkStore } from '../../../stores/winkStore';
 import { useUIStore } from '../../../stores/uiStore';
 import {
   useUserPreferencesStore,
@@ -65,6 +66,8 @@ export function NotificationsPanel({
   const soundNewMessage = useUserPreferencesStore((s) => s.soundNewMessage);
   const soundIncomingCall = useUserPreferencesStore((s) => s.soundIncomingCall);
   const soundVoiceJoinLeave = useUserPreferencesStore((s) => s.soundVoiceJoinLeave);
+  const winkPlayAudio = useWinkStore((s) => s.settings.playAudio);
+  const updateWinkSettings = useWinkStore((s) => s.updateSettings);
   const muteAllNotificationSounds = useUserPreferencesStore((s) => s.muteAllNotificationSounds);
 
   const badgeUnreadIndicator = useUserPreferencesStore((s) => s.badgeUnreadIndicator);
@@ -303,6 +306,13 @@ export function NotificationsPanel({
               checked={soundVoiceJoinLeave}
               disabled={muteAllNotificationSounds}
               onChange={(val) => setPreference('soundVoiceJoinLeave', val)}
+            />
+            <SettingsToggleItem
+              heading={t('notifications.sounds.winks.title')}
+              description={t('notifications.sounds.winks.description')}
+              checked={winkPlayAudio}
+              disabled={muteAllNotificationSounds}
+              onChange={(val) => updateWinkSettings({ playAudio: val })}
             />
           </SettingsCardSection>
 

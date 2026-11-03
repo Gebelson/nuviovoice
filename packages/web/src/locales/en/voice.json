@@ -13,7 +13,8 @@
     "you": "(you)"
   },
   "preview": {
-    "loading": "Loading stream...",
+    "loading": "Loading preview...",
+    "connecting": "Connecting to stream...",
     "ended": "This stream has ended.",
     "noPermission": "You do not have permission to view this stream.",
     "failed": "Could not load preview.",

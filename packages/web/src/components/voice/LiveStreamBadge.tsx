@@ -6,15 +6,17 @@ import {
   Room,
   RoomEvent,
   Track,
+  VideoQuality,
   type RemoteTrackPublication,
   type RemoteParticipant,
+  type Participant,
 } from 'livekit-client';
 import { useFloatingPosition } from '../../hooks/useFloatingPosition';
 import { usePortalContainer } from '../../hooks/usePortalContainer';
 import { useDismissOnEscape } from '../../hooks/useDismissOnEscape';
 import { useUIStore } from '../../stores/uiStore';
 import { useVoiceStore } from '../../stores/voiceStore';
-import { useSpaceStore, getApiForOrigin, getChannelOrigin } from '../../stores/spaceStore';
+import { getApiForOrigin, getChannelOrigin } from '../../stores/spaceStore';
 import { api } from '../../api/client';
 import { getActiveRoom, parseIdentity } from '../../hooks/useLiveKit';
 import { joinVoiceChannel } from '../../utils/voice';
@@ -44,6 +46,7 @@ function releaseActivePreviewCard(id: string): void {
 
 export interface LiveStreamBadgeProps {
   userId: string;
+  homeUserId?: string;
   displayName: string;
   avatar: string | null;
   avatarColor?: string | null;
@@ -54,10 +57,57 @@ export interface LiveStreamBadgeProps {
   className?: string;
 }
 
-type PreviewStatus = 'idle' | 'loading' | 'active' | 'ended' | 'forbidden' | 'error';
+export type PreviewStatus = 'idle' | 'loading' | 'connecting' | 'playing' | 'ended' | 'forbidden' | 'error';
+
+/**
+ * Resilient matching of participants between LiveKit identity and store user identity.
+ */
+function matchesParticipant(
+  participant: { identity: string; name?: string },
+  targetUserId: string,
+  targetDisplayName: string,
+  homeUserId?: string,
+): boolean {
+  if (!participant?.identity) return false;
+  const { userId, username } = parseIdentity(participant.identity);
+  if (targetUserId && (userId === targetUserId || participant.identity.startsWith(`${targetUserId}:`))) {
+    return true;
+  }
+  if (homeUserId && (userId === homeUserId || participant.identity.startsWith(`${homeUserId}:`))) {
+    return true;
+  }
+  if (
+    targetDisplayName &&
+    (username.toLowerCase() === targetDisplayName.toLowerCase() ||
+      participant.name?.toLowerCase() === targetDisplayName.toLowerCase())
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Look for a screen share track publication, falling back to non-camera video tracks.
+ */
+function findScreenSharePublication(
+  participant: RemoteParticipant | Participant,
+): RemoteTrackPublication | undefined {
+  for (const pub of participant.trackPublications.values()) {
+    if (pub.source === Track.Source.ScreenShare) {
+      return pub as RemoteTrackPublication;
+    }
+  }
+  for (const pub of participant.trackPublications.values()) {
+    if (pub.kind === Track.Kind.Video && pub.source !== Track.Source.Camera) {
+      return pub as RemoteTrackPublication;
+    }
+  }
+  return undefined;
+}
 
 export function LiveStreamBadge({
   userId,
+  homeUserId,
   displayName,
   avatar,
   avatarColor,
@@ -78,10 +128,12 @@ export function LiveStreamBadge({
 
   const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isPending, setIsPending] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [status, setStatus] = useState<PreviewStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
   const [rawMediaStreamTrack, setRawMediaStreamTrack] = useState<MediaStreamTrack | null>(null);
   const [showSwitchCallConfirm, setShowSwitchCallConfirm] = useState(false);
@@ -103,6 +155,10 @@ export function LiveStreamBadge({
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
+    if (connectionTimeoutRef.current !== null) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
   }, []);
 
   const forceClose = useCallback(() => {
@@ -110,6 +166,7 @@ export function LiveStreamBadge({
     setIsPending(false);
     setIsVisible(false);
     setStatus('idle');
+    setErrorMessage(null);
     releaseActivePreviewCard(cardKey);
   }, [clearTimers, cardKey]);
 
@@ -133,7 +190,7 @@ export function LiveStreamBadge({
     }, 250);
   }, [isMobile, channelId, isVisible, cardKey, forceClose]);
 
-  // Schedule close with grace period (250ms) so moving cursor into the popover keeps it open
+  // Schedule close with grace period (250ms) so moving cursor into popover keeps it open
   const handleScheduleClose = useCallback(() => {
     if (openTimerRef.current !== null) {
       clearTimeout(openTimerRef.current);
@@ -166,29 +223,75 @@ export function LiveStreamBadge({
     }
   }, [status, isVisible, forceClose]);
 
+  // ─── Video playback event handlers ──────────────────────────────────────────
+  const handleVideoPlaying = useCallback(() => {
+    if (connectionTimeoutRef.current !== null) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
+    setStatus('playing');
+  }, []);
+
+  const handleVideoLoadedData = useCallback(() => {
+    if (videoRef.current && (videoRef.current.videoWidth > 0 || videoRef.current.readyState >= 2)) {
+      if (connectionTimeoutRef.current !== null) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      setStatus('playing');
+    }
+  }, []);
+
+  const handleVideoTimeUpdate = useCallback(() => {
+    if (videoRef.current && (videoRef.current.currentTime > 0 || videoRef.current.videoWidth > 0)) {
+      if (connectionTimeoutRef.current !== null) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      setStatus('playing');
+    }
+  }, []);
+
+  const handleVideoError = useCallback(() => {
+    if (connectionTimeoutRef.current !== null) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
+    setStatus('error');
+    setErrorMessage(t('voice:preview.failed'));
+  }, [t]);
+
   // ─── LiveKit preview subscription & room management ────────────────────────
   const fetchAndConnectPreview = useCallback(async () => {
     if (!channelId) return;
     setStatus('loading');
+    setErrorMessage(null);
     setActiveTrack(null);
     setRawMediaStreamTrack(null);
+
+    // Timeout guard: 8 seconds maximum to acquire frames
+    if (connectionTimeoutRef.current !== null) clearTimeout(connectionTimeoutRef.current);
+    connectionTimeoutRef.current = setTimeout(() => {
+      setStatus('error');
+      setErrorMessage(t('voice:preview.failed'));
+    }, 8000);
 
     const inSameChannel = currentVoiceChannelId === channelId && isLiveKitConnected;
     const activeRoom = getActiveRoom();
 
     // 1. REUSE ACTIVE ROOM if we are in the same channel
     if (inSameChannel && activeRoom) {
+      setStatus('connecting');
+
       // Local participant (self sharing screen)
-      if (activeRoom.localParticipant.identity.startsWith(`${userId}:`) || activeRoom.localParticipant.identity === userId) {
+      if (matchesParticipant(activeRoom.localParticipant, userId, displayName, homeUserId)) {
         const localPub = activeRoom.localParticipant.getTrackPublication(Track.Source.ScreenShare);
         const localPartInfo = currentParticipants.find((p) => p.isLocal);
         if (localPub?.track) {
           setActiveTrack(localPub.track);
-          setStatus('active');
           return;
         } else if (localPartInfo?.screenTrack) {
           setRawMediaStreamTrack(localPartInfo.screenTrack);
-          setStatus('active');
           return;
         }
       }
@@ -196,43 +299,48 @@ export function LiveStreamBadge({
       // Remote participant in current room
       let foundPub: RemoteTrackPublication | undefined;
       for (const rp of activeRoom.remoteParticipants.values()) {
-        if (parseIdentity(rp.identity).userId === userId) {
-          for (const pub of rp.trackPublications.values()) {
-            if (pub.source === Track.Source.ScreenShare) {
-              foundPub = pub as RemoteTrackPublication;
-              break;
-            }
-          }
+        if (matchesParticipant(rp, userId, displayName, homeUserId)) {
+          foundPub = findScreenSharePublication(rp);
           break;
         }
       }
 
+      let didSubscribeLocally = false;
       if (foundPub) {
-        foundPub.setSubscribed(true);
+        if (!foundPub.isSubscribed) {
+          foundPub.setSubscribed(true);
+          didSubscribeLocally = true;
+        }
+        try {
+          foundPub.setVideoQuality?.(VideoQuality.LOW);
+        } catch {}
+
         if (foundPub.track) {
           setActiveTrack(foundPub.track);
-          setStatus('active');
         }
       } else {
         // Fallback: check if voiceStore already cached participant info with screenTrack
-        const pInfo = currentParticipants.find((p) => p.userId === userId);
+        const pInfo = currentParticipants.find((p) => p.userId === userId || p.username === displayName);
         if (pInfo?.lkScreenTrack) {
           setActiveTrack(pInfo.lkScreenTrack);
-          setStatus('active');
         } else if (pInfo?.screenTrack) {
           setRawMediaStreamTrack(pInfo.screenTrack);
-          setStatus('active');
         }
       }
 
       const handleSubscribed = (track: Track, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
-        if (parseIdentity(participant.identity).userId === userId && pub.source === Track.Source.ScreenShare) {
+        if (matchesParticipant(participant, userId, displayName, homeUserId) &&
+            (pub.source === Track.Source.ScreenShare || pub.kind === Track.Kind.Video)) {
+          try {
+            pub.setVideoQuality?.(VideoQuality.LOW);
+          } catch {}
           setActiveTrack(track);
-          setStatus('active');
         }
       };
+
       const handleUnsubscribed = (_track: Track, pub: RemoteTrackPublication, participant: RemoteParticipant) => {
-        if (parseIdentity(participant.identity).userId === userId && pub.source === Track.Source.ScreenShare) {
+        if (matchesParticipant(participant, userId, displayName, homeUserId) &&
+            (pub.source === Track.Source.ScreenShare || pub.kind === Track.Kind.Video)) {
           setActiveTrack(null);
           setRawMediaStreamTrack(null);
           setStatus('ended');
@@ -245,6 +353,16 @@ export function LiveStreamBadge({
       return () => {
         activeRoom.off(RoomEvent.TrackSubscribed, handleSubscribed);
         activeRoom.off(RoomEvent.TrackUnsubscribed, handleUnsubscribed);
+
+        // If the viewer was not already watching the stream globally, unsubscribe to free bandwidth
+        if (didSubscribeLocally && foundPub) {
+          const isGloballyWatching = useVoiceStore.getState().watchingStreams.has(userId);
+          if (!isGloballyWatching) {
+            try {
+              foundPub.setSubscribed(false);
+            } catch {}
+          }
+        }
       };
     }
 
@@ -257,23 +375,29 @@ export function LiveStreamBadge({
 
       if (cancelled) return;
 
+      setStatus('connecting');
+
       const previewRoom = new Room({
-        adaptiveStream: true,
+        adaptiveStream: false,
         dynacast: true,
       });
       previewRoomRef.current = previewRoom;
 
       previewRoom.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
         if (cancelled) return;
-        if (parseIdentity(participant.identity).userId === userId && pub.source === Track.Source.ScreenShare) {
+        if (matchesParticipant(participant, userId, displayName, homeUserId) &&
+            (pub.source === Track.Source.ScreenShare || pub.kind === Track.Kind.Video)) {
+          try {
+            pub.setVideoQuality?.(VideoQuality.LOW);
+          } catch {}
           setActiveTrack(track);
-          setStatus('active');
         }
       });
 
       previewRoom.on(RoomEvent.TrackUnsubscribed, (_track, pub, participant) => {
         if (cancelled) return;
-        if (parseIdentity(participant.identity).userId === userId && pub.source === Track.Source.ScreenShare) {
+        if (matchesParticipant(participant, userId, displayName, homeUserId) &&
+            (pub.source === Track.Source.ScreenShare || pub.kind === Track.Kind.Video)) {
           setActiveTrack(null);
           setRawMediaStreamTrack(null);
           setStatus('ended');
@@ -282,7 +406,7 @@ export function LiveStreamBadge({
 
       previewRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
         if (cancelled) return;
-        if (parseIdentity(participant.identity).userId === userId) {
+        if (matchesParticipant(participant, userId, displayName, homeUserId)) {
           setActiveTrack(null);
           setRawMediaStreamTrack(null);
           setStatus('ended');
@@ -296,7 +420,40 @@ export function LiveStreamBadge({
         }
       });
 
-      // autoSubscribe: false ensures we only subscribe to the target participant's screen share
+      // Handle new publications arriving while connected
+      const handlePublished = (pub: RemoteTrackPublication, participant: RemoteParticipant) => {
+        if (cancelled) return;
+        if (matchesParticipant(participant, userId, displayName, homeUserId) &&
+            (pub.source === Track.Source.ScreenShare || pub.kind === Track.Kind.Video)) {
+          pub.setSubscribed(true);
+          try {
+            pub.setVideoQuality?.(VideoQuality.LOW);
+          } catch {}
+          if (pub.track) {
+            setActiveTrack(pub.track);
+          }
+        }
+      };
+      previewRoom.on(RoomEvent.TrackPublished, handlePublished);
+
+      // Handle participants connecting after us
+      previewRoom.on(RoomEvent.ParticipantConnected, (participant) => {
+        if (cancelled) return;
+        if (matchesParticipant(participant, userId, displayName, homeUserId)) {
+          const targetPub = findScreenSharePublication(participant);
+          if (targetPub) {
+            targetPub.setSubscribed(true);
+            try {
+              targetPub.setVideoQuality?.(VideoQuality.LOW);
+            } catch {}
+            if (targetPub.track) {
+              setActiveTrack(targetPub.track);
+            }
+          }
+        }
+      });
+
+      // autoSubscribe: false ensures we strictly only receive the target stream
       await previewRoom.connect(res.url, res.token, { autoSubscribe: false });
       if (cancelled) {
         previewRoom.disconnect();
@@ -306,65 +463,68 @@ export function LiveStreamBadge({
       // Find target participant among connected remote participants
       let targetPub: RemoteTrackPublication | undefined;
       for (const rp of previewRoom.remoteParticipants.values()) {
-        if (parseIdentity(rp.identity).userId === userId) {
-          for (const pub of rp.trackPublications.values()) {
-            if (pub.source === Track.Source.ScreenShare) {
-              targetPub = pub as RemoteTrackPublication;
-              break;
-            }
-          }
+        if (matchesParticipant(rp, userId, displayName, homeUserId)) {
+          targetPub = findScreenSharePublication(rp);
           break;
         }
       }
 
       if (targetPub) {
         targetPub.setSubscribed(true);
+        try {
+          targetPub.setVideoQuality?.(VideoQuality.LOW);
+        } catch {}
         if (targetPub.track) {
           setActiveTrack(targetPub.track);
-          setStatus('active');
         }
-      } else {
-        // If not immediately present, listen for TrackPublished
-        const handlePublished = (pub: RemoteTrackPublication, participant: RemoteParticipant) => {
-          if (parseIdentity(participant.identity).userId === userId && pub.source === Track.Source.ScreenShare) {
-            pub.setSubscribed(true);
-            if (pub.track) {
-              setActiveTrack(pub.track);
-              setStatus('active');
-            }
-          }
-        };
-        previewRoom.on(RoomEvent.TrackPublished, handlePublished);
       }
     } catch (err: any) {
       if (cancelled) return;
+      if (connectionTimeoutRef.current !== null) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       if (err?.status === 403 || err?.code === 'voice_connect_forbidden') {
         setStatus('forbidden');
       } else {
         setStatus('error');
+        setErrorMessage(t('voice:preview.failed'));
       }
     }
 
     return () => {
       cancelled = true;
+      if (connectionTimeoutRef.current !== null) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       if (previewRoomRef.current) {
-        previewRoomRef.current.disconnect();
+        try {
+          previewRoomRef.current.disconnect();
+        } catch {}
         previewRoomRef.current = null;
       }
       setActiveTrack(null);
       setRawMediaStreamTrack(null);
     };
-  }, [channelId, userId, currentVoiceChannelId, isLiveKitConnected, currentParticipants]);
+  }, [channelId, userId, homeUserId, displayName, currentVoiceChannelId, isLiveKitConnected, currentParticipants, t]);
 
   useEffect(() => {
     if (!isVisible) {
+      if (connectionTimeoutRef.current !== null) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       if (previewRoomRef.current) {
-        previewRoomRef.current.disconnect();
+        try {
+          previewRoomRef.current.disconnect();
+        } catch {}
         previewRoomRef.current = null;
       }
       setActiveTrack(null);
       setRawMediaStreamTrack(null);
       setStatus('idle');
+      setErrorMessage(null);
       return;
     }
 
@@ -391,12 +551,26 @@ export function LiveStreamBadge({
 
     if (activeTrack) {
       activeTrack.attach(videoEl);
+      try {
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {});
+        }
+      } catch {}
       return () => {
-        activeTrack.detach(videoEl);
+        try {
+          activeTrack.detach(videoEl);
+        } catch {}
       };
     } else if (rawMediaStreamTrack) {
       const stream = new MediaStream([rawMediaStreamTrack]);
       videoEl.srcObject = stream;
+      try {
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {});
+        }
+      } catch {}
       return () => {
         videoEl.srcObject = null;
       };
@@ -404,6 +578,24 @@ export function LiveStreamBadge({
       videoEl.srcObject = null;
     }
   }, [activeTrack, rawMediaStreamTrack]);
+
+  const handleRetry = useCallback(() => {
+    if (connectionTimeoutRef.current !== null) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
+    if (previewRoomRef.current) {
+      try {
+        previewRoomRef.current.disconnect();
+      } catch {}
+      previewRoomRef.current = null;
+    }
+    setActiveTrack(null);
+    setRawMediaStreamTrack(null);
+    setStatus('idle');
+    setErrorMessage(null);
+    void fetchAndConnectPreview();
+  }, [fetchAndConnectPreview]);
 
   // Floating placement next to badge
   const { style } = useFloatingPosition(anchorRef, floatingRef, {
@@ -419,13 +611,16 @@ export function LiveStreamBadge({
     forceClose();
     if (!channelId) return;
 
+    // Immediately mark stream as watched in store
+    useVoiceStore.getState().watchStream(userId);
+
     if (currentVoiceChannelId !== channelId) {
       joinVoiceChannel(channelId, connectFn ?? undefined);
     }
     if (spaceId) {
       navigate(`/channels/${spaceId}/${channelId}`);
     }
-  }, [forceClose, channelId, currentVoiceChannelId, connectFn, spaceId, navigate]);
+  }, [forceClose, channelId, currentVoiceChannelId, connectFn, spaceId, navigate, userId]);
 
   const handleWatchStreamClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -508,13 +703,19 @@ export function LiveStreamBadge({
 
           {/* Central Video Viewport (16:9 strictly preserved) */}
           <div className="relative w-full aspect-video bg-black/80 rounded-xl overflow-hidden border border-white/[0.06] flex items-center justify-center">
-            {/* Real Live Video */}
+            {/* Real Live Video element */}
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className={`w-full h-full object-contain ${status === 'active' ? 'block' : 'hidden'}`}
+              onPlaying={handleVideoPlaying}
+              onLoadedData={handleVideoLoadedData}
+              onTimeUpdate={handleVideoTimeUpdate}
+              onError={handleVideoError}
+              className={`w-full h-full object-contain transition-opacity duration-200 ${
+                status === 'playing' ? 'opacity-100 block' : 'opacity-0 pointer-events-none absolute inset-0'
+              }`}
             />
 
             {/* State: Loading */}
@@ -525,6 +726,17 @@ export function LiveStreamBadge({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 <span>{t('voice:preview.loading')}</span>
+              </div>
+            )}
+
+            {/* State: Connecting */}
+            {status === 'connecting' && (
+              <div className="flex flex-col items-center justify-center gap-2 text-txt-secondary text-xs p-4 animate-pulse">
+                <svg className="animate-spin text-accent-primary" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>{t('voice:preview.connecting')}</span>
               </div>
             )}
 
@@ -559,10 +771,10 @@ export function LiveStreamBadge({
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                <span>{t('voice:preview.failed')}</span>
+                <span>{errorMessage || t('voice:preview.failed')}</span>
                 <button
                   type="button"
-                  onClick={fetchAndConnectPreview}
+                  onClick={handleRetry}
                   className="mt-1 px-2.5 py-1 text-[11px] rounded bg-white/10 hover:bg-white/15 text-txt-primary transition-colors cursor-pointer"
                 >
                   {t('voice:preview.retry')}

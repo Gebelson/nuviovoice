@@ -50,6 +50,9 @@ function getAttachmentIcon(mimeType: string): string {
 }
 
 function getAttachmentLabel(mimeType: string, name: string): string {
+  if (name.startsWith('voice-message') || (mimeType.startsWith('audio/') && name.includes('voice-message'))) {
+    return `🎙️ ${i18n.t('dm:preview.voiceMessage')}`;
+  }
   const icon = getAttachmentIcon(mimeType);
   if (mimeType.startsWith('image/')) return `${icon} ${i18n.t('dm:preview.image')}`;
   if (mimeType.startsWith('video/')) return `${icon} ${i18n.t('dm:preview.video')}`;

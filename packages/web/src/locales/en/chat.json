@@ -223,5 +223,27 @@
     "action": "Poke",
     "received": "{{actor}} poked {{target}}",
     "disconnected": "Disconnected. Poke was not sent."
+  },
+  "voice": {
+    "record": "Record voice message",
+    "recording": "Recording audio…",
+    "paused": "Recording paused",
+    "pause": "Pause recording",
+    "resume": "Resume recording",
+    "cancel": "Cancel recording",
+    "slideToCancel": "< Slide to cancel",
+    "slideUpToLock": "Slide up to lock",
+    "review": "Review recording",
+    "send": "Send voice message",
+    "discard": "Discard recording",
+    "permissionDenied": "Microphone permission denied. Please allow microphone access in your settings.",
+    "notFound": "No microphone found. Please connect a microphone to record.",
+    "tooShort": "Recording is too short to send.",
+    "error": "Could not record audio. Please try again.",
+    "voiceMessage": "Voice message",
+    "playbackSpeed": "Playback speed",
+    "play": "Play",
+    "pausePlayback": "Pause",
+    "unavailable": "Audio unavailable"
   }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePwaInstallStore } from '../../../stores/pwaInstallStore';
 import {
   buildDesktopDownloads,
   detectDesktopPlatform,
@@ -432,6 +433,41 @@ export function DesktopDownloadPanel({ version }: { version: string | null }) {
   return (
     <div className="ddl-panel">
       <h2 className="text-lg font-semibold text-txt-primary mb-6">{t('desktopDownload.title')}</h2>
+
+      {/* Mobile App (PWA) Install Card */}
+      <div className="mb-6 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-accent-primary/20 border border-accent-primary/30 flex items-center justify-center shrink-0 text-accent-primary">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="3" ry="3" />
+              <line x1="12" y1="18" x2="12.01" y2="18" strokeWidth="2.5" />
+            </svg>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-white">Nuvio no Celular</h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent-primary/15 text-accent-primary border border-accent-primary/20">
+                PWA
+              </span>
+            </div>
+            <p className="text-xs text-txt-secondary mt-0.5">
+              Instale o Nuvio na tela inicial para notificações em tempo real, chamadas e tela cheia.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => usePwaInstallStore.getState().openInstallModal('settings')}
+          className="w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-semibold bg-accent-primary hover:bg-accent-primary-hover text-white transition-all shrink-0 shadow-md shadow-accent-primary/20 flex items-center justify-center gap-2"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Instalar no celular</span>
+        </button>
+      </div>
 
       {detected && (
         <div className="mb-5 space-y-3">

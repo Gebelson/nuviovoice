@@ -4,6 +4,7 @@ import { LiveStreamBadge } from './LiveStreamBadge';
 
 export interface VoiceUserRowProps {
   userId: string;
+  homeUserId?: string;
   displayName: string;
   avatar: string | null;
   avatarColor?: string;
@@ -28,6 +29,7 @@ export interface VoiceUserRowProps {
 
 export function VoiceUserRow({
   userId,
+  homeUserId,
   displayName,
   avatar,
   avatarColor,
@@ -141,6 +143,7 @@ export function VoiceUserRow({
         {isScreenSharing && (
           <LiveStreamBadge
             userId={userId}
+            homeUserId={homeUserId}
             displayName={displayName}
             avatar={avatar}
             avatarColor={avatarColor}

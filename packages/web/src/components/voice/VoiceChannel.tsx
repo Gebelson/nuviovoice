@@ -275,7 +275,8 @@ export function VoiceChannel({ channelId, channelName, onClick, locked, canManag
                 onContextMenu={(e) => handleContextMenu(e, userId)}
               >
                 <VoiceUserRow
-                  userId={member?.user.homeUserId ?? userId}
+                  userId={userId}
+                  homeUserId={member?.user.homeUserId ?? undefined}
                   displayName={displayName}
                   avatar={avatar}
                   avatarColor={avatarColor ?? undefined}

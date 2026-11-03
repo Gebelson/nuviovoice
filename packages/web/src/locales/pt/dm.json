@@ -14,7 +14,8 @@
     "files_one": "📎 {{count}} arquivo",
     "files_many": "📎 {{count}} arquivos",
     "files_other": "📎 {{count}} arquivos",
-    "withSender": "{{name}}: {{text}}"
+    "withSender": "{{name}}: {{text}}",
+    "voiceMessage": "Mensagem de voz"
   },
   "system": {
     "spaceInviteNamed": "📨 Enviou convite para {{spaceName}}",

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { type OfficialWink, type WinkCategory } from '@concord/shared/src/winks';
 import { useWinkStore } from '../../stores/winkStore';
+import { useUIStore } from '../../stores/uiStore';
 import { SparklesIcon } from '../ui/icons';
 import { WinkThumbnail } from './WinkThumbnail';
 
@@ -19,7 +20,52 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
   const popoverRef = useRef<HTMLDivElement>(null);
   const recentWinkIds = useWinkStore((s) => s.recentWinkIds);
   const publishedWinks = useWinkStore((s) => s.publishedWinks);
+  const isLoadingPublished = useWinkStore((s) => s.isLoadingPublished);
   const fetchPublishedWinks = useWinkStore((s) => s.fetchPublishedWinks);
+
+  const storeIsMobile = useUIStore((s) => s.isMobile);
+  const [isNarrow, setIsNarrow] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 || storeIsMobile : false
+  );
+
+  useEffect(() => {
+    const check = () => setIsNarrow(window.innerWidth < 768 || storeIsMobile);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [storeIsMobile]);
+
+  const isMobile = storeIsMobile || isNarrow;
+
+  // Track live visual viewport height on mobile to adapt dynamically
+  // (e.g. keyboard animation, safe areas, orientation change, iPhone models)
+  const [availableHeight, setAvailableHeight] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isMobile) return;
+    const updateHeight = () => {
+      const vv = window.visualViewport;
+      const h = vv ? vv.height : window.innerHeight;
+      // Leave at least 48px for header + 68px for composer + 16px margins (~135px)
+      const maxAllowed = Math.max(160, Math.min(420, h - 135));
+      setAvailableHeight(maxAllowed);
+    };
+    updateHeight();
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', updateHeight);
+      vv.addEventListener('scroll', updateHeight);
+    }
+    window.addEventListener('resize', updateHeight);
+    window.addEventListener('orientationchange', updateHeight);
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', updateHeight);
+        vv.removeEventListener('scroll', updateHeight);
+      }
+      window.removeEventListener('resize', updateHeight);
+      window.removeEventListener('orientationchange', updateHeight);
+    };
+  }, [isMobile]);
 
   useEffect(() => {
     fetchPublishedWinks();
@@ -33,7 +79,7 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
       }
     };
 
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: Event) => {
       const target = e.target as Node;
       if (anchorRef.current && anchorRef.current.contains(target)) return;
       if (popoverRef.current && !popoverRef.current.contains(target)) {
@@ -42,10 +88,10 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
     };
   }, [onClose, anchorRef]);
 
@@ -111,10 +157,161 @@ export function WinkPickerPopover({ onSelect, onClose, anchorRef }: WinkPickerPo
     return list;
   }, [publishedWinks]);
 
+  // ─── Mobile View: Dedicated integrated 2-column panel without keyboard competition ───
+  if (isMobile) {
+    return (
+      <div
+        ref={popoverRef}
+        role="dialog"
+        aria-label="Winks"
+        className="absolute bottom-full mb-2 left-0 right-0 w-full flex flex-col rounded-2xl bg-[#14151a]/95 backdrop-blur-2xl border border-white/10 text-txt-primary z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        style={{
+          maxHeight: availableHeight
+            ? `${availableHeight}px`
+            : 'min(420px, calc(100*var(--app-dvh) - 135px - var(--safe-bottom)))',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 20px 50px -10px rgba(0,0,0,0.9)',
+        }}
+      >
+        {/* Compact Mobile Header */}
+        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.08] shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-accent-primary/20 flex items-center justify-center text-accent-primary">
+              <SparklesIcon width="14" height="14" />
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <h3 className="text-sm font-semibold text-white tracking-wide">Winks</h3>
+              <span className="text-[11px] text-txt-secondary">
+                ({filteredWinks.length})
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            type="button"
+            aria-label="Fechar"
+            className="w-7 h-7 flex items-center justify-center text-txt-secondary hover:text-white rounded-lg hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Dynamic Categories if any */}
+        {categories.length > 1 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-white/[0.04] overflow-x-auto scrollbar-none shrink-0">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-accent-primary text-white shadow-sm'
+                    : 'bg-white/[0.04] text-txt-secondary hover:text-white hover:bg-white/[0.08]'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Scrollable 2-Column Catalog with independent scroll & overscroll-contain */}
+        <div
+          data-testid="winks-mobile-grid-scroll"
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2.5 scrollbar-thin touch-pan-y"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {isLoadingPublished && filteredWinks.length === 0 ? (
+            <div className="grid grid-cols-2 gap-2" role="status" aria-label="Carregando Winks">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="animate-pulse flex flex-col items-center p-2 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+                >
+                  <div className="w-full aspect-[4/3] max-h-[96px] rounded-lg bg-white/[0.05] mb-2" />
+                  <div className="w-3/4 h-3 bg-white/[0.05] rounded mb-1" />
+                  <div className="w-1/2 h-2.5 bg-white/[0.03] rounded" />
+                </div>
+              ))}
+            </div>
+          ) : filteredWinks.length === 0 ? (
+            <div className="py-8 px-4 text-center">
+              <p className="text-xs text-txt-secondary mb-2">
+                {search ? `Nenhum Wink encontrado para "${search}"` : 'Nenhum Wink disponível'}
+              </p>
+              <button
+                type="button"
+                onClick={() => fetchPublishedWinks()}
+                className="px-3 py-1.5 bg-white/[0.08] hover:bg-white/[0.12] rounded-lg text-xs text-txt-primary transition-colors"
+              >
+                Recarregar Winks
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2" data-testid="winks-mobile-grid">
+              {filteredWinks.map((wink) => (
+                <button
+                  key={wink.id}
+                  type="button"
+                  onClick={() => handleSend(wink)}
+                  className="group flex flex-col items-center p-2 rounded-xl bg-white/[0.03] active:bg-white/[0.08] hover:bg-white/[0.06] border border-white/[0.06] active:border-accent-primary/60 transition-all text-center relative overflow-hidden focus:outline-none focus:ring-1 focus:ring-accent-primary/60"
+                  title={`${wink.name} - Enviar Wink`}
+                >
+                  {/* Thumbnail Container */}
+                  <div className="w-full aspect-[4/3] max-h-[96px] rounded-lg bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden mb-1.5 relative shadow-inner">
+                    <WinkThumbnail wink={wink} className="w-full h-full object-cover" emojiClassName="text-3xl" />
+
+                    {/* Discrete Audio Indicator */}
+                    {wink.hasAudio && (
+                      <div
+                        className="absolute top-1 right-1 px-1 py-0.5 rounded bg-black/75 backdrop-blur-md border border-white/15 flex items-center gap-0.5 text-txt-secondary text-[9px]"
+                        title="Possui áudio"
+                        aria-label="Possui áudio"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        </svg>
+                        <span>Áudio</span>
+                      </div>
+                    )}
+
+                    {/* Discrete Alpha Indicator */}
+                    {wink.hasAlpha && (
+                      <div
+                        className="absolute top-1 left-1 px-1 py-0.2 text-[8px] bg-purple-500/30 text-purple-200 rounded border border-purple-500/30 font-medium"
+                        title="Fundo transparente"
+                      >
+                        Alpha
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name below thumbnail */}
+                  <span className="text-xs font-semibold text-txt-primary group-hover:text-white truncate w-full px-0.5">
+                    {wink.name}
+                  </span>
+                  <span className="text-[10px] text-txt-tertiary truncate w-full mt-0.5">
+                    ~{Math.round((wink.durationMs || 5000) / 1000)}s
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Desktop View: Preserved popover layout with detailed single-column catalog & preview footer ───
   return (
     <div
       ref={popoverRef}
-      className="absolute bottom-full mb-3 right-0 w-[340px] max-w-[calc(100vw-24px)] sm:w-[400px] max-h-[500px] flex flex-col rounded-2xl bg-[#14151a]/95 backdrop-blur-2xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.7)] text-txt-primary z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+      role="dialog"
+      aria-label="Winks"
+      className="absolute bottom-full mb-3 right-0 w-[340px] max-w-[calc(100vw-24px)] desktop:w-[400px] max-h-[500px] flex flex-col rounded-2xl bg-[#14151a]/95 backdrop-blur-2xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.7)] text-txt-primary z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       style={{
         boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 64px -12px rgba(0,0,0,0.8)',
       }}

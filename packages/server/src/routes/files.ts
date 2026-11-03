@@ -207,7 +207,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
       // Assign snowflake and embed userId into tus metadata
       const snowflakeId = generateSnowflake();
-      const augmented = buildTusMetadata({ snowflakeId, userId, originalName });
+      const augmented = buildTusMetadata({ snowflakeId, userId, originalName, duration: parsedMeta.duration, waveform: parsedMeta.waveform });
 
       // tus's metadata type is Record<string, string | null>. buildTusMetadata
       // returns UploadMetadata with optional fields; we filter undefined to
@@ -217,6 +217,8 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       for (const [k, v] of Object.entries({ ...upload.metadata, ...augmented })) {
         if (v !== undefined) mergedMetadata[k] = v;
       }
+      if (parsedMeta.duration) mergedMetadata.duration = parsedMeta.duration;
+      if (parsedMeta.waveform) mergedMetadata.waveform = parsedMeta.waveform;
 
       return { res, metadata: mergedMetadata };
     },
@@ -234,6 +236,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       const snowflakeId = meta.snowflakeId ?? null;
       const storedUserId = meta.userId ?? null;
       const originalName = meta.originalName ?? 'upload';
+      const waveform: string | null = meta.waveform ?? null;
 
       // Defense in depth: re-verify ownership
       if (!snowflakeId || !storedUserId || storedUserId !== requestUserId) {
@@ -286,6 +289,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
             playable = classifyVideoPlayable(mimetype, mediaMeta.codec);
           }
         } else if (mimetype.startsWith('audio/')) {
+          if (!duration && meta.duration) { const p = parseFloat(meta.duration); if (!isNaN(p) && p > 0) duration = p; }
           const mediaMeta = await probeMediaMeta(srcPath, mimetype);
           if (mediaMeta?.duration) duration = mediaMeta.duration;
         }
@@ -351,6 +355,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
           height,
           duration,
           playable,
+          waveform,
           createdAt: now,
         }).run();
       } catch (err) {
@@ -377,6 +382,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
         height: height ?? undefined,
         duration: duration ?? undefined,
         playable,
+        waveform: waveform ?? undefined,
         createdAt: now,
       };
 

@@ -5,6 +5,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useTransferStore } from '../../stores/transferStore';
 import { Tooltip } from '../ui/Tooltip';
 import { useFormatters } from '../../i18n/formatters';
+import { VoiceMessagePlayer } from './VoiceMessagePlayer';
 
 interface AttachmentRendererProps {
   attachment: Attachment;
@@ -268,31 +269,11 @@ export function AttachmentRenderer({ attachment }: AttachmentRendererProps) {
 
   if (mimetype.startsWith('audio/')) {
     return (
-      <div className="relative mt-1 flex flex-col p-3 bg-surface-channel/50 rounded-lg border border-border-hard max-w-[420px]">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-surface-base rounded text-txt-tertiary flex-shrink-0">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
-              />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <p className="text-txt-primary text-[14px] font-medium truncate">{originalName}</p>
-            <div className="flex items-center gap-2">
-              <p className="text-[12px] text-txt-tertiary">{formatBytes(size)}</p>
-              {federationInlineBadge}
-            </div>
-          </div>
-        </div>
-        <audio controls preload="metadata" className="w-full mt-2 h-8">
-          <source src={attUrl} type={mimetype} />
-          {t('chat:attachment.audio.unsupportedBrowser')}
-        </audio>
-      </div>
+      <VoiceMessagePlayer
+        attachment={attachment}
+        attUrl={attUrl}
+        federationInlineBadge={federationInlineBadge}
+      />
     );
   }
 

@@ -1243,6 +1243,17 @@ export function migrateExistingSpacesSeparation(
   } catch (err) {
     console.warn('[defaults] space_members columns check:', err);
   }
+
+  // 19. Ensure attachments waveform column exists
+  try {
+    const attCols = db.prepare('PRAGMA table_info(attachments)').all() as Array<{ name: string }>;
+    if (attCols.length > 0 && !attCols.some((c) => c.name === 'waveform')) {
+      db.prepare('ALTER TABLE attachments ADD COLUMN waveform TEXT').run();
+      console.log('[defaults] Added waveform column to attachments');
+    }
+  } catch (err) {
+    console.warn('[defaults] attachments waveform column check:', err);
+  }
   db.exec(`
   `);
 

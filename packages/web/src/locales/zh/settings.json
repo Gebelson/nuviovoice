@@ -893,6 +893,10 @@
         "heading": "麦克风与扬声器硬件设置",
         "description": "调试与选择您的音频输入输出硬件设备。",
         "action": "前往语音与视频设置"
+      },
+      "winks": {
+        "title": "Wink 音效",
+        "description": "播放接收到的 Wink 动画音效与伴随音频。"
       }
     },
     "badges": {
