@@ -703,6 +703,8 @@ export function MessageInput({ channelId, channelName, placeholder }: MessageInp
         // Confirm send with server first before playing local animation
         await client.dm.sendWink(channelId, wink.id);
 
+        void useWinkStore.getState().recordRecentWink(wink.id);
+
         useWinkStore.getState().triggerWink({
           winkId: wink.id,
           senderName,

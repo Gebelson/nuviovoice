@@ -813,7 +813,11 @@
       "ignoreAction": "Ignorar",
       "unignoreAction": "Remover de ignorados",
       "blockedEmpty": "Você não possui nenhuma conta bloqueada.",
-      "ignoredEmpty": "Nenhuma conta está marcada como ignorada."
+      "ignoredEmpty": "Nenhuma conta está marcada como ignorada.",
+      "mutedWinksHeading": "Winks silenciados",
+      "mutedWinksDescription": "Contatos cujas animações e sons de Winks não serão reproduzidos automaticamente.",
+      "mutedWinksEmpty": "Nenhum contato com Winks silenciados no momento.",
+      "unmuteWinksAction": "Reativar Winks"
     }
   },
   "notifications": {
@@ -861,6 +865,16 @@
         "all": "Em todas as mensagens (DMs e espaços)",
         "dmsAndMentions": "Apenas em DMs e mensagens com menção direta",
         "none": "Nenhuma notificação de reação"
+      },
+      "winksHeading": "Notificações de Winks",
+      "winksDescription": "Controle alertas e notificações push ao receber animações especiais.",
+      "winks": {
+        "title": "Notificações de Winks",
+        "description": "Exibir notificações na área de trabalho e no celular quando receber um Wink."
+      },
+      "winksInBackground": {
+        "title": "Notificar quando o Nuvio estiver em segundo plano",
+        "description": "Receba notificações quando o aplicativo estiver minimizado, na bandeja ou em outra janela."
       }
     },
     "sounds": {
@@ -897,9 +911,18 @@
         "action": "Configurar voz e vídeo"
       },
       "winks": {
-        "title": "Sons dos Winks",
-        "description": "Reproduz o áudio e os efeitos sonoros das animações de Winks recebidas."
-      }
+        "title": "Reproduzir sons dos Winks",
+        "description": "Toca o áudio e os efeitos sonoros das animações de Winks recebidas."
+      },
+      "winksInBackground": {
+        "title": "Permitir sons dos Winks em segundo plano",
+        "description": "Reproduz o áudio mesmo quando o Nuvio estiver em segundo plano ou minimizado."
+      },
+      "winksInCall": {
+        "title": "Reproduzir sons dos Winks durante chamadas",
+        "description": "Permite que sons de Winks toquem durante chamadas de voz com atenuação de volume."
+      },
+      "winksVolumeSliderLabel": "Volume dos Winks"
     },
     "badges": {
       "heading": "Indicadores e contadores visuais",

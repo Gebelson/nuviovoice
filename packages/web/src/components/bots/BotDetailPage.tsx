@@ -68,23 +68,29 @@ export function BotDetailPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-surface-chat">
-        <div className="w-8 h-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-2 border-accent-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-txt-tertiary">Carregando detalhes do bot...</p>
+        </div>
       </div>
     );
   }
 
   if (!bot) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-surface-chat text-txt-primary space-y-4">
-        <div className="text-4xl">🤖</div>
-        <h2 className="text-2xl font-bold text-white">Bot não encontrado</h2>
-        <p className="text-sm text-txt-muted max-w-sm">
-          O bot solicitado não existe ou foi removido da biblioteca.
-        </p>
+      <div className="flex-1 flex flex-col items-center justify-center bg-surface-chat p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-surface-panel flex items-center justify-center text-txt-tertiary mb-4">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-bold text-white mb-2">Bot Indisponível</h2>
+        <p className="text-sm text-txt-secondary max-w-md mb-6">O bot solicitado não existe ou foi removido da biblioteca.</p>
         <button
-          type="button"
           onClick={() => navigate('/store/bots')}
-          className="px-5 py-2.5 rounded-xl bg-accent-primary text-white font-semibold text-sm transition-colors shadow-md"
+          className="px-5 py-2.5 rounded-xl bg-accent-primary text-white text-xs font-bold hover:bg-accent-primary/90 transition-colors"
         >
           Voltar para a Biblioteca
         </button>
@@ -97,7 +103,7 @@ export function BotDetailPage() {
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-chat overflow-y-auto no-scrollbar text-txt-primary">
       {/* Panoramic Header Banner */}
-      <div className="relative w-full h-64 md:h-80 bg-gradient-to-r from-accent-primary/30 via-indigo-900/40 to-surface-panel overflow-hidden">
+      <div className="relative w-full h-64 md:h-80 bg-gradient-to-r from-accent-primary/20 via-surface-panel to-surface-chat overflow-hidden">
         {bot.banner && (
           <img
             src={resolveUploadUrl(bot.banner) ?? undefined}
@@ -112,7 +118,7 @@ export function BotDetailPage() {
           <button
             type="button"
             onClick={() => navigate('/store/bots')}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/40 hover:bg-black/60 border border-white/10 text-white text-xs font-semibold backdrop-blur-md transition-all shadow-lg"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-panel/80 hover:bg-surface-panel border border-border-hard text-white text-xs font-semibold backdrop-blur-md transition-all shadow-lg"
           >
             <svg
               width="16"
@@ -131,7 +137,7 @@ export function BotDetailPage() {
 
       {/* Main Bot Profile Header (Overlapping Banner) */}
       <div className="max-w-6xl mx-auto w-full px-6 -mt-20 relative z-20 space-y-6">
-        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 pb-6 border-b border-white/10">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 pb-6 border-b border-border-hard">
           <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-surface-panel border-4 border-surface-chat overflow-hidden shadow-2xl flex items-center justify-center">
               {bot.avatar ? (
@@ -170,7 +176,7 @@ export function BotDetailPage() {
                     Oficial Nuvio
                   </span>
                 )}
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-txt-muted text-xs font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-surface-base border border-border-hard text-txt-muted text-xs font-medium">
                   v{bot.version}
                 </span>
               </div>
@@ -189,7 +195,7 @@ export function BotDetailPage() {
                 <span>•</span>
                 <span>
                   Prefixo:{' '}
-                  <code className="text-accent-primary font-mono bg-white/5 px-1 py-0.5 rounded">
+                  <code className="text-accent-primary font-mono bg-surface-base px-1 py-0.5 rounded">
                     {bot.prefix || '/'}
                   </code>
                 </span>
@@ -221,7 +227,7 @@ export function BotDetailPage() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-white/5 shadow-md flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-border-hard shadow-md flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary flex items-center justify-center">
               <svg
                 width="20"
@@ -244,7 +250,7 @@ export function BotDetailPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-white/5 shadow-md flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-border-hard shadow-md flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
               <span className="text-xl">★</span>
             </div>
@@ -259,7 +265,7 @@ export function BotDetailPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-white/5 shadow-md flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-border-hard shadow-md flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
               <svg
                 width="20"
@@ -280,7 +286,7 @@ export function BotDetailPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-white/5 shadow-md flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-surface-panel/60 border border-border-hard shadow-md flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <svg
                 width="20"
@@ -303,7 +309,7 @@ export function BotDetailPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-white/10">
+        <div className="flex items-center gap-2 border-b border-border-hard">
           <button
             type="button"
             onClick={() => setActiveTab('overview')}
@@ -356,7 +362,7 @@ export function BotDetailPage() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
             <div className="lg:col-span-2 space-y-6">
-              <div className="p-6 rounded-2xl bg-surface-panel/60 border border-white/5 space-y-4">
+              <div className="p-6 rounded-2xl bg-surface-panel/60 border border-border-hard space-y-4">
                 <h2 className="text-lg font-bold text-white">Sobre o Bot</h2>
                 <div className="text-sm text-txt-secondary leading-relaxed whitespace-pre-wrap">
                   {bot.description || 'Nenhuma descrição detalhada disponível.'}
@@ -364,7 +370,7 @@ export function BotDetailPage() {
               </div>
 
               {/* Requested Permissions */}
-              <div className="p-6 rounded-2xl bg-surface-panel/60 border border-white/5 space-y-4">
+              <div className="p-6 rounded-2xl bg-surface-panel/60 border border-border-hard space-y-4">
                 <h2 className="text-lg font-bold text-white">
                   Permissões Necessárias
                 </h2>
@@ -379,7 +385,7 @@ export function BotDetailPage() {
                   ).map((perm, idx) => (
                     <div
                       key={idx}
-                      className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center gap-2 text-xs"
+                      className="p-3 rounded-xl bg-surface-base border border-border-hard flex items-center gap-2 text-xs"
                     >
                       <svg
                         width="16"
@@ -401,22 +407,22 @@ export function BotDetailPage() {
 
             {/* Sidebar info */}
             <div className="space-y-6">
-              <div className="p-6 rounded-2xl bg-surface-panel/60 border border-white/5 space-y-4 text-xs">
+              <div className="p-6 rounded-2xl bg-surface-panel/60 border border-border-hard space-y-4 text-xs">
                 <h3 className="font-bold text-white text-sm">Informações</h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between py-1 border-b border-white/5">
+                  <div className="flex justify-between py-1 border-b border-border-hard">
                     <span className="text-txt-muted">Categoria</span>
                     <span className="font-semibold text-white capitalize">
                       {bot.categories?.[0] || 'Utilidades'}
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-white/5">
+                  <div className="flex justify-between py-1 border-b border-border-hard">
                     <span className="text-txt-muted">Versão</span>
                     <span className="font-semibold text-white">
                       {bot.version}
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-white/5">
+                  <div className="flex justify-between py-1 border-b border-border-hard">
                     <span className="text-txt-muted">Prefixo padrão</span>
                     <span className="font-mono text-accent-primary">
                       {bot.prefix || '/'}
@@ -431,7 +437,7 @@ export function BotDetailPage() {
                       href={bot.websiteUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white font-medium transition-colors"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-base hover:bg-surface-channel text-white font-medium transition-colors"
                     >
                       <span>Website Oficial</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -442,7 +448,7 @@ export function BotDetailPage() {
                       href={bot.supportUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white font-medium transition-colors"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-base hover:bg-surface-channel text-white font-medium transition-colors"
                     >
                       <span>Servidor de Suporte</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -453,7 +459,7 @@ export function BotDetailPage() {
                       href={bot.privacyPolicyUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white font-medium transition-colors"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-base hover:bg-surface-channel text-white font-medium transition-colors"
                     >
                       <span>Política de Privacidade</span>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -468,7 +474,7 @@ export function BotDetailPage() {
         {/* TAB 2: COMMANDS */}
         {activeTab === 'commands' && (
           <div className="space-y-4 pb-12">
-            <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-txt-muted flex items-center gap-2">
+            <div className="p-4 rounded-xl bg-surface-base border border-border-hard text-xs text-txt-muted flex items-center gap-2">
               <span className="text-accent-primary font-bold">Dica:</span>
               <span>
                 Você pode executar comandos diretamente em qualquer canal onde o
@@ -485,7 +491,7 @@ export function BotDetailPage() {
                 {bot.commands.map((cmd, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl bg-surface-panel/60 border border-white/5 space-y-2 hover:border-white/10 transition-colors"
+                    className="p-4 rounded-2xl bg-surface-panel/60 border border-border-hard space-y-2 hover:border-border-hard transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -503,7 +509,7 @@ export function BotDetailPage() {
                       {cmd.description}
                     </p>
                     {cmd.options && cmd.options.length > 0 && (
-                      <div className="pt-2 pl-2 border-l-2 border-white/10 space-y-1">
+                      <div className="pt-2 pl-2 border-l-2 border-border-hard space-y-1">
                         <div className="text-[11px] font-semibold text-txt-muted">
                           Parâmetros:
                         </div>
@@ -543,7 +549,7 @@ export function BotDetailPage() {
             {/* Review Form */}
             <form
               onSubmit={handlePostReview}
-              className="p-6 rounded-2xl bg-surface-panel/60 border border-white/5 space-y-4"
+              className="p-6 rounded-2xl bg-surface-panel/60 border border-border-hard space-y-4"
             >
               <h3 className="text-base font-bold text-white">
                 Avaliar {bot.name}
@@ -591,7 +597,7 @@ export function BotDetailPage() {
                 onChange={(e) => setReviewComment(e.target.value)}
                 placeholder="Escreva sua avaliação detalhada sobre a estabilidade, recursos e usabilidade do bot..."
                 rows={3}
-                className="w-full p-3.5 rounded-xl bg-surface-chat border border-white/10 text-white placeholder:text-txt-muted text-xs focus:outline-none focus:border-accent-primary"
+                className="w-full p-3.5 rounded-xl bg-surface-chat border border-border-hard text-white placeholder:text-txt-muted text-xs focus:outline-none focus:border-accent-primary"
               />
 
               <div className="flex justify-end">
@@ -611,18 +617,18 @@ export function BotDetailPage() {
                 Avaliações da Comunidade ({reviews.length})
               </h3>
               {reviews.length === 0 ? (
-                <div className="p-8 text-center text-xs text-txt-muted rounded-xl bg-white/[0.01] border border-white/5">
+                <div className="p-8 text-center text-xs text-txt-muted rounded-xl bg-white/[0.01] border border-border-hard">
                   Nenhuma avaliação registrada ainda. Seja o primeiro a avaliar!
                 </div>
               ) : (
                 reviews.map((rev) => (
                   <div
                     key={rev.id}
-                    className="p-4 rounded-xl bg-surface-panel/50 border border-white/5 space-y-2"
+                    className="p-4 rounded-xl bg-surface-panel/50 border border-border-hard space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-surface-chat border border-white/10 overflow-hidden flex items-center justify-center font-bold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-surface-chat border border-border-hard overflow-hidden flex items-center justify-center font-bold text-xs">
                           {rev.user?.avatar ? (
                             <img
                               src={resolveUploadUrl(rev.user.avatar) ?? undefined}

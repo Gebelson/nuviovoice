@@ -22,7 +22,7 @@
     "test": "pnpm -r test",
     "dev:desktop": "pnpm --filter @concord/desktop dev",
     "build:desktop": "pnpm --filter @concord/shared build && pnpm --filter @concord/web build && pnpm --filter @concord/desktop build",
-    "gen-icons": "node scripts/gen-icons.mjs",
+    "gen-icons": "python scripts/generate_icons.py",
     "gen-social-preview": "node scripts/gen-social-preview.mjs",
     "bump": "node scripts/bump-version.mjs",
     "smoke:web": "node scripts/smoke-web-browser.mjs"

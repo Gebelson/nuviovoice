@@ -164,6 +164,22 @@ function VideoAttachment({ attachment, attUrl, thumbUrl, federationInlineBadge }
   );
 }
 
+export function isAudioAttachment(attachment: Attachment): boolean {
+  const mimetype = (attachment.mimetype || '').toLowerCase();
+  const name = (attachment.originalName || '').toLowerCase();
+  if (mimetype.startsWith('audio/')) return true;
+  if (name.startsWith('voice-message')) return true;
+  if (Boolean(attachment.waveform)) return true;
+  const audioExtensions = ['.mp3', '.ogg', '.wav', '.flac', '.aac', '.opus', '.m4a', '.weba', '.wma'];
+  if (audioExtensions.some((ext) => name.endsWith(ext))) return true;
+  if (mimetype === 'video/webm' && !attachment.width && !attachment.height && !attachment.thumbnailFilename) {
+    if (name.includes('voice') || name.includes('audio') || Boolean(attachment.duration)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function AttachmentRenderer({ attachment }: AttachmentRendererProps) {
   const { t } = useTranslation(['chat']);
   const { formatBytes } = useFormatters();
@@ -256,22 +272,22 @@ export function AttachmentRenderer({ attachment }: AttachmentRendererProps) {
     );
   }
 
+  if (isAudioAttachment(attachment)) {
+    return (
+      <VoiceMessagePlayer
+        attachment={attachment}
+        attUrl={attUrl}
+        federationInlineBadge={federationInlineBadge}
+      />
+    );
+  }
+
   if (mimetype.startsWith('video/')) {
     return (
       <VideoAttachment
         attachment={attachment}
         attUrl={attUrl}
         thumbUrl={thumbUrl}
-        federationInlineBadge={federationInlineBadge}
-      />
-    );
-  }
-
-  if (mimetype.startsWith('audio/')) {
-    return (
-      <VoiceMessagePlayer
-        attachment={attachment}
-        attUrl={attUrl}
         federationInlineBadge={federationInlineBadge}
       />
     );

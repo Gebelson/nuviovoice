@@ -42,7 +42,7 @@ describe('VerificationBadge', () => {
     render(<VerificationBadge category="official" status="verified" />);
     const badge = screen.getByTestId('verification-badge-official');
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveAttribute('aria-label', 'Equipe oficial Nuvio');
+    expect(badge).toHaveAttribute('aria-label', 'Equipe Oficial Nuvio');
     expect(badge.className).toContain('text-purple-400');
   });
 

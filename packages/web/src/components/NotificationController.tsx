@@ -11,6 +11,8 @@ import { useSpaceStore } from '../stores/spaceStore';
 import { useUIStore } from '../stores/uiStore';
 import { replaceEmojiShortcodesInMarkdownSource } from '../utils/emojiShortcodes';
 import { isStickerMessage } from '../utils/stickerMessages';
+import { isWinkContent } from '@concord/shared/src/winks.js';
+import { useWinkStore } from '../stores/winkStore';
 
 /**
  * Headless component that bridges store events to native OS notifications and badge counts.
@@ -88,10 +90,32 @@ export function NotificationController() {
         const alert = newEvents.find((event) => messageAlertsUser(event));
         if (alert) {
           const { message } = alert;
+          const winkInfo = isWinkContent(message.content);
+          const isWink = message.type === 'wink' || winkInfo.isWink;
+
+          if (isWink) {
+            const senderId = message.userId;
+            if (senderId && useWinkStore.getState().isContactMuted(senderId)) {
+              return;
+            }
+
+            const winkSettings = useWinkStore.getState().settings;
+            if (!winkSettings.notifyWinks) return;
+            if (!windowFocused.current && !winkSettings.notifyWinksInBackground) return;
+
+            // Deduplication: if window is focused on this exact channel and wink animation is already active, suppress
+            const { currentChannelId } = useChatStore.getState();
+            const activeWink = useWinkStore.getState().activeWink;
+            if (windowFocused.current && currentChannelId === alert.channelId && activeWink?.winkId) {
+              return;
+            }
+          }
           // i18n.t, not a hook: read at notification time, in the language
           // selected now rather than when this subscription was made.
           const displayName = message.user?.displayName || message.user?.username || i18n.t('chat:notification.unknownSender');
-          const body = isStickerMessage(message.content)
+          const body = isWink
+            ? 'Você recebeu um Wink!'
+            : isStickerMessage(message.content)
             ? i18n.t('chat:stickers.sticker')
             : message.content
               ? replaceEmojiShortcodesInMarkdownSource(message.content).replace(/[*_~`>#\-\[\]]/g, '').slice(0, 100)

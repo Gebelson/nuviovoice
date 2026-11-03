@@ -1,13 +1,25 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { OFFICIAL_WINKS, getOfficialWink, resolveWinkMediaUrls, type OfficialWink } from '@concord/shared/src/winks';
+import {
+  OFFICIAL_WINKS,
+  getOfficialWink,
+  resolveWinkMediaUrls,
+  type OfficialWink,
+  type WinkContactMute,
+  type WinkMuteDuration,
+} from '@concord/shared/src/winks';
 import { api } from '../api/client';
 import { AudioManager } from '../audio/AudioManager';
+import { useUIStore } from './uiStore';
 
 export interface WinkSettings {
   autoplay: boolean;
   playAudio: boolean;
+  playAudioInBackground: boolean;
+  playAudioInCall: boolean;
   volume: number; // 0 - 100
+  notifyWinks: boolean;
+  notifyWinksInBackground: boolean;
   reduceMotion: boolean;
   disableIncoming: boolean;
 }
@@ -15,6 +27,7 @@ export interface WinkSettings {
 export interface ActiveWink {
   winkId: string;
   senderName?: string;
+  senderId?: string;
   isLocalReplay?: boolean;
   channelId?: string | null;
   startedAt: number;
@@ -24,7 +37,9 @@ export interface ActiveWink {
 
 interface WinkState {
   settings: WinkSettings;
+  favoriteWinkIds: string[];
   recentWinkIds: string[];
+  contactMutes: Record<string, WinkContactMute>;
   activeWink: ActiveWink | null;
   queue: ActiveWink[];
   isAutoplayBlocked: boolean;
@@ -37,6 +52,7 @@ interface WinkState {
   triggerWink: (params: {
     winkId: string;
     senderName?: string;
+    senderId?: string;
     isLocalReplay?: boolean;
     channelId?: string | null;
     messageId?: string;
@@ -45,6 +61,7 @@ interface WinkState {
   queueWink: (params: {
     winkId: string;
     senderName?: string;
+    senderId?: string;
     isLocalReplay?: boolean;
     channelId?: string | null;
     messageId?: string;
@@ -56,17 +73,25 @@ interface WinkState {
   unlockAudio: () => void;
   hasProcessedMessage: (dedupeKey: string) => boolean;
   markMessageProcessed: (dedupeKey: string) => void;
-  recordRecentWink: (winkId: string) => void;
+  recordRecentWink: (winkId: string) => Promise<void>;
   updateSettings: (settings: Partial<WinkSettings>) => void;
+
+  // Contact Mutes
+  isContactMuted: (targetUserId: string) => boolean;
+  getContactMute: (targetUserId: string) => WinkContactMute | undefined;
+  fetchMutes: () => Promise<void>;
+  setContactMute: (targetUserId: string, duration: WinkMuteDuration, targetUser?: any) => Promise<void>;
+  removeContactMute: (targetUserId: string) => Promise<void>;
+
+  // Favorites
+  fetchFavorites: () => Promise<void>;
+  toggleFavorite: (winkId: string) => Promise<void>;
+
+  // Recents
+  fetchRecents: () => Promise<void>;
 }
 
 let winkTimer: ReturnType<typeof setTimeout> | null = null;
-
-const VALID_CATALOG_IDS = new Set(['diabravinho', 'bolsogado', 'nikole']);
-
-function filterValidIds(ids: string[]): string[] {
-  return ids.filter((id) => VALID_CATALOG_IDS.has(id));
-}
 
 // Bounded in-memory deduplication set
 const processedMessageKeys = new Set<string>();
@@ -78,11 +103,17 @@ export const useWinkStore = create<WinkState>()(
       settings: {
         autoplay: true,
         playAudio: true,
+        playAudioInBackground: true,
+        playAudioInCall: false,
         volume: 80,
+        notifyWinks: true,
+        notifyWinksInBackground: true,
         reduceMotion: false,
         disableIncoming: false,
       },
+      favoriteWinkIds: [],
       recentWinkIds: ['diabravinho', 'bolsogado', 'nikole'],
+      contactMutes: {},
       activeWink: null,
       queue: [],
       isAutoplayBlocked: false,
@@ -106,22 +137,20 @@ export const useWinkStore = create<WinkState>()(
               thumbnailUrl: resolved.thumbnailUrl,
             });
           }
-          // Merge API items, strictly filtering out any legacy preset IDs and preserving static asset resolution
+          // Merge API items, preserving static asset resolution
           for (const w of list) {
-            if (VALID_CATALOG_IDS.has(w.id)) {
-              const resolved = resolveWinkMediaUrls(w);
-              map.set(w.id, {
-                ...w,
-                webmUrl: resolved.webmUrl,
-                mp4Url: resolved.mp4Url,
-                alphaMp4Url: resolved.alphaMp4Url,
-                thumbnailUrl: resolved.thumbnailUrl,
-              });
-            }
+            const resolved = resolveWinkMediaUrls(w);
+            map.set(w.id, {
+              ...w,
+              webmUrl: resolved.webmUrl,
+              mp4Url: resolved.mp4Url,
+              alphaMp4Url: resolved.alphaMp4Url,
+              thumbnailUrl: resolved.thumbnailUrl,
+            });
           }
           set({ publishedWinks: Array.from(map.values()), isLoadingPublished: false });
         } catch {
-          // If server call fails, fallback strictly to the 3 new winks
+          // If server call fails, fallback to official presets
           set({ publishedWinks: [...OFFICIAL_WINKS], isLoadingPublished: false });
         } finally {
           try {
@@ -141,7 +170,6 @@ export const useWinkStore = create<WinkState>()(
 
       markMessageProcessed: (dedupeKey: string) => {
         if (processedMessageKeys.size >= MAX_PROCESSED_KEYS) {
-          // Evict oldest elements
           const firstKey = processedMessageKeys.values().next().value;
           if (firstKey) processedMessageKeys.delete(firstKey);
         }
@@ -157,18 +185,167 @@ export const useWinkStore = create<WinkState>()(
         try {
           const audio = AudioManager.getInstance();
           audio.resumeContext().catch(() => {});
-        } catch {
-          // Audio manager resume optional
+        } catch {}
+      },
+
+      isContactMuted: (targetUserId: string) => {
+        if (!targetUserId) return false;
+        const mute = get().contactMutes[targetUserId];
+        if (!mute) return false;
+        if (mute.muteType === 'indefinite') return true;
+        if (mute.expiresAt) {
+          if (mute.expiresAt > Date.now()) {
+            return true;
+          } else {
+            // Expired — remove locally
+            const next = { ...get().contactMutes };
+            delete next[targetUserId];
+            set({ contactMutes: next });
+            return false;
+          }
         }
+        return false;
+      },
+
+      getContactMute: (targetUserId: string) => {
+        if (!targetUserId) return undefined;
+        const mute = get().contactMutes[targetUserId];
+        if (!mute) return undefined;
+        if (mute.muteType === 'indefinite') return mute;
+        if (mute.expiresAt && mute.expiresAt > Date.now()) return mute;
+        return undefined;
+      },
+
+      fetchMutes: async () => {
+        try {
+          const mutesList = await api.winks.mutes.list();
+          const map: Record<string, WinkContactMute> = {};
+          for (const m of mutesList) {
+            map[m.targetUserId] = m;
+          }
+          set({ contactMutes: map });
+        } catch (err) {
+          console.warn('[winkStore] Failed to fetch contact mutes:', err);
+        }
+      },
+
+      setContactMute: async (targetUserId: string, duration: WinkMuteDuration, targetUser?: any) => {
+        const prevMutes = get().contactMutes;
+        const now = Date.now();
+        let expiresAt: number | null = null;
+        if (duration === '1h') expiresAt = now + 3600 * 1000;
+        else if (duration === '8h') expiresAt = now + 8 * 3600 * 1000;
+        else if (duration === '24h') expiresAt = now + 24 * 3600 * 1000;
+
+        const optimisticMute: WinkContactMute = {
+          id: prevMutes[targetUserId]?.id || `local-${now}`,
+          userId: '',
+          targetUserId,
+          muteType: duration === 'indefinite' ? 'indefinite' : 'temporary',
+          createdAt: prevMutes[targetUserId]?.createdAt || now,
+          updatedAt: now,
+          expiresAt,
+          user: targetUser || prevMutes[targetUserId]?.user || null,
+        };
+
+        set({
+          contactMutes: {
+            ...prevMutes,
+            [targetUserId]: optimisticMute,
+          },
+        });
+
+        try {
+          const serverMute = await api.winks.mutes.set(targetUserId, duration);
+          set((state) => ({
+            contactMutes: {
+              ...state.contactMutes,
+              [targetUserId]: serverMute,
+            },
+          }));
+        } catch {
+          set({ contactMutes: prevMutes });
+          useUIStore.getState().addToast('Não foi possível silenciar o contato.', 'warning');
+        }
+      },
+
+      removeContactMute: async (targetUserId: string) => {
+        const prevMutes = get().contactMutes;
+        const next = { ...prevMutes };
+        delete next[targetUserId];
+        set({ contactMutes: next });
+
+        try {
+          await api.winks.mutes.delete(targetUserId);
+        } catch {
+          set({ contactMutes: prevMutes });
+          useUIStore.getState().addToast('Não foi possível reativar Winks do contato.', 'warning');
+        }
+      },
+
+      fetchFavorites: async () => {
+        try {
+          const favs = await api.winks.favorites.list();
+          set({ favoriteWinkIds: favs });
+        } catch (err) {
+          console.warn('[winkStore] Failed to fetch favorite winks:', err);
+        }
+      },
+
+      toggleFavorite: async (winkId: string) => {
+        const current = get().favoriteWinkIds;
+        const isFav = current.includes(winkId);
+        const next = isFav ? current.filter((id) => id !== winkId) : [...current, winkId];
+
+        set({ favoriteWinkIds: next });
+
+        try {
+          if (isFav) {
+            await api.winks.favorites.remove(winkId);
+          } else {
+            await api.winks.favorites.add(winkId);
+          }
+        } catch {
+          set({ favoriteWinkIds: current });
+          useUIStore.getState().addToast('Não foi possível atualizar favoritos.', 'warning');
+        }
+      },
+
+      fetchRecents: async () => {
+        try {
+          const recents = await api.winks.recents.list();
+          if (Array.isArray(recents) && recents.length > 0) {
+            set({ recentWinkIds: recents.slice(0, 20) });
+          }
+        } catch (err) {
+          console.warn('[winkStore] Failed to fetch recent winks:', err);
+        }
+      },
+
+      recordRecentWink: async (winkId: string) => {
+        if (!winkId) return;
+        set((state) => {
+          const filtered = state.recentWinkIds.filter((id) => id !== winkId);
+          return {
+            recentWinkIds: [winkId, ...filtered].slice(0, 20),
+          };
+        });
+
+        try {
+          await api.winks.recents.record(winkId);
+        } catch {}
       },
 
       queueWink: (params) => {
         const state = get();
-        // If nothing is playing, play immediately
+        // If sender is muted and not local replay, do not queue
+        if (!params.isLocalReplay && params.senderId && state.isContactMuted(params.senderId)) {
+          return;
+        }
+
         if (!state.activeWink) {
           state.triggerWink(params);
         } else {
-          // Otherwise enqueue (limit queue to 3 items to avoid backlog)
           if (state.queue.length < 3) {
             set((s) => ({
               queue: [
@@ -183,13 +360,15 @@ export const useWinkStore = create<WinkState>()(
         }
       },
 
-      triggerWink: ({ winkId, senderName, isLocalReplay = false, channelId, messageId, origin }) => {
+      triggerWink: ({ winkId, senderName, senderId, isLocalReplay = false, channelId, messageId, origin }) => {
         const state = get();
         const { settings } = state;
 
-        // Honor user preferences for incoming winks
         if (!isLocalReplay) {
           if (!settings.autoplay || settings.disableIncoming) {
+            return;
+          }
+          if (senderId && state.isContactMuted(senderId)) {
             return;
           }
         }
@@ -197,7 +376,6 @@ export const useWinkStore = create<WinkState>()(
         const wink = state.getWink(winkId);
         if (!wink) return;
 
-        // Don't attempt to play nonexistent or legacy animations without media
         if (!wink.webmUrl && !wink.mp4Url) {
           return;
         }
@@ -210,6 +388,7 @@ export const useWinkStore = create<WinkState>()(
         const active: ActiveWink = {
           winkId,
           senderName: senderName || 'Alguém',
+          senderId,
           isLocalReplay,
           channelId,
           messageId,
@@ -219,9 +398,6 @@ export const useWinkStore = create<WinkState>()(
 
         set({ activeWink: active, isAutoplayBlocked: false });
 
-        // Fallback safety timeout (15s): in case network drops or browser completely stalls
-        // before confirming playback, ensure overlay doesn't hang indefinitely.
-        // Once playback actually starts, startWinkPlaybackTimer sets the definitive timer.
         winkTimer = setTimeout(() => {
           const current = get().activeWink;
           if (current && current.startedAt === active.startedAt) {
@@ -235,9 +411,6 @@ export const useWinkStore = create<WinkState>()(
           clearTimeout(winkTimer);
           winkTimer = null;
         }
-        // Safety timeout begins ONLY after video confirmed started playing.
-        // The natural end event (onEnded) handles normal termination.
-        // This timer gives an extra safety margin to prevent premature disappearance.
         const duration = (durationMs && durationMs > 0 ? durationMs : 5000) + 1500;
         winkTimer = setTimeout(() => {
           get().dismissActiveWink();
@@ -255,7 +428,6 @@ export const useWinkStore = create<WinkState>()(
           const [next, ...remainingQueue] = state.queue;
           if (next) {
             set({ activeWink: next, queue: remainingQueue, isAutoplayBlocked: false });
-            // Start fallback timer for next wink
             winkTimer = setTimeout(() => {
               const current = get().activeWink;
               if (current && current.startedAt === next.startedAt) {
@@ -270,16 +442,6 @@ export const useWinkStore = create<WinkState>()(
         }
       },
 
-      recordRecentWink: (winkId: string) => {
-        if (!VALID_CATALOG_IDS.has(winkId)) return;
-        set((state) => {
-          const filtered = filterValidIds(state.recentWinkIds).filter((id) => id !== winkId);
-          return {
-            recentWinkIds: [winkId, ...filtered].slice(0, 3),
-          };
-        });
-      },
-
       updateSettings: (newSettings) => {
         set((state) => ({
           settings: {
@@ -290,11 +452,13 @@ export const useWinkStore = create<WinkState>()(
       },
     }),
     {
-      name: 'nuvio_winks_settings_v2',
+      name: 'nuvio_winks_settings_v3',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         settings: state.settings,
-        recentWinkIds: filterValidIds(state.recentWinkIds),
+        favoriteWinkIds: state.favoriteWinkIds,
+        recentWinkIds: state.recentWinkIds.slice(0, 20),
+        contactMutes: state.contactMutes,
       }),
     }
   )

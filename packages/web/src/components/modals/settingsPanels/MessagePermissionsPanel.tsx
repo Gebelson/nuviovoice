@@ -14,6 +14,7 @@ import {
 import { api } from '../../../api/client';
 import { Avatar } from '../../ui/Avatar';
 import { resolveUploadUrl } from '../../../utils/assetUrls';
+import { formatRemainingTime } from '../../chat/winkMuteMenuItems';
 import {
   SettingsHubHeader,
   SettingsCardSection,
@@ -99,6 +100,21 @@ export function MessagePermissionsPanel({
   // Winks store + backend receiveWinks
   const winkSettings = useWinkStore((s) => s.settings);
   const updateWinkSettings = useWinkStore((s) => s.updateSettings);
+  const contactMutes = useWinkStore((s) => s.contactMutes);
+  const fetchMutes = useWinkStore((s) => s.fetchMutes);
+  const removeContactMute = useWinkStore((s) => s.removeContactMute);
+
+  useEffect(() => {
+    void fetchMutes();
+  }, [fetchMutes]);
+
+  const mutedContactsList = React.useMemo(() => {
+    const now = Date.now();
+    return Object.values(contactMutes).filter(m => {
+      if (m.muteType === 'indefinite') return true;
+      return m.expiresAt ? m.expiresAt > now : false;
+    });
+  }, [contactMutes]);
 
   const [receiveWinks, setReceiveWinks] = useState<boolean>(user?.receiveWinks ?? true);
   const [savingWinks, setSavingWinks] = useState(false);
@@ -180,8 +196,8 @@ export function MessagePermissionsPanel({
       id: 'ignore-block',
       title: t('messagePermissions.subsections.ignoreBlock'),
       badge:
-        blockedAccounts.length + ignoredAccounts.length > 0
-          ? String(blockedAccounts.length + ignoredAccounts.length)
+        blockedAccounts.length + ignoredAccounts.length + mutedContactsList.length > 0
+          ? String(blockedAccounts.length + ignoredAccounts.length + mutedContactsList.length)
           : undefined,
     },
   ];
@@ -678,6 +694,57 @@ export function MessagePermissionsPanel({
                   </button>
                 </div>
               ))
+            )}
+          </SettingsCardSection>
+
+          {/* Muted Winks */}
+          <SettingsCardSection
+            heading={t('messagePermissions.ignoreBlock.mutedWinksHeading')}
+            description={t('messagePermissions.ignoreBlock.mutedWinksDescription')}
+          >
+            {mutedContactsList.length === 0 ? (
+              <div className="p-4 text-xs text-txt-tertiary">
+                {t('messagePermissions.ignoreBlock.mutedWinksEmpty')}
+              </div>
+            ) : (
+              mutedContactsList.map((mute) => {
+                const target = mute.targetUser || mute.user;
+                const name = target?.displayName || target?.username || mute.targetUserId;
+                const username = target?.username ? `@${target.username}` : mute.targetUserId;
+                const remainingText = formatRemainingTime(mute.expiresAt);
+
+                return (
+                  <div key={mute.targetUserId} className="p-3.5 flex items-center justify-between gap-3 border-b border-white/[0.04] last:border-b-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar
+                        src={resolveUploadUrl(target?.avatar ?? null)}
+                        name={name}
+                        size={32}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-txt-primary truncate">
+                          {name}
+                        </div>
+                        <div className="text-xs text-txt-tertiary font-mono truncate">
+                          {username}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/[0.06] text-txt-secondary border border-white/[0.06]">
+                        {remainingText}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void removeContactMute(mute.targetUserId)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white/[0.06] hover:bg-white/[0.12] text-txt-primary transition-colors"
+                      >
+                        {t('messagePermissions.ignoreBlock.unmuteWinksAction')}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </SettingsCardSection>
         </div>

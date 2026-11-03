@@ -13,7 +13,7 @@ const EXT_MIMETYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
   '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav',
-  '.flac': 'audio/flac', '.aac': 'audio/aac', '.opus': 'audio/opus',
+  '.flac': 'audio/flac', '.aac': 'audio/aac', '.opus': 'audio/opus', '.weba': 'audio/webm',
   '.pdf': 'application/pdf',
 };
 

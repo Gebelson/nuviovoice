@@ -3,6 +3,7 @@ import type { DmChannel, User } from '@concord/shared';
 import { Avatar } from '../ui/Avatar';
 import { AvatarStack } from '../ui/AvatarStack';
 import { Tooltip } from '../ui/Tooltip';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { isMine, isFederationGlobeApplicable, userDisplayName } from '../../utils/identity';
 import { useDmViewer } from '../../hooks/useDmViewer';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
@@ -154,6 +155,13 @@ export function DmListItem({ dm, isActive, isUnread, user, onSelect, onClose, on
           <span className={nameClass}>
             {displayName}
           </span>
+          {!isGroup && firstOther?.verification?.status === 'verified' && (
+            <VerificationBadge
+              category={firstOther.verification.category}
+              status={firstOther.verification.status}
+              size="xs"
+            />
+          )}
           {showGroupGlobe && (
             <Tooltip content={groupFederatedMembers.map(m => m.username).join(', ')} position="top">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className={fedBadgeClass}>

@@ -7,6 +7,7 @@ import { useChatStore } from '../../stores/chatStore';
 import { useSocialStore } from '../../stores/socialStore';
 import { useContextMenuStore, type ContextMenuItem } from '../../stores/contextMenuStore';
 import { Avatar } from '../ui/Avatar';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { AvatarStack } from '../ui/AvatarStack';
 import { Mascot } from '../ui/Mascot';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -16,6 +17,8 @@ import { parseFederatedUsername, isFederationGlobeApplicable, isMine, userDispla
 import { useDmViewer } from '../../hooks/useDmViewer';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import { formatDmSidebarPreview, formatDmHeaderName } from '../../utils/dmFormatters';
+import { useAuthStore } from '../../stores/authStore';
+import { buildWinkMuteMenuItems } from '../chat/winkMuteMenuItems';
 import type { DmChannel, User } from '@concord/shared';
 import type { TaggedFriend } from '../../stores/socialStore';
 
@@ -148,6 +151,13 @@ function MobileDmRow({
             <span className={`text-sm truncate ${isUnread ? 'font-semibold text-txt-primary' : 'text-txt-primary'}`}>
               {name}
             </span>
+            {!isGroup && mainUser?.verification?.status === 'verified' && (
+              <VerificationBadge
+                category={mainUser.verification.category}
+                status={mainUser.verification.status}
+                size="xs"
+              />
+            )}
             {groupHasFederatedMember && (
               <svg
                 data-dm-row-globe
@@ -196,6 +206,7 @@ export function MobileDmsScreen() {
   const f = useFormatters();
   const openContextMenu = useContextMenuStore((s) => s.open);
   const setCurrentChannel = useChatStore((s) => s.setCurrentChannel);
+  const currentUser = useAuthStore((s) => s.user);
 
   const [clearHistoryDmId, setClearHistoryDmId] = useState<string | null>(null);
   const [clearHistoryLoading, setClearHistoryLoading] = useState(false);
@@ -264,6 +275,15 @@ export function MobileDmsScreen() {
           setLeaveGroupDmId(dmId);
         },
       });
+    } else {
+      const dm = dmChannels.find(d => d.id === dmId);
+      if (dm) {
+        const partner = dm.members.find(m => m.id !== currentUser?.id);
+        if (partner) {
+          items.push({ type: 'separator', key: 'dm-wink-sep' });
+          items.push(buildWinkMuteMenuItems(partner.id, partner));
+        }
+      }
     }
 
     openContextMenu({ x: e.clientX, y: e.clientY }, items);
@@ -285,6 +305,17 @@ export function MobileDmsScreen() {
       <header className="h-12 flex items-center justify-between px-4 border-b border-border-soft shrink-0">
         <h1 className="text-base font-semibold text-txt-primary">{t('dm:list.title')}</h1>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => navigate('/opportunities')}
+            className="h-8 px-2.5 rounded-lg text-xs font-medium text-txt-secondary hover:text-txt-primary hover:bg-interactive-hover transition-colors flex items-center gap-1.5"
+            title="Oportunidades"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </svg>
+            <span>Oportunidades</span>
+          </button>
           <button
             onClick={() => pushMobileScreen('friends')}
             className="h-8 px-3 rounded-lg text-xs font-medium text-accent-primary hover:bg-interactive-hover transition-colors"

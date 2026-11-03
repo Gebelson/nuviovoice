@@ -715,7 +715,7 @@ const shownNotifications = new NotificationRetainer<Notification>();
 
 function showNotification(title: string, body: string, onClick?: () => void): void {
   if (!Notification.isSupported()) return;
-  const notification = new Notification({ title, body, silent: false });
+  const notification = new Notification({ title, body, silent: false, icon: resolveWindowIcon() });
   notification.on('click', onClick ?? (() => {
     mainWindow?.show();
     mainWindow?.focus();

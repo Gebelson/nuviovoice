@@ -54,6 +54,8 @@ export function sanitizeUser(row: typeof schema.users.$inferSelect, isSelf = fal
     discoverable: row.discoverable !== 0,
     friendDiscoveryVisibility: (row.friendDiscoveryVisibility as any) || 'everyone',
     receiveWinks: row.receiveWinks !== 0,
+    verificationStatus: (row.verificationStatus as any) || 'none',
+    verificationCategory: (row.verificationCategory as any) || null,
     verification: (row.verificationStatus === 'verified')
       ? {
           status: 'verified',

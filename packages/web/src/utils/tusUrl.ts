@@ -51,3 +51,10 @@ export function tusEndpoint(origin: string | undefined): string {
   return new URL('/api/files/', base).toString();
 }
 
+/**
+ * The absolute tus endpoint for Wink video uploads on the home instance.
+ */
+export function winkTusEndpoint(origin?: string): string {
+  const base = origin && origin.trim() ? origin.trim() : getHomeOrigin();
+  return new URL('/api/admin/winks/files/', base).toString();
+}

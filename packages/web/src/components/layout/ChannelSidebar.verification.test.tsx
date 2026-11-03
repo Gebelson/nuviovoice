@@ -66,7 +66,7 @@ describe('ChannelSidebar User Area Verification Badge', () => {
     expect(screen.getByText('@gebelson')).toBeInTheDocument();
     const badge = screen.getByTestId('verification-badge-official');
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveAttribute('aria-label', 'Equipe oficial Nuvio');
+    expect(badge).toHaveAttribute('aria-label', 'Equipe Oficial Nuvio');
   });
 
   it('does not render badge if user is not verified', () => {

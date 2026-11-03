@@ -593,7 +593,8 @@
       "leaveGroupConfirm": {
         "title": "Sair da DM em grupo",
         "description": "Tem certeza de que deseja sair? Você não poderá entrar de novo, a menos que alguém adicione você outra vez."
-      }
+      },
+      "opportunities": "Oportunidades"
     },
     "userArea": {
       "inputDevice": "Dispositivo de entrada",

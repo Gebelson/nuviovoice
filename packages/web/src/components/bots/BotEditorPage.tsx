@@ -159,12 +159,12 @@ export function BotEditorPage() {
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-chat overflow-hidden text-txt-primary">
       {/* Editor Top Bar */}
-      <div className="h-14 px-6 border-b border-white/10 bg-surface-panel/80 backdrop-blur-xl flex items-center justify-between z-20">
+      <div className="h-14 px-6 border-b border-border-hard bg-surface-panel/80 backdrop-blur-xl flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate('/developers')}
-            className="p-1.5 rounded-lg text-txt-muted hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-lg text-txt-muted hover:text-white hover:bg-surface-base transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="m15 18-6-6 6-6" />
@@ -187,7 +187,7 @@ export function BotEditorPage() {
           <button
             type="button"
             onClick={() => window.open(`/store/bots/${bot.slug}`, '_blank')}
-            className="px-3.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-txt-secondary hover:text-white text-xs font-semibold transition-colors"
+            className="px-3.5 py-1.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-xs font-semibold transition-colors"
           >
             Visualizar Página
           </button>
@@ -203,7 +203,7 @@ export function BotEditorPage() {
       </div>
 
       {/* Editor Tabs */}
-      <div className="flex items-center gap-4 px-6 border-b border-white/10 bg-surface-panel/40 text-xs font-semibold">
+      <div className="flex items-center gap-4 px-6 border-b border-border-hard bg-surface-panel/40 text-xs font-semibold">
         <button
           type="button"
           onClick={() => setActiveTab('details')}
@@ -254,7 +254,7 @@ export function BotEditorPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white text-sm focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                 />
               </div>
               <div>
@@ -263,7 +263,7 @@ export function BotEditorPage() {
                   type="text"
                   value={prefix}
                   onChange={(e) => setPrefix(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white text-sm font-mono focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white text-sm font-mono focus:outline-none focus:border-accent-primary"
                 />
               </div>
             </div>
@@ -274,7 +274,7 @@ export function BotEditorPage() {
                 type="text"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
-                className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
               />
             </div>
 
@@ -284,7 +284,7 @@ export function BotEditorPage() {
                 rows={5}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
               />
             </div>
 
@@ -296,7 +296,7 @@ export function BotEditorPage() {
                   value={avatar}
                   onChange={(e) => setAvatar(e.target.value)}
                   placeholder="https://..."
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
               <div>
@@ -306,7 +306,7 @@ export function BotEditorPage() {
                   value={banner}
                   onChange={(e) => setBanner(e.target.value)}
                   placeholder="https://..."
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
             </div>
@@ -319,7 +319,7 @@ export function BotEditorPage() {
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
               <div>
@@ -329,7 +329,7 @@ export function BotEditorPage() {
                   value={supportUrl}
                   onChange={(e) => setSupportUrl(e.target.value)}
                   placeholder="https://nuvio.app/..."
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
               <div>
@@ -339,7 +339,7 @@ export function BotEditorPage() {
                   value={privacyPolicyUrl}
                   onChange={(e) => setPrivacyPolicyUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white focus:outline-none focus:border-accent-primary"
                 />
               </div>
             </div>
@@ -351,7 +351,7 @@ export function BotEditorPage() {
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
                 placeholder="https://meuservidor.com/nuvio-webhook"
-                className="w-full p-3 rounded-xl bg-surface-panel border border-white/10 text-white font-mono focus:outline-none focus:border-accent-primary"
+                className="w-full p-3 rounded-xl bg-surface-panel border border-border-hard text-white font-mono focus:outline-none focus:border-accent-primary"
               />
             </div>
           </div>
@@ -368,7 +368,7 @@ export function BotEditorPage() {
               <button
                 type="button"
                 onClick={handleAddCommand}
-                className="px-3.5 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-white text-xs font-semibold border border-white/10 flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-white text-xs font-semibold border border-border-hard flex items-center gap-1.5"
               >
                 + Adicionar Comando
               </button>
@@ -378,7 +378,7 @@ export function BotEditorPage() {
               {commands.map((cmd, idx) => (
                 <div
                   key={idx}
-                  className="p-4 rounded-xl bg-surface-panel border border-white/10 space-y-3 relative group"
+                  className="p-4 rounded-xl bg-surface-panel border border-border-hard space-y-3 relative group"
                 >
                   <button
                     type="button"
@@ -399,7 +399,7 @@ export function BotEditorPage() {
                             prev.map((c, i) => (i === idx ? { ...c, name: val } : c))
                           );
                         }}
-                        className="w-full p-2.5 rounded-lg bg-surface-chat border border-white/10 text-white font-mono"
+                        className="w-full p-2.5 rounded-lg bg-surface-chat border border-border-hard text-white font-mono"
                       />
                     </div>
                     <div>
@@ -414,7 +414,7 @@ export function BotEditorPage() {
                           );
                         }}
                         placeholder={`/${cmd.name} [opções]`}
-                        className="w-full p-2.5 rounded-lg bg-surface-chat border border-white/10 text-white font-mono"
+                        className="w-full p-2.5 rounded-lg bg-surface-chat border border-border-hard text-white font-mono"
                       />
                     </div>
                   </div>
@@ -429,7 +429,7 @@ export function BotEditorPage() {
                           prev.map((c, i) => (i === idx ? { ...c, description: val } : c))
                         );
                       }}
-                      className="w-full p-2.5 rounded-lg bg-surface-chat border border-white/10 text-white text-xs"
+                      className="w-full p-2.5 rounded-lg bg-surface-chat border border-border-hard text-white text-xs"
                     />
                   </div>
                 </div>
@@ -450,21 +450,21 @@ export function BotEditorPage() {
                 <button
                   type="button"
                   onClick={() => handleAddBlock('hero')}
-                  className="px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs font-semibold"
+                  className="px-3 py-1.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-xs font-semibold"
                 >
                   + Hero
                 </button>
                 <button
                   type="button"
                   onClick={() => handleAddBlock('feature_grid')}
-                  className="px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs font-semibold"
+                  className="px-3 py-1.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-xs font-semibold"
                 >
                   + Recursos
                 </button>
                 <button
                   type="button"
                   onClick={() => handleAddBlock('faq')}
-                  className="px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-xs font-semibold"
+                  className="px-3 py-1.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-xs font-semibold"
                 >
                   + FAQ
                 </button>
@@ -475,7 +475,7 @@ export function BotEditorPage() {
               {blocks.map((block) => (
                 <div
                   key={block.id}
-                  className="p-4 rounded-xl bg-surface-panel border border-white/10 flex items-center justify-between"
+                  className="p-4 rounded-xl bg-surface-panel border border-border-hard flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
                     <span className="px-2.5 py-1 rounded-lg bg-accent-primary/20 text-accent-primary font-bold text-xs uppercase">
@@ -506,7 +506,7 @@ export function BotEditorPage() {
                 type="button"
                 onClick={() => setPreviewMode('desktop')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                  previewMode === 'desktop' ? 'bg-accent-primary text-white' : 'bg-white/5 text-txt-muted'
+                  previewMode === 'desktop' ? 'bg-accent-primary text-white' : 'bg-surface-base text-txt-muted'
                 }`}
               >
                 Desktop
@@ -515,13 +515,13 @@ export function BotEditorPage() {
                 type="button"
                 onClick={() => setPreviewMode('mobile')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                  previewMode === 'mobile' ? 'bg-accent-primary text-white' : 'bg-white/5 text-txt-muted'
+                  previewMode === 'mobile' ? 'bg-accent-primary text-white' : 'bg-surface-base text-txt-muted'
                 }`}
               >
                 Mobile
               </button>
             </div>
-            <div className="p-6 rounded-2xl bg-surface-chat border border-white/10 min-h-[400px]">
+            <div className="p-6 rounded-2xl bg-surface-chat border border-border-hard min-h-[400px]">
               <VisualBlockRenderer blocks={blocks} previewMode={previewMode} />
             </div>
           </div>

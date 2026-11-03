@@ -28,6 +28,8 @@ import { fetchSpaceInviteSnapshot, getLocalInviteSnapshot } from '../utils/space
 import { sanitizeUser } from '../utils/sanitize.js';
 import { loadDmChannelWire, loadOpenDmChannels } from '../utils/dmChannelWire.js';
 import { findOrCreateOneOnOne, mintGroupKey, type OneOnOneResult } from '../utils/dmConversation.js';
+import { sendWinkPushNotification } from '../utils/webPush.js';
+import { isUserWinkMuted, recordWinkRecent } from '../utils/winkMutes.js';
 import { sendError } from '../utils/httpErrors.js';
 import { parseHistoryPage, selectHistoryPage, markHistoryPageHonoured } from '../utils/messagePaging.js';
 
@@ -339,11 +341,27 @@ export function broadcastDmMessage(dmChannelId: string, message: DmMessageWithUs
 
   reopenForClosedMembers(dmChannelId, message);
 
+  const isWink = (message as any).type === 'wink' || isWinkContent(message.content).isWink;
+  const senderName = message.user?.displayName || message.user?.username || 'Alguém';
+
   for (const member of dmMembers) {
     connectionManager.sendToUser(member.userId, {
       type: 'dm_message_created',
       message,
     });
+
+    if (isWink && member.userId !== message.userId) {
+      if (!isUserWinkMuted(member.userId, message.userId)) {
+        void sendWinkPushNotification({
+          userId: member.userId,
+          senderName,
+          dmChannelId,
+          messageId: message.id,
+        }).catch((err) => {
+          console.warn(`[web-push] Failed to dispatch wink push for user ${member.userId}:`, err);
+        });
+      }
+    }
   }
 }
 
@@ -2158,6 +2176,7 @@ export async function dmRoutes(app: FastifyInstance): Promise<void> {
       return sendError(reply, 500, 'message_create_failed');
     }
 
+    recordWinkRecent(request.userId, request.body.winkId);
     broadcastDmMessage(id, message);
     queueDmRelay(message, id, 'create');
 

@@ -7,6 +7,7 @@ import { wsSend } from '../../hooks/useWebSocket';
 import { resolveChannelUser } from '../../utils/channelUser';
 import { spaceMemberName } from '../../utils/identity';
 import { insertComposerMention } from './useComposerMention';
+import { buildWinkMuteMenuItems } from './winkMuteMenuItems';
 
 interface Options {
   /** The channel or DM the message is in. */
@@ -66,6 +67,10 @@ export function useAuthorMenu({ channelId, authorId, origin, isDm, canSend, isAu
           }
         },
       });
+    }
+    if (isDm && authorId) {
+      items.push({ type: 'separator', key: 'author-wink-sep' });
+      items.push(buildWinkMuteMenuItems(authorId, author?.user));
     }
     if (items.length === 0) return;
     event.preventDefault();

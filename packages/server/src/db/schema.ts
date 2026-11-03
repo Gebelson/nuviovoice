@@ -472,6 +472,8 @@ export const instanceSettings = sqliteTable('instance_settings', {
    * peer's friend events from before it (utils/federationSync.ts).
    */
   ledgerStartedAt: integer('ledger_started_at'),
+  vapidPublicKey: text('vapid_public_key'),
+  vapidPrivateKey: text('vapid_private_key'),
   updatedAt: integer('updated_at').notNull(),
 });
 
@@ -1290,6 +1292,40 @@ export const winks = sqliteTable('winks', {
   statusIdx: index('idx_winks_status').on(table.status),
   publishedIdx: index('idx_winks_published').on(table.published),
 }));
+export const winkContactMutes = sqliteTable('wink_contact_mutes', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetUserId: text('target_user_id').notNull(),
+  muteType: text('mute_type').notNull(), // 'temporary' | 'indefinite'
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+  expiresAt: integer('expires_at'), // null for indefinite, timestamp ms for temporary
+}, (table) => ({
+  userTargetIdx: uniqueIndex('idx_wink_mutes_user_target').on(table.userId, table.targetUserId),
+  userIdx: index('idx_wink_mutes_user').on(table.userId),
+  targetUserIdx: index('idx_wink_mutes_target').on(table.targetUserId),
+}));
+
+export const winkFavorites = sqliteTable('wink_favorites', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  winkId: text('wink_id').notNull(),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  userWinkIdx: uniqueIndex('idx_wink_favorites_user_wink').on(table.userId, table.winkId),
+  userIdx: index('idx_wink_favorites_user').on(table.userId),
+}));
+
+export const winkRecents = sqliteTable('wink_recents', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  winkId: text('wink_id').notNull(),
+  usedAt: integer('used_at').notNull(),
+}, (table) => ({
+  userWinkIdx: uniqueIndex('idx_wink_recents_user_wink').on(table.userId, table.winkId),
+  userIdx: index('idx_wink_recents_user').on(table.userId),
+  usedAtIdx: index('idx_wink_recents_used_at').on(table.usedAt),
+}));
 
 
 
@@ -1518,4 +1554,193 @@ export const streamerChannels = sqliteTable('streamer_channels', {
   userIdx: index('idx_streamer_channels_user').on(table.userId),
   isLiveIdx: index('idx_streamer_channels_live').on(table.isLive),
   platformChannelIdx: uniqueIndex('idx_streamer_channels_platform_channel').on(table.platform, table.channelName),
+}));
+
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  userAgent: text('user_agent'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  userIdx: index('idx_push_subscriptions_user').on(table.userId),
+  endpointIdx: uniqueIndex('idx_push_subscriptions_endpoint').on(table.endpoint),
+}));
+
+
+
+// ─── Opportunities & Professional Network ────────────────────────────────────
+
+export const professionalProfiles = sqliteTable('professional_profiles', {
+  userId: text('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  headline: text('headline'),
+  bio: text('bio'),
+  roles: text('roles').notNull().default('["job_seeker"]'),
+  skills: text('skills').notNull().default('[]'),
+  experiences: text('experiences').notNull().default('[]'),
+  education: text('education').notNull().default('[]'),
+  portfolio: text('portfolio').notNull().default('[]'),
+  languages: text('languages').notNull().default('[]'),
+  location: text('location'),
+  workPreference: text('work_preference').notNull().default('any'),
+  expectedSalary: text('expected_salary'),
+  resumeUrl: text('resume_url'),
+  resumeName: text('resume_name'),
+  isPublic: integer('is_public').notNull().default(1),
+  hideContactInfo: integer('hide_contact_info').notNull().default(1),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  publicIdx: index('idx_prof_profiles_public').on(table.isPublic),
+}));
+
+export const opportunities = sqliteTable('opportunities', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  category: text('category').notNull(),
+  description: text('description').notNull(),
+  status: text('status').notNull().default('published'),
+  companyName: text('company_name'),
+  companyLogo: text('company_logo'),
+  creatorRole: text('creator_role').default('individual'),
+  contractType: text('contract_type'),
+  responsibilities: text('responsibilities'),
+  qualificationsMin: text('qualifications_min'),
+  qualificationsPref: text('qualifications_pref'),
+  education: text('education'),
+  experienceLevel: text('experience_level'),
+  workSchedule: text('work_schedule'),
+  remunerationType: text('remuneration_type').notNull().default('negotiable'),
+  salaryMin: integer('salary_min'),
+  salaryMax: integer('salary_max'),
+  currency: text('currency').notNull().default('BRL'),
+  benefits: text('benefits').default('[]'),
+  vacanciesCount: integer('vacancies_count').notNull().default(1),
+  deadline: integer('deadline'),
+  questions: text('questions').default('[]'),
+  documentsRequired: text('documents_required').default('[]'),
+  externalLink: text('external_link'),
+  budget: integer('budget'),
+  budgetType: text('budget_type'),
+  skills: text('skills').default('[]'),
+  deliverables: text('deliverables'),
+  complexity: text('complexity'),
+  expectedDuration: text('expected_duration'),
+  coverImage: text('cover_image'),
+  gallery: text('gallery').default('[]'),
+  deliveryDays: integer('delivery_days'),
+  revisionsCount: integer('revisions_count'),
+  packages: text('packages'),
+  servicesIncluded: text('services_included'),
+  servicesExcluded: text('services_excluded'),
+  faqs: text('faqs').default('[]'),
+  requirements: text('requirements'),
+  workModality: text('work_modality').notNull().default('remote'),
+  locationCountry: text('location_country'),
+  locationState: text('location_state'),
+  locationCity: text('location_city'),
+  language: text('language').notNull().default('pt'),
+  viewCount: integer('view_count').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  userIdx: index('idx_opportunities_user').on(table.userId),
+  typeIdx: index('idx_opportunities_type').on(table.type),
+  categoryIdx: index('idx_opportunities_category').on(table.category),
+  statusIdx: index('idx_opportunities_status').on(table.status),
+  createdIdx: index('idx_opportunities_created').on(table.createdAt),
+}));
+
+export const opportunityApplications = sqliteTable('opportunity_applications', {
+  id: text('id').primaryKey(),
+  opportunityId: text('opportunity_id').notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
+  applicantId: text('applicant_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetUserId: text('target_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  status: text('status').notNull().default('submitted'),
+  message: text('message').notNull(),
+  proposedPrice: integer('proposed_price'),
+  proposedDuration: text('proposed_duration'),
+  deliverables: text('deliverables'),
+  packageTier: text('package_tier'),
+  resumeUrl: text('resume_url'),
+  resumeName: text('resume_name'),
+  portfolioUrls: text('portfolio_urls').default('[]'),
+  answers: text('answers').default('[]'),
+  attachments: text('attachments').default('[]'),
+  reviewedAt: integer('reviewed_at'),
+  unlockedAt: integer('unlocked_at'),
+  rejectedAt: integer('rejected_at'),
+  withdrawnAt: integer('withdrawn_at'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  oppIdx: index('idx_opp_apps_opp').on(table.opportunityId),
+  applicantIdx: index('idx_opp_apps_applicant').on(table.applicantId),
+  targetIdx: index('idx_opp_apps_target').on(table.targetUserId),
+  statusIdx: index('idx_opp_apps_status').on(table.status),
+  createdIdx: index('idx_opp_apps_created').on(table.createdAt),
+}));
+
+export const opportunityApplicationMessages = sqliteTable('opportunity_application_messages', {
+  id: text('id').primaryKey(),
+  applicationId: text('application_id').notNull().references(() => opportunityApplications.id, { onDelete: 'cascade' }),
+  senderId: text('sender_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  messageType: text('message_type').notNull().default('text'),
+  attachments: text('attachments').default('[]'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  appIdx: index('idx_opp_app_msgs_app').on(table.applicationId),
+  createdIdx: index('idx_opp_app_msgs_created').on(table.createdAt),
+}));
+
+export const opportunityNegotiations = sqliteTable('opportunity_negotiations', {
+  id: text('id').primaryKey(),
+  applicationId: text('application_id').notNull().references(() => opportunityApplications.id, { onDelete: 'cascade' }),
+  senderId: text('sender_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  receiverId: text('receiver_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('pending'),
+  price: integer('price'),
+  deadline: text('deadline'),
+  scope: text('scope'),
+  deliverables: text('deliverables'),
+  revisions: integer('revisions'),
+  notes: text('notes'),
+  version: integer('version').notNull().default(1),
+  parentNegotiationId: text('parent_negotiation_id'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (table) => ({
+  appIdx: index('idx_opp_negotiations_app').on(table.applicationId),
+  createdIdx: index('idx_opp_negotiations_created').on(table.createdAt),
+}));
+
+export const opportunityFavorites = sqliteTable('opportunity_favorites', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  opportunityId: text('opportunity_id').notNull().references(() => opportunities.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  userOppIdx: uniqueIndex('idx_opp_favs_user_opp').on(table.userId, table.opportunityId),
+  userIdx: index('idx_opp_favs_user').on(table.userId),
+}));
+
+export const opportunityReports = sqliteTable('opportunity_reports', {
+  id: text('id').primaryKey(),
+  reporterId: text('reporter_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  targetType: text('target_type').notNull(),
+  targetId: text('target_id').notNull(),
+  reason: text('reason').notNull(),
+  details: text('details'),
+  status: text('status').notNull().default('pending'),
+  createdAt: integer('created_at').notNull(),
+}, (table) => ({
+  statusIdx: index('idx_opp_reports_status').on(table.status),
+  reporterIdx: index('idx_opp_reports_reporter').on(table.reporterId),
 }));

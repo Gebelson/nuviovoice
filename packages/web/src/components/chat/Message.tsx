@@ -688,7 +688,7 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
               </>
             ) : (
               <>
-                {message.content && (
+                {message.content && message.content.trim().length > 0 ? (
                   <div className="text-txt-message text-[15px] leading-[1.5] break-words whitespace-pre-wrap selection:bg-accent-primary/30">
                     {isSticker
                       ? <StickerMessage token={message.content} />
@@ -699,7 +699,7 @@ export function Message({ message, isCompact, isFirstInGroup, previousMessageId 
                       <span className="text-[10px] text-txt-tertiary ml-1 select-none font-medium">{t('chat:message.edited')}</span>
                     )}
                   </div>
-                )}
+                ) : null}
 
                 {/* Embeds */}
                 {!isEditing && !isSticker && !isWink && message.embeds && message.embeds.length > 0 && (

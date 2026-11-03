@@ -25,17 +25,40 @@ function MascotVideo({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.defaultMuted = true;
-      videoRef.current.muted = true;
-      try {
-        const promise = videoRef.current.play();
-        if (promise && typeof promise.catch === 'function') {
-          promise.catch(() => {});
-        }
-      } catch {
-        // Ignored for environments without full media element support
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.defaultMuted = true;
+    video.muted = true;
+
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+
+    const applyMotionPreference = (matches: boolean) => {
+      if (matches) {
+        try {
+          video.pause();
+        } catch {}
+      } else {
+        try {
+          const promise = video.play();
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch(() => {});
+          }
+        } catch {}
       }
+    };
+
+    applyMotionPreference(Boolean(mq?.matches));
+
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      applyMotionPreference(e.matches);
+    };
+
+    if (mq && typeof mq.addEventListener === 'function') {
+      mq.addEventListener('change', handleMotionChange);
+      return () => {
+        mq.removeEventListener('change', handleMotionChange);
+      };
     }
   }, []);
 

@@ -21,6 +21,8 @@ export function GlobalWinkOverlay() {
   const dismissActiveWink = useWinkStore((s) => s.dismissActiveWink);
   const startWinkPlaybackTimer = useWinkStore((s) => s.startWinkPlaybackTimer);
   const playAudio = useWinkStore((s) => s.settings.playAudio);
+  const playAudioInBackground = useWinkStore((s) => s.settings.playAudioInBackground);
+  const playAudioInCall = useWinkStore((s) => s.settings.playAudioInCall);
   const volume = useWinkStore((s) => s.settings.volume);
   const reduceMotion = useWinkStore((s) => s.settings.reduceMotion);
   const isAutoplayBlocked = useWinkStore((s) => s.isAutoplayBlocked);
@@ -29,6 +31,10 @@ export function GlobalWinkOverlay() {
   const audioUnlocked = useWinkStore((s) => s.audioUnlocked);
   const muteAllNotificationSounds = useUserPreferencesStore((s) => s.muteAllNotificationSounds);
   const soundEffectVolume = useVoiceStore((s) => s.soundEffectVolume);
+  const currentVoiceChannelId = useVoiceStore((s) => s.currentVoiceChannelId);
+  const activeDmCall = useVoiceStore((s) => s.activeDmCall);
+  const isLiveKitConnected = useVoiceStore((s) => s.isLiveKitConnected);
+  const isCallActive = Boolean(currentVoiceChannelId || activeDmCall || isLiveKitConnected);
   const hasAudioStartedRef = useRef(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -65,19 +71,24 @@ export function GlobalWinkOverlay() {
     setMediaError(null);
   }, [activeWink?.winkId, activeWink?.startedAt, isSafari]);
 
-  // Audio configuration with respect to global notifications and wink settings
+  // Audio configuration with respect to global notifications, wink settings, and active calls
   const effectiveVolume = useMemo(() => {
     if (!wink || muteAllNotificationSounds) return 0;
-    const baseVolume = (volume / 100) * (wink.defaultVolume ?? 1.0);
+    let baseVolume = (volume / 100) * (wink.defaultVolume ?? 1.0);
     const globalSfxMultiplier = typeof soundEffectVolume === 'number' ? soundEffectVolume : 1.0;
+    // Apply 50% volume ducking if a voice/video call is active to avoid blasting user
+    if (isCallActive) {
+      baseVolume *= 0.5;
+    }
     return Math.min(1, Math.max(0, baseVolume * globalSfxMultiplier));
-  }, [wink, volume, muteAllNotificationSounds, soundEffectVolume]);
+  }, [wink, volume, muteAllNotificationSounds, soundEffectVolume, isCallActive]);
 
   const shouldMute = useMemo(() => {
     if (!playAudio || !wink?.hasAudio || effectiveVolume === 0 || muteAllNotificationSounds) return true;
+    if (isCallActive && !playAudioInCall) return true;
     if (isAutoplayBlocked && !audioUnlocked) return true;
     return false;
-  }, [playAudio, wink?.hasAudio, effectiveVolume, isAutoplayBlocked, audioUnlocked, muteAllNotificationSounds]);
+  }, [playAudio, wink?.hasAudio, effectiveVolume, muteAllNotificationSounds, isCallActive, playAudioInCall, isAutoplayBlocked, audioUnlocked]);
 
   // Stop any active wink sound when activeWink changes or unmounts
   useEffect(() => {
@@ -138,6 +149,37 @@ export function GlobalWinkOverlay() {
       setAutoplayBlocked(true);
     }
   }, [wink, shouldMute, effectiveVolume, activeMediaSrc, setAutoplayBlocked]);
+
+  // Handle background playback and foreground fallback
+  useEffect(() => {
+    if (!activeWink || !wink) return;
+
+    const isBackground = typeof document !== 'undefined' && (document.hidden || !document.hasFocus());
+
+    if (isBackground) {
+      if (playAudioInBackground && !shouldMute) {
+        void playWinkAudio();
+      }
+      startWinkPlaybackTimer(wink.durationMs);
+    } else {
+      const fallbackTimer = setTimeout(() => {
+        if (!hasAudioStartedRef.current && !shouldMute) {
+          void playWinkAudio();
+          startWinkPlaybackTimer(wink.durationMs);
+        }
+      }, 350);
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [
+    activeWink?.startedAt,
+    activeWink?.winkId,
+    wink?.id,
+    playAudioInBackground,
+    shouldMute,
+    playWinkAudio,
+    startWinkPlaybackTimer,
+  ]);
 
   if (!activeWink || !wink) return null;
 

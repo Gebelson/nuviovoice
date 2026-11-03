@@ -17,6 +17,7 @@ import { DedicatedLiveStreamView } from '../live/DedicatedLiveStreamView';
 import { DownloadPage } from '../download/DownloadPage';
 import { ProjectHubPage } from '../projectHub/ProjectHubPage';
 import { StoreContainer } from '../store/StoreContainer';
+import { OpportunitiesContainer } from '../opportunities/OpportunitiesContainer';
 import { Avatar } from '../ui/Avatar';
 import { AvatarStack } from '../ui/AvatarStack';
 import { useVoiceStore } from '../../stores/voiceStore';
@@ -89,6 +90,7 @@ export function MainContent() {
   const isProjectHubPage = location.pathname === '/backspace';
   const isDownloadPage = location.pathname === '/download';
   const isStorePage = location.pathname.startsWith('/store') || location.pathname.startsWith('/developers');
+  const isOpportunitiesPage = location.pathname.startsWith('/opportunities');
   // The DM call's conversation as this client opens it (never the call's key).
   const { dmChannelId: dmCallChannel } = useActiveDmCall();
   const outgoingCall = useVoiceStore((s) => s.outgoingCall);
@@ -271,7 +273,7 @@ export function MainContent() {
   const channel = channels.find(c => c.id === currentChannelId);
   const isVoiceChannel = channel?.type === 'voice';
 
-  if (showDms || isExplorePage || isLiveStreamPage || isProjectHubPage || isDownloadPage || isStorePage || !currentSpaceId) {
+  if (showDms || isExplorePage || isLiveStreamPage || isProjectHubPage || isDownloadPage || isStorePage || isOpportunitiesPage || !currentSpaceId) {
     if (isLiveStreamPage) {
       return <DedicatedLiveStreamView />;
     }
@@ -280,6 +282,9 @@ export function MainContent() {
     }
     if (isStorePage) {
       return <StoreContainer />;
+    }
+    if (isOpportunitiesPage) {
+      return <OpportunitiesContainer />;
     }
     if (!currentChannelId) {
       return isExplorePage ? (

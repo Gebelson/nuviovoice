@@ -72,7 +72,7 @@ describe('Store Navigation and Section Separation', () => {
     expect(tabs[1]).toHaveAttribute('aria-selected', 'false');
 
     // Section 11 empty state requirement
-    expect(screen.getByText('Nenhum produto disponível no momento.')).toBeInTheDocument();
+    expect(screen.getByText('Nada por aqui ainda. Novidades estão chegando!')).toBeInTheDocument();
   });
 
   it('renders BotCatalogPage on /store/bots with Bots tab active and empty state message', () => {
@@ -96,7 +96,7 @@ describe('Store Navigation and Section Separation', () => {
     expect(tabs[1]).toHaveAttribute('aria-selected', 'true');
 
     // Section 11 empty state requirement
-    expect(screen.getByText('Nenhum bot disponível no momento.')).toBeInTheDocument();
+    expect(screen.getByText('Nada por aqui ainda. Novidades estão chegando!')).toBeInTheDocument();
   });
 
   it('renders StoreAdminQueue on /store/admin with both Produtos and Bots queues', async () => {
@@ -199,5 +199,100 @@ describe('Store Navigation and Section Separation', () => {
     expect(retryBtn).toBeInTheDocument();
     fireEvent.click(retryBtn);
     expect(loadBotsMock).toHaveBeenCalled();
+  });
+
+  it('renders discrete loading indicator on StoreFrontPage while fetching products', () => {
+    useStoreStore.setState({
+      products: [],
+      isLoading: true,
+      error: null,
+      loadProducts: vi.fn(),
+      loadCategories: vi.fn(),
+      loadFavorites: vi.fn(),
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/store']}>
+        <Routes>
+          <Route path="/store/*" element={<StoreContainer />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Buscando catálogo da loja...')).toBeInTheDocument();
+  });
+
+  it('renders products catalog when products are loaded successfully', () => {
+    useStoreStore.setState({
+      products: [
+        {
+          id: 'prod_1',
+          sellerId: 'seller_1',
+          title: 'Tema Cyberpunk Nuvio',
+          slug: 'tema-cyberpunk',
+          shortDescription: 'Tema neon para Nuvio',
+          price: 1500,
+          currency: 'BRL',
+          productType: 'digital',
+          status: 'published',
+          rating: 4.8,
+          salesCount: 12,
+          seller: { id: 'seller_1', storeName: 'CyberStudio' },
+        },
+      ],
+      favorites: new Set(),
+      isLoading: false,
+      error: null,
+      loadProducts: vi.fn(),
+      loadCategories: vi.fn(),
+      loadFavorites: vi.fn(),
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/store']}>
+        <Routes>
+          <Route path="/store/*" element={<StoreContainer />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Tema Cyberpunk Nuvio')).toBeInTheDocument();
+  });
+
+  it('renders filtered empty state with clear filters button when search returns no products', () => {
+    const setSearchMock = vi.fn();
+    const setSelectedCategoryMock = vi.fn();
+    const setSelectedProductTypeMock = vi.fn();
+
+    useStoreStore.setState({
+      products: [],
+      search: 'algoinexistente',
+      selectedCategory: null,
+      selectedProductType: null,
+      isLoading: false,
+      error: null,
+      setSearch: setSearchMock,
+      setSelectedCategory: setSelectedCategoryMock,
+      setSelectedProductType: setSelectedProductTypeMock,
+      loadProducts: vi.fn(),
+      loadCategories: vi.fn(),
+      loadFavorites: vi.fn(),
+    } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/store']}>
+        <Routes>
+          <Route path="/store/*" element={<StoreContainer />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Nenhum produto encontrado')).toBeInTheDocument();
+    const clearBtn = screen.getByRole('button', { name: /Limpar filtros/i });
+    expect(clearBtn).toBeInTheDocument();
+    fireEvent.click(clearBtn);
+    expect(setSearchMock).toHaveBeenCalledWith('');
+    expect(setSelectedCategoryMock).toHaveBeenCalledWith(null);
+    expect(setSelectedProductTypeMock).toHaveBeenCalledWith(null);
   });
 });

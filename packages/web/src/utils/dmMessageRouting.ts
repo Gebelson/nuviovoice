@@ -84,27 +84,33 @@ function recordLastMessage(origin: string, channelId: string, message: DmMessage
  * message and sorts by it.
  */
 
-function checkAndTriggerIncomingWink(origin: string, channelId: string, message: DmMessageWithUser): void {
+export function checkAndTriggerIncomingWink(origin: string, channelId: string, message: DmMessageWithUser): boolean {
   // Do not play incoming animation for messages written by self (sender already played local replay on send)
-  if (isOwnMessage(origin, message)) return;
+  if (isOwnMessage(origin, message)) return false;
 
   const winkInfo = isWinkContent(message.content);
-  if (!winkInfo.isWink || !winkInfo.winkId) return;
+  if (!winkInfo.isWink || !winkInfo.winkId) return false;
 
   // Confirm that wink exists in official catalog
   const officialWink = getOfficialWink(winkInfo.winkId);
-  if (!officialWink) return;
+  if (!officialWink) return false;
 
   // Deduplicate by message ID + origin to prevent duplicate animations on reconnects or federated deliveries
   const dedupeKey = `${origin || 'home'}:${message.id}`;
-  if (useWinkStore.getState().hasProcessedMessage(dedupeKey)) return;
+  if (useWinkStore.getState().hasProcessedMessage(dedupeKey)) return false;
   useWinkStore.getState().markMessageProcessed(dedupeKey);
 
   // Recency check: only automatically trigger animations for messages delivered within the last 60 seconds.
   // Historical messages loaded during scrolling or initialization must never auto-trigger animations.
   const now = Date.now();
   const msgTime = message.createdAt || now;
-  if (now - msgTime > 60_000) return;
+  if (now - msgTime > 60_000) return false;
+
+  // Contact mute check: if the sender is muted for Winks, do not automatically trigger or queue
+  const senderId = message.userId;
+  if (senderId && useWinkStore.getState().isContactMuted(senderId)) {
+    return false;
+  }
 
   // Global trigger: Winks play over ANY active view in Nuvio (store, bots, spaces, calls, settings)
   // without restricting to currentChannelId
@@ -114,12 +120,15 @@ function checkAndTriggerIncomingWink(origin: string, channelId: string, message:
     useWinkStore.getState().queueWink({
       winkId: winkInfo.winkId,
       senderName,
+      senderId,
       channelId,
       isLocalReplay: false,
       messageId: message.id,
       origin,
     });
+    return true;
   }
+  return false;
 }
 
 function deliverToConversation(origin: string, primaryId: string, message: DmMessageWithUser): void {

@@ -16,7 +16,7 @@ export default defineConfig({
       // 'prompt' keeps a new build waiting until SwAutoUpdate applies it, so an
       // update never reloads the page out from under a live voice session.
       registerType: 'prompt',
-      includeAssets: ['icons/favicon-32.png', 'icons/favicon-16.png', 'icons/apple-touch-icon.png'],
+      includeAssets: ['icons/favicon-32.png', 'icons/favicon-16.png', 'icons/apple-touch-icon.png', 'favicon.ico'],
       manifest: {
         id: '/',
         name: 'Nuvio',
@@ -35,10 +35,10 @@ export default defineConfig({
           { src: '/icons/icon-96.png', sizes: '96x96', type: 'image/png' },
           { src: '/icons/icon-128.png', sizes: '128x128', type: 'image/png' },
           { src: '/icons/icon-144.png', sizes: '144x144', type: 'image/png' },
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-256.png', sizes: '256x256', type: 'image/png' },
           { src: '/icons/icon-384.png', sizes: '384x384', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
           { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           { src: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
@@ -52,7 +52,7 @@ export default defineConfig({
         // before that flow, which public/sw-rollover.js handles.
         // clientsClaim only matters on the first install, where there is no
         // older worker to replace.
-        importScripts: ['sw-rollover.js'],
+        importScripts: ['sw-rollover.js', 'sw-push.js'],
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         // The precached file types; the CI size check reads the same list.

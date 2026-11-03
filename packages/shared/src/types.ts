@@ -1,8 +1,12 @@
+import type { WinkContactMute } from './winks.js';
 import type { ErrorCode, ErrorDetails } from './errors.js';
-import type { VerificationInfo } from './verifications.js';
+import type { VerificationInfo, VerificationStatus, VerificationCategory } from './verifications.js';
 export * from './verifications.js';
 export * from './liveStreams.js';
 import type { LiveStreamInfo } from './liveStreams.js';
+export * from './opportunities.js';
+import type { OpportunityApplicationMessage } from './opportunities.js';
+
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -33,6 +37,8 @@ export interface User {
   friendDiscoveryVisibility?: FriendDiscoveryVisibility;
   receiveWinks?: boolean;
   verification?: VerificationInfo | null;
+  verificationStatus?: VerificationStatus;
+  verificationCategory?: VerificationCategory | null;
   profileUpdatedAt?: number;
   createdAt: number;
   homeInstance: string | null;
@@ -1035,7 +1041,17 @@ export type ServerEvent =
   | { type: 'space_access_changed'; spaceId: string }
   | { type: 'live_stream_started'; stream: LiveStreamInfo }
   | { type: 'live_stream_updated'; stream: LiveStreamInfo }
-  | { type: 'live_stream_ended'; channelId: string; userId: string };
+  | { type: 'live_stream_ended'; channelId: string; userId: string }
+  | { type: 'wink_mute_updated'; targetUserId: string; mute: WinkContactMute }
+  | { type: 'wink_mute_removed'; targetUserId: string }
+  | { type: 'wink_favorite_added'; winkId: string }
+  | { type: 'wink_favorite_removed'; winkId: string }
+  | { type: 'wink_recent_added'; winkId: string }
+  | { type: 'opportunity_application_created'; applicationId: string; opportunityId: string; opportunityTitle: string; applicantId: string; createdAt: number }
+  | { type: 'opportunity_application_updated'; applicationId: string; status: string; rejectedAt?: number | null }
+  | { type: 'opportunity_chat_unlocked'; applicationId: string; unlockedAt: number }
+  | { type: 'opportunity_application_message_created'; message: OpportunityApplicationMessage }
+  | { type: 'opportunity_negotiation_updated'; negotiationId: string; applicationId: string; status: string; version?: number };
 
 // ─── API Request/Response Types ─────────────────────────────────────────────
 
@@ -2458,6 +2474,7 @@ export interface SoundpadPlayEvent {
 
 // ─── Winks ──────────────────────────────────────────────────────────────────
 export * from './winks.js';
+
 
 
 // ─── Security Center & Authority Cooperation ─────────────────────────────────

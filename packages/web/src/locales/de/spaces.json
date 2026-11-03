@@ -585,7 +585,8 @@
       "leaveGroupConfirm": {
         "title": "Gruppe verlassen",
         "description": "Willst du die Gruppe wirklich verlassen? Du kommst nur zurück, wenn dich jemand wieder hinzufügt."
-      }
+      },
+      "opportunities": "Chancen"
     },
     "userArea": {
       "inputDevice": "Eingabegerät",

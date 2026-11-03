@@ -88,7 +88,7 @@ const EXT_MIMETYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime',
   '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav',
-  '.flac': 'audio/flac', '.aac': 'audio/aac', '.opus': 'audio/opus',
+  '.flac': 'audio/flac', '.aac': 'audio/aac', '.opus': 'audio/opus', '.weba': 'audio/webm',
   '.pdf': 'application/pdf',
 };
 
@@ -252,7 +252,14 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       // before media processing because thumbnails are written there.
       fs.mkdirSync(config.uploadDir, { recursive: true });
 
-      const mimetype = mimetypeFromFilename(originalName);
+      let mimetype = (meta.filetype && typeof meta.filetype === 'string' && meta.filetype.trim())
+        ? meta.filetype.trim()
+        : mimetypeFromFilename(originalName);
+
+      // Audio recorded via MediaRecorder with .webm container is audio/webm
+      if (originalName.startsWith('voice-message') && mimetype.startsWith('video/')) {
+        mimetype = mimetype.replace(/^video\//, 'audio/');
+      }
 
       // ── Media processing (on the still-staging file in .tus/) ────────────
       // Wrapped defensively: any failure here must not abort the upload —

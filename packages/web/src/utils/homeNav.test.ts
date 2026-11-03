@@ -14,6 +14,15 @@ describe('activeHomeNavItem', () => {
     expect(activeHomeNavItem('/download', null)).toBe('download');
   });
 
+  it('selects Store on /store', () => {
+    expect(activeHomeNavItem('/store', null)).toBe('store');
+  });
+
+  it('selects Opportunities on /opportunities', () => {
+    expect(activeHomeNavItem('/opportunities', null)).toBe('opportunities');
+    expect(activeHomeNavItem('/opportunities/jobs', null)).toBe('opportunities');
+  });
+
   it('selects Friends on the DM home with no channel open', () => {
     expect(activeHomeNavItem('/channels/@me', null)).toBe('friends');
   });

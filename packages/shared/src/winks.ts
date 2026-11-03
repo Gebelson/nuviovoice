@@ -69,6 +69,41 @@ export interface WinkMessagePayload {
 export interface SendWinkRequest {
   winkId: string;
 }
+export type WinkMuteDuration = '1h' | '8h' | '24h' | 'indefinite';
+
+export interface WinkContactMute {
+  id: string;
+  userId: string;
+  targetUserId: string;
+  muteType: 'temporary' | 'indefinite';
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number | null;
+  user?: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatar: string | null;
+  } | null;
+  targetUser?: {
+    id: string;
+    username: string;
+    displayName: string | null;
+    avatar: string | null;
+  } | null;
+}
+
+export interface SetWinkMuteRequest {
+  duration: WinkMuteDuration;
+}
+
+export interface WinkFavoritesResponse {
+  favorites: string[];
+}
+
+export interface WinkRecentsResponse {
+  recents: string[];
+}
 
 /**
  * The official Winks catalog of Nuvio.

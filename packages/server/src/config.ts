@@ -260,6 +260,12 @@ export const config = {
     apiSecret: envOptional('LIVEKIT_API_SECRET'),
   },
 
+  vapid: {
+    publicKey: envOptional('VAPID_PUBLIC_KEY'),
+    privateKey: envOptional('VAPID_PRIVATE_KEY'),
+    subject: envOptional('VAPID_SUBJECT') ?? 'mailto:admin@nuvio.chat',
+  },
+
   federation: {
     /**
      * Allow an origin that a stranger asserted to resolve to a private address.

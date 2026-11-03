@@ -812,7 +812,11 @@
       "ignoreAction": "Ignore",
       "unignoreAction": "Unignore",
       "blockedEmpty": "You have not blocked any accounts.",
-      "ignoredEmpty": "No accounts are currently on your ignore list."
+      "ignoredEmpty": "No accounts are currently on your ignore list.",
+      "mutedWinksHeading": "Muted Winks",
+      "mutedWinksDescription": "Contacts whose Wink animations and sounds will not play automatically.",
+      "mutedWinksEmpty": "No contacts with muted Winks at this time.",
+      "unmuteWinksAction": "Unmute Winks"
     }
   },
   "notifications": {
@@ -860,6 +864,16 @@
         "all": "Across all conversations (DMs and spaces)",
         "dmsAndMentions": "Only in direct messages and direct mentions",
         "none": "Mute all reaction notifications"
+      },
+      "winksHeading": "Wink Notifications",
+      "winksDescription": "Configure notifications and alerts when receiving special Wink animations.",
+      "winks": {
+        "title": "Wink notifications",
+        "description": "Show desktop and mobile notifications when receiving a Wink."
+      },
+      "winksInBackground": {
+        "title": "Notify when Nuvio is in background",
+        "description": "Receive notifications when the app is minimized, in system tray, or in another window."
       }
     },
     "sounds": {
@@ -896,9 +910,18 @@
         "action": "Configure voice & video"
       },
       "winks": {
-        "title": "Wink sounds",
-        "description": "Plays audio and sound effects for incoming Wink animations."
-      }
+        "title": "Play Wink sounds",
+        "description": "Plays audio and sound effects synchronized with incoming Wink animations."
+      },
+      "winksInBackground": {
+        "title": "Allow Wink sounds in background",
+        "description": "Plays audio even when Nuvio is in background or minimized."
+      },
+      "winksInCall": {
+        "title": "Play Wink sounds during calls",
+        "description": "Allows Wink sounds to play during voice calls with audio ducking applied."
+      },
+      "winksVolumeSliderLabel": "Wink sound volume"
     },
     "badges": {
       "heading": "Unread Badges & Counts",

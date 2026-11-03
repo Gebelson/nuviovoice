@@ -28,6 +28,8 @@ import { useFederationStore } from '../stores/federationStore';
 import { notePendingOriginReady } from '../stores/pendingMessageRehydrate';
 import { useNotificationSettingsStore } from '../stores/notificationSettingsStore';
 import { useBotStore } from '../stores/botStore';
+import { useOpportunityStore } from '../stores/opportunityStore';
+import { useWinkStore } from '../stores/winkStore';
 import { useLiveStreamStore } from '../stores/liveStreamStore';
 import { detectClientKind } from '../platform/clientKind';
 import { ConnectionState as LiveKitConnectionState } from 'livekit-client';
@@ -612,6 +614,9 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
 
       // Populate rejected peer origins for DM member indicators
       if (isHome) {
+        void useWinkStore.getState().fetchFavorites();
+        void useWinkStore.getState().fetchRecents();
+        void useWinkStore.getState().fetchMutes();
         rejectedPeerOrigins.clear();
         if (Array.isArray(event.rejectedPeerOrigins)) {
           for (const o of event.rejectedPeerOrigins) {
@@ -1023,6 +1028,48 @@ function handleEvent(origin: string, event: ServerEvent, readyAlreadyDelivered =
     case 'dm_history_cleared':
       useChatStore.getState().clearChannelMessages(event.dmChannelId);
       break;
+
+    case 'wink_mute_updated': {
+      useWinkStore.setState((s) => ({
+        contactMutes: {
+          ...s.contactMutes,
+          [event.targetUserId]: event.mute,
+        },
+      }));
+      break;
+    }
+
+    case 'wink_mute_removed': {
+      useWinkStore.setState((s) => {
+        const next = { ...s.contactMutes };
+        delete next[event.targetUserId];
+        return { contactMutes: next };
+      });
+      break;
+    }
+
+    case 'wink_favorite_added': {
+      useWinkStore.setState((s) => ({
+        favoriteWinkIds: s.favoriteWinkIds.includes(event.winkId)
+          ? s.favoriteWinkIds
+          : [...s.favoriteWinkIds, event.winkId],
+      }));
+      break;
+    }
+
+    case 'wink_favorite_removed': {
+      useWinkStore.setState((s) => ({
+        favoriteWinkIds: s.favoriteWinkIds.filter((id) => id !== event.winkId),
+      }));
+      break;
+    }
+
+    case 'wink_recent_added': {
+      useWinkStore.setState((s) => ({
+        recentWinkIds: [event.winkId, ...s.recentWinkIds.filter((id) => id !== event.winkId)].slice(0, 20),
+      }));
+      break;
+    }
 
     case 'embeds_resolved': {
       if (!isHome) {

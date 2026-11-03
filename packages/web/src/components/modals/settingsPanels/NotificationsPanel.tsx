@@ -67,6 +67,11 @@ export function NotificationsPanel({
   const soundIncomingCall = useUserPreferencesStore((s) => s.soundIncomingCall);
   const soundVoiceJoinLeave = useUserPreferencesStore((s) => s.soundVoiceJoinLeave);
   const winkPlayAudio = useWinkStore((s) => s.settings.playAudio);
+  const winkPlayAudioInBackground = useWinkStore((s) => s.settings.playAudioInBackground);
+  const winkPlayAudioInCall = useWinkStore((s) => s.settings.playAudioInCall);
+  const winkVolume = useWinkStore((s) => s.settings.volume);
+  const winkNotify = useWinkStore((s) => s.settings.notifyWinks);
+  const winkNotifyInBackground = useWinkStore((s) => s.settings.notifyWinksInBackground);
   const updateWinkSettings = useWinkStore((s) => s.updateSettings);
   const muteAllNotificationSounds = useUserPreferencesStore((s) => s.muteAllNotificationSounds);
 
@@ -222,6 +227,25 @@ export function NotificationsPanel({
               </select>
             </div>
           </SettingsCardSection>
+
+          <SettingsCardSection
+            heading={t('notifications.overview.winksHeading')}
+            description={t('notifications.overview.winksDescription')}
+          >
+            <SettingsToggleItem
+              heading={t('notifications.overview.winks.title')}
+              description={t('notifications.overview.winks.description')}
+              checked={winkNotify}
+              onChange={(val) => updateWinkSettings({ notifyWinks: val })}
+            />
+            <SettingsToggleItem
+              heading={t('notifications.overview.winksInBackground.title')}
+              description={t('notifications.overview.winksInBackground.description')}
+              checked={winkNotifyInBackground}
+              disabled={!winkNotify}
+              onChange={(val) => updateWinkSettings({ notifyWinksInBackground: val })}
+            />
+          </SettingsCardSection>
         </div>
       )}
 
@@ -314,6 +338,39 @@ export function NotificationsPanel({
               disabled={muteAllNotificationSounds}
               onChange={(val) => updateWinkSettings({ playAudio: val })}
             />
+            <SettingsToggleItem
+              heading={t('notifications.sounds.winksInBackground.title')}
+              description={t('notifications.sounds.winksInBackground.description')}
+              checked={winkPlayAudioInBackground}
+              disabled={muteAllNotificationSounds || !winkPlayAudio}
+              onChange={(val) => updateWinkSettings({ playAudioInBackground: val })}
+            />
+            <SettingsToggleItem
+              heading={t('notifications.sounds.winksInCall.title')}
+              description={t('notifications.sounds.winksInCall.description')}
+              checked={winkPlayAudioInCall}
+              disabled={muteAllNotificationSounds || !winkPlayAudio}
+              onChange={(val) => updateWinkSettings({ playAudioInCall: val })}
+            />
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-txt-primary">
+                  {t('notifications.sounds.winksVolumeSliderLabel')}
+                </span>
+                <span className="text-xs text-txt-tertiary tabular-nums">
+                  {winkVolume}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                disabled={muteAllNotificationSounds || !winkPlayAudio}
+                value={winkVolume}
+                onChange={(e) => updateWinkSettings({ volume: Number(e.target.value) })}
+                className="w-full accent-accent-mint cursor-pointer disabled:opacity-40"
+              />
+            </div>
           </SettingsCardSection>
 
           {onNavigateToSection && (

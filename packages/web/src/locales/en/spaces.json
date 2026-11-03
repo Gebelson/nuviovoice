@@ -585,7 +585,8 @@
       "leaveGroupConfirm": {
         "title": "Leave Group DM",
         "description": "Are you sure you want to leave? You won't be able to rejoin unless someone adds you back."
-      }
+      },
+      "opportunities": "Opportunities"
     },
     "userArea": {
       "inputDevice": "Input Device",

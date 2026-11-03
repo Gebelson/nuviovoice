@@ -5,6 +5,15 @@ import { useAuthStore } from '../../stores/authStore';
 import { resolveUploadUrl } from '../../utils/assetUrls';
 import { BotInstallModal } from './BotInstallModal';
 import { StoreNavTabs } from '../store/StoreNavTabs';
+import {
+  MarketplaceHero,
+  MarketplaceSearchBar,
+  MarketplaceCategorySelector,
+  MarketplaceSegmentedControl,
+  MarketplaceEmptyState,
+  MarketplaceErrorState,
+  MarketplaceLoadingState,
+} from '../marketplace';
 import type { Bot } from '@concord/shared';
 
 export function BotCatalogPage() {
@@ -35,262 +44,135 @@ export function BotCatalogPage() {
     void loadBots();
   }, []);
 
+  const hasActiveFilters = Boolean(search.trim() || selectedCategory);
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setSelectedCategory(null);
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-chat overflow-y-auto no-scrollbar text-txt-primary">
       {/* Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-indigo-900/30 via-surface-panel to-surface-chat border-b border-white/10 px-6 py-10 md:py-14">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-primary/20 text-accent-primary border border-accent-primary/30 text-xs font-bold uppercase tracking-wider mb-3">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect width="18" height="18" x="3" y="3" rx="2" />
-                  <path d="M9 3v18M3 9h18" />
-                </svg>
-                Biblioteca de Bots & Aplicações
-              </div>
-              <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                Biblioteca de Bots
-              </h1>
-              <p className="text-sm md:text-base text-txt-secondary mt-1 max-w-xl">
-                Automatize tarefas, modere comunidades, gerencie músicas e integre
-                ferramentas poderosas com a biblioteca oficial do Nuvio.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={() => navigate('/developers')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/20"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="16" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-                Publicar meu bot
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/developers')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/10 text-white text-xs font-semibold transition-all shadow-md backdrop-blur-md"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" />
-                </svg>
-                Portal do Desenvolvedor
-              </button>
-            </div>
-          </div>
-
-          {/* Main Store Switcher: Produtos | Bots */}
-          <div>
-            <StoreNavTabs />
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative max-w-2xl">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pesquise bots por nome, comandos (ex: /limpar), ou tags (ex: moderação, xp)..."
-              className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-surface-panel/80 border border-white/10 text-white placeholder:text-txt-muted text-sm shadow-xl focus:outline-none focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20 backdrop-blur-xl transition-all"
-            />
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-txt-muted pointer-events-none"
+      <MarketplaceHero
+        badgeIcon={
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <rect width="18" height="18" x="3" y="3" rx="2" />
+            <path d="M9 3v18M3 9h18" />
+          </svg>
+        }
+        badgeText="Biblioteca de Bots & Aplicações"
+        title="Biblioteca de Bots"
+        description="Automatize tarefas, modere comunidades, gerencie músicas e integre ferramentas poderosas com a biblioteca oficial do Nuvio."
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => navigate('/developers')}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/20"
             >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-txt-muted hover:text-white"
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
               >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              Publicar meu bot
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/developers')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-xs font-bold transition-colors"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" />
+              </svg>
+              Portal do Desenvolvedor
+            </button>
+          </>
+        }
+        navTabs={<StoreNavTabs />}
+        searchBar={
+          <MarketplaceSearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Pesquise bots por nome, comandos (ex: /limpar), ou tags (ex: moderação, xp)..."
+          />
+        }
+      />
 
       {/* Main Content Area */}
-      <div className="max-w-6xl mx-auto w-full px-6 py-8 space-y-6 flex-1">
+      <div className="max-w-6xl mx-auto w-full px-6 py-8 space-y-6 flex-1 flex flex-col">
         {/* Category Pills Slider */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
-              selectedCategory === null
-                ? 'bg-accent-primary text-white border-accent-primary shadow-md'
-                : 'bg-white/[0.04] text-txt-secondary border-white/5 hover:bg-white/[0.08] hover:text-white'
-            }`}
-          >
-            Todos os Bots
-          </button>
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat.slug;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(isSelected ? null : cat.slug)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-accent-primary text-white border-accent-primary shadow-md'
-                    : 'bg-white/[0.04] text-txt-secondary border-white/5 hover:bg-white/[0.08] hover:text-white'
-                }`}
-              >
-                <span>{cat.name}</span>
-              </button>
-            );
-          })}
-        </div>
+        <MarketplaceCategorySelector
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          allLabel="Todos os Bots"
+        />
 
         {/* Sort and Filters Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-          <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/5">
-            <button
-              type="button"
-              onClick={() => setSelectedSort('featured')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedSort === 'featured'
-                  ? 'bg-accent-primary text-white shadow-sm'
-                  : 'text-txt-muted hover:text-white'
-              }`}
-            >
-              Destaques
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedSort('popular')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedSort === 'popular'
-                  ? 'bg-accent-primary text-white shadow-sm'
-                  : 'text-txt-muted hover:text-white'
-              }`}
-            >
-              Mais Utilizados
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedSort('top_rated')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedSort === 'top_rated'
-                  ? 'bg-accent-primary text-white shadow-sm'
-                  : 'text-txt-muted hover:text-white'
-              }`}
-            >
-              Mais Bem Avaliados
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedSort('newest')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                selectedSort === 'newest'
-                  ? 'bg-accent-primary text-white shadow-sm'
-                  : 'text-txt-muted hover:text-white'
-              }`}
-            >
-              Novidades
-            </button>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-hard pb-4">
+          <MarketplaceSegmentedControl
+            options={[
+              { id: 'featured', label: 'Destaques' },
+              { id: 'popular', label: 'Mais Utilizados' },
+              { id: 'top_rated', label: 'Mais Bem Avaliados' },
+              { id: 'newest', label: 'Novidades' },
+            ]}
+            selectedId={selectedSort}
+            onSelect={(id) => setSelectedSort(id as any)}
+          />
 
-          <div className="text-xs text-txt-muted">
+          <div className="text-xs text-txt-muted font-medium">
             {total} {total === 1 ? 'bot disponível' : 'bots disponíveis'}
           </div>
         </div>
 
-        {/* Bots Grid */}
+        {/* Content States */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="h-64 rounded-2xl bg-surface-panel/40 border border-white/5 animate-pulse"
-              />
-            ))}
-          </div>
+          <MarketplaceLoadingState message="Buscando biblioteca de bots..." />
         ) : error ? (
-          <div className="text-center py-16 px-4 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-400 mx-auto">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-bold text-white">Falha ao carregar bots</h3>
-            <p className="text-xs text-txt-secondary max-w-sm mx-auto">{error}</p>
-            <button
-              onClick={() => void loadBots()}
-              className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-transform active:scale-95 shadow-md"
-            >
-              Tentar novamente
-            </button>
-          </div>
+          <MarketplaceErrorState
+            title="Falha ao carregar bots"
+            error={error}
+            onRetry={() => void loadBots()}
+          />
         ) : bots.length === 0 ? (
-          <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] space-y-3">
-            <div className="text-4xl">🤖</div>
-            <h3 className="text-lg font-bold text-white">
-              {search || selectedCategory
-                ? 'Nenhum bot encontrado'
-                : 'Nenhum bot disponível no momento.'}
-            </h3>
-            <p className="text-sm text-txt-muted max-w-sm mx-auto">
-              {search || selectedCategory
-                ? 'Tente buscar por outros termos ou explore outras categorias.'
-                : 'Seja o primeiro a publicar um bot oficial ou comunitário para o Nuvio.'}
-            </p>
-            {!search && !selectedCategory && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/developers')}
-                  className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-md inline-flex items-center gap-2"
-                >
-                  Publicar meu bot
-                </button>
-              </div>
-            )}
-          </div>
+          <MarketplaceEmptyState
+            hasFilters={hasActiveFilters}
+            emptyMessage="Nada por aqui ainda. Novidades estão chegando!"
+            filteredTitle="Nenhum bot encontrado"
+            filteredMessage="Não encontramos bots para os filtros ou busca aplicados. Tente buscar outros termos ou explorar outras categorias."
+            onClearFilters={handleClearFilters}
+            clearFiltersLabel="Limpar filtros"
+          />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {bots.map((bot) => (
               <div
                 key={bot.id}
-                className="group relative rounded-2xl bg-surface-panel/80 hover:bg-surface-panel border border-white/10 hover:border-white/20 transition-all duration-300 shadow-xl overflow-hidden flex flex-col backdrop-blur-xl"
+                className="group relative rounded-2xl bg-surface-panel/80 hover:bg-surface-panel border border-border-hard hover:border-accent-primary/40 transition-all duration-300 shadow-xl overflow-hidden flex flex-col backdrop-blur-xl"
               >
                 {/* Banner or Gradient Header */}
                 <div className="h-24 w-full bg-gradient-to-r from-accent-primary/25 via-indigo-600/20 to-purple-800/30 relative overflow-hidden">
@@ -303,7 +185,7 @@ export function BotCatalogPage() {
                   )}
                   <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
                     {bot.isOfficial && (
-                      <span className="px-2 py-0.5 rounded-full bg-accent-primary/90 text-white font-bold text-[10px] tracking-wide uppercase shadow-sm">
+                      <span className="px-2.5 py-0.5 rounded-full bg-accent-primary/90 text-white font-bold text-[10px] tracking-wide uppercase shadow-sm">
                         Oficial
                       </span>
                     )}
@@ -376,7 +258,7 @@ export function BotCatalogPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-txt-muted line-clamp-2 mt-1">
+                      <p className="text-xs text-txt-secondary line-clamp-2 mt-1 leading-relaxed">
                         {bot.tagline || bot.description || 'Nenhuma descrição informada.'}
                       </p>
                     </div>
@@ -387,7 +269,7 @@ export function BotCatalogPage() {
                         {bot.tags.slice(0, 3).map((tag, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-0.5 rounded-md bg-white/[0.04] text-[10px] text-txt-muted font-medium"
+                            className="px-2 py-0.5 rounded-md bg-surface-base text-[10px] text-txt-secondary font-medium border border-border-hard"
                           >
                             #{tag}
                           </span>
@@ -397,18 +279,18 @@ export function BotCatalogPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="pt-2 flex items-center gap-2 border-t border-white/5">
+                  <div className="pt-3 flex items-center gap-2 border-t border-border-hard">
                     <button
                       type="button"
                       onClick={() => navigate(`/store/bots/${bot.slug}`)}
-                      className="flex-1 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-txt-primary text-xs font-semibold transition-colors text-center"
+                      className="flex-1 py-2 rounded-xl bg-surface-base hover:bg-surface-channel border border-border-hard hover:border-accent-primary/30 text-white text-xs font-semibold transition-colors text-center"
                     >
                       Ver Detalhes
                     </button>
                     <button
                       type="button"
                       onClick={() => setInstallingBot(bot)}
-                      className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-semibold transition-colors shadow-md flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-transform active:scale-95 shadow-md shadow-accent-primary/20 flex items-center gap-1.5"
                     >
                       <svg
                         width="14"

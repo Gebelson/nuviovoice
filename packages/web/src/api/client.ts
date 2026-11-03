@@ -1,3 +1,15 @@
+import type {
+  OpportunityItem,
+  OpportunityFilters,
+  CreateOpportunityRequest,
+  ApplyOpportunityRequest,
+  NegotiateOpportunityRequest,
+  OpportunityReportRequest,
+  ProfessionalProfile,
+  OpportunityApplication,
+  OpportunityNegotiation,
+  OpportunityApplicationMessage,
+} from '@concord/shared';
 import type { PersonalSticker } from '@concord/shared/src/stickers';
 import type { LiveStreamInfo, StreamerChannel, LinkChannelInput } from '@concord/shared';
 import { isErrorCode, type ErrorCode, type ErrorDetails } from '@concord/shared/src/errors';
@@ -100,6 +112,8 @@ import type {
   SoundpadCategory,
   SoundScope,
   OfficialWink,
+  WinkContactMute,
+  WinkMuteDuration,
   WinkAdminMetrics,
   SafetyReport,
   SafetyReportCategory,
@@ -584,6 +598,21 @@ export class BackspaceApiClient {
     list: () => Promise<OfficialWink[]>;
     get: (id: string) => Promise<OfficialWink>;
     send: (channelId: string, winkId: string) => Promise<DmMessageWithUser>;
+    mutes: {
+      list: () => Promise<WinkContactMute[]>;
+      get: (targetUserId: string) => Promise<{ isMuted: boolean; mute: WinkContactMute | null }>;
+      set: (targetUserId: string, duration: WinkMuteDuration) => Promise<WinkContactMute>;
+      delete: (targetUserId: string) => Promise<{ success: boolean; targetUserId: string }>;
+    };
+    favorites: {
+      list: () => Promise<string[]>;
+      add: (winkId: string) => Promise<{ success: boolean; favorites: string[] }>;
+      remove: (winkId: string) => Promise<{ success: boolean; favorites: string[] }>;
+    };
+    recents: {
+      list: () => Promise<string[]>;
+      record: (winkId: string) => Promise<{ success: boolean; recents: string[] }>;
+    };
   };
 
   readonly adminWinks: {
@@ -591,7 +620,16 @@ export class BackspaceApiClient {
       winks: OfficialWink[];
       metrics: WinkAdminMetrics;
     }>;
-    upload: (formData: FormData) => Promise<OfficialWink>;
+    upload: (data: FormData | {
+      uploadId?: string;
+      name: string;
+      category?: string;
+      emoji?: string;
+      description?: string;
+      defaultVolume?: number;
+      autoPublish?: boolean;
+      allowDuplicate?: boolean;
+    }) => Promise<OfficialWink>;
     get: (id: string) => Promise<OfficialWink>;
     update: (id: string, data: Partial<OfficialWink>) => Promise<OfficialWink>;
     publish: (id: string) => Promise<OfficialWink>;
@@ -659,6 +697,45 @@ export class BackspaceApiClient {
     getVerifiedEntities: (entityType?: 'user' | 'space') => Promise<{ verified: Array<Record<string, unknown>> }>;
   };
 
+  readonly opportunities: {
+    list: (params?: OpportunityFilters) => Promise<{ opportunities: OpportunityItem[]; total: number; limit: number; offset: number }>;
+    get: (id: string) => Promise<{ opportunity: OpportunityItem }>;
+    create: (data: CreateOpportunityRequest) => Promise<{ opportunity: OpportunityItem }>;
+    update: (id: string, data: Partial<CreateOpportunityRequest>) => Promise<{ opportunity: OpportunityItem }>;
+    delete: (id: string) => Promise<{ success: boolean }>;
+    pause: (id: string) => Promise<{ success: boolean; status: string }>;
+    close: (id: string) => Promise<{ success: boolean; status: string }>;
+    favorite: (id: string) => Promise<{ isFavorite: boolean }>;
+    listFavorites: () => Promise<{ opportunities: OpportunityItem[] }>;
+    my: () => Promise<{ opportunities: OpportunityItem[] }>;
+    getMyProfile: () => Promise<{ profile: ProfessionalProfile }>;
+    updateMyProfile: (data: Partial<ProfessionalProfile>) => Promise<{ profile: ProfessionalProfile }>;
+    getUserProfile: (userId: string) => Promise<{ profile: ProfessionalProfile }>;
+    apply: (id: string, data: ApplyOpportunityRequest) => Promise<{ application: OpportunityApplication }>;
+    listApplications: (params?: { as?: 'applicant' | 'recipient'; status?: string; type?: string }) => Promise<{
+      applications: OpportunityApplication[];
+      counts: { received: number; sent: number; pending: number; unlocked: number };
+    }>;
+    getApplication: (id: string) => Promise<{
+      application: OpportunityApplication;
+      opportunity: OpportunityItem;
+      applicant: any;
+      applicantProfile: any;
+      messages: OpportunityApplicationMessage[];
+      negotiations: OpportunityNegotiation[];
+    }>;
+    acceptApplication: (id: string) => Promise<{ success: boolean; application: OpportunityApplication }>;
+    rejectApplication: (id: string) => Promise<{ success: boolean; application: OpportunityApplication }>;
+    withdrawApplication: (id: string) => Promise<{ success: boolean }>;
+    getMessages: (applicationId: string) => Promise<{ messages: OpportunityApplicationMessage[] }>;
+    sendMessage: (applicationId: string, content: string, attachments?: any[]) => Promise<{ message: OpportunityApplicationMessage }>;
+    negotiate: (applicationId: string, data: NegotiateOpportunityRequest) => Promise<{ negotiation: OpportunityNegotiation }>;
+    acceptNegotiation: (id: string) => Promise<{ success: boolean; negotiation: OpportunityNegotiation }>;
+    declineNegotiation: (id: string) => Promise<{ success: boolean; negotiation: OpportunityNegotiation }>;
+    report: (data: OpportunityReportRequest) => Promise<{ success: boolean; message: string }>;
+    upload: (formData: FormData) => Promise<{ url: string; filename: string; size: number; originalName: string; mimetype: string }>;
+  };
+
   readonly live: {
     getStreams: () => Promise<{ streams: LiveStreamInfo[] }>;
     getStream: (channelId: string) => Promise<{ stream: LiveStreamInfo }>;
@@ -705,7 +782,7 @@ export class BackspaceApiClient {
     ): Promise<Response> {
       const headers: Record<string, string> = {};
 
-      if (body) {
+      if (body && !(body instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
       }
 
@@ -716,8 +793,10 @@ export class BackspaceApiClient {
         }
       }
 
+      const isFormData = body instanceof FormData;
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutMs = isFormData ? 600_000 : 30_000;
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       let response: Response;
       try {
@@ -1480,6 +1559,21 @@ export class BackspaceApiClient {
       get: (id: string) => request<OfficialWink>('GET', `/winks/${encodeURIComponent(id)}`, undefined, false),
       send: (channelId: string, winkId: string) =>
         request<DmMessageWithUser>('POST', `/dm/${channelId}/winks`, { winkId }),
+      mutes: {
+        list: () => request<WinkContactMute[]>('GET', '/winks/mutes'),
+        get: (targetUserId: string) => request<{ isMuted: boolean; mute: WinkContactMute | null }>('GET', `/winks/mutes/${encodeURIComponent(targetUserId)}`),
+        set: (targetUserId: string, duration: WinkMuteDuration) => request<WinkContactMute>('PUT', `/winks/mutes/${encodeURIComponent(targetUserId)}`, { duration }),
+        delete: (targetUserId: string) => request<{ success: boolean; targetUserId: string }>('DELETE', `/winks/mutes/${encodeURIComponent(targetUserId)}`),
+      },
+      favorites: {
+        list: () => request<string[]>('GET', '/winks/favorites'),
+        add: (winkId: string) => request<{ success: boolean; favorites: string[] }>('PUT', `/winks/favorites/${encodeURIComponent(winkId)}`),
+        remove: (winkId: string) => request<{ success: boolean; favorites: string[] }>('DELETE', `/winks/favorites/${encodeURIComponent(winkId)}`),
+      },
+      recents: {
+        list: () => request<string[]>('GET', '/winks/recents'),
+        record: (winkId: string) => request<{ success: boolean; recents: string[] }>('POST', '/winks/recents', { winkId }),
+      },
     };
 
     this.adminWinks = {
@@ -1669,6 +1763,59 @@ export class BackspaceApiClient {
           verified: res.verified || res.items || [],
         };
       },
+    };
+
+    this.opportunities = {
+      list: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.search) qs.set('search', params.search);
+        if (params?.type) qs.set('type', params.type);
+        if (params?.category) qs.set('category', params.category);
+        if (params?.modality) qs.set('modality', params.modality);
+        if (params?.contractType) qs.set('contractType', params.contractType);
+        if (params?.experienceLevel) qs.set('experienceLevel', params.experienceLevel);
+        if (params?.salaryMin !== undefined) qs.set('salaryMin', String(params.salaryMin));
+        if (params?.salaryMax !== undefined) qs.set('salaryMax', String(params.salaryMax));
+        if (params?.location) qs.set('location', params.location);
+        if (params?.sort) qs.set('sort', params.sort);
+        if (params?.limit) qs.set('limit', String(params.limit));
+        if (params?.offset) qs.set('offset', String(params.offset));
+        const q = qs.toString();
+        return request('GET', `/opportunities${q ? `?${q}` : ''}`, undefined, false);
+      },
+      get: (id) => request('GET', `/opportunities/${encodeURIComponent(id)}`, undefined, false),
+      create: (data) => request('POST', '/opportunities', data),
+      update: (id, data) => request('PUT', `/opportunities/${encodeURIComponent(id)}`, data),
+      delete: (id) => request('DELETE', `/opportunities/${encodeURIComponent(id)}`),
+      pause: (id) => request('POST', `/opportunities/${encodeURIComponent(id)}/pause`),
+      close: (id) => request('POST', `/opportunities/${encodeURIComponent(id)}/close`),
+      favorite: (id) => request('POST', `/opportunities/${encodeURIComponent(id)}/favorite`),
+      listFavorites: () => request('GET', '/opportunities/favorites'),
+      my: () => request('GET', '/opportunities/my'),
+      getMyProfile: () => request('GET', '/opportunities/profile/me'),
+      updateMyProfile: (data) => request('PUT', '/opportunities/profile/me', data),
+      getUserProfile: (userId) => request('GET', `/opportunities/profile/${encodeURIComponent(userId)}`, undefined, false),
+      apply: (id, data) => request('POST', `/opportunities/${encodeURIComponent(id)}/apply`, data),
+      listApplications: (params) => {
+        const qs = new URLSearchParams();
+        if (params?.as) qs.set('as', params.as);
+        if (params?.status) qs.set('status', params.status);
+        if (params?.type) qs.set('type', params.type);
+        const q = qs.toString();
+        return request('GET', `/opportunities/applications${q ? `?${q}` : ''}`);
+      },
+      getApplication: (id) => request('GET', `/opportunities/applications/${encodeURIComponent(id)}`),
+      acceptApplication: (id) => request('POST', `/opportunities/applications/${encodeURIComponent(id)}/accept`),
+      rejectApplication: (id) => request('POST', `/opportunities/applications/${encodeURIComponent(id)}/reject`),
+      withdrawApplication: (id) => request('POST', `/opportunities/applications/${encodeURIComponent(id)}/withdraw`),
+      getMessages: (applicationId) => request('GET', `/opportunities/applications/${encodeURIComponent(applicationId)}/messages`),
+      sendMessage: (applicationId, content, attachments) =>
+        request('POST', `/opportunities/applications/${encodeURIComponent(applicationId)}/messages`, { content, attachments }),
+      negotiate: (applicationId, data) => request('POST', `/opportunities/applications/${encodeURIComponent(applicationId)}/negotiate`, data),
+      acceptNegotiation: (id) => request('POST', `/opportunities/negotiations/${encodeURIComponent(id)}/accept`),
+      declineNegotiation: (id) => request('POST', `/opportunities/negotiations/${encodeURIComponent(id)}/decline`),
+      report: (data) => request('POST', '/opportunities/report', data),
+      upload: (formData) => request('POST', '/opportunities/upload', formData),
     };
 
     this.live = {

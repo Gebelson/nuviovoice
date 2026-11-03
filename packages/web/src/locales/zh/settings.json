@@ -811,7 +811,11 @@
       "ignoreAction": "设为忽略",
       "unignoreAction": "取消忽略",
       "blockedEmpty": "当前没有任何被拉黑的用户。",
-      "ignoredEmpty": "当前没有任何被忽略的用户。"
+      "ignoredEmpty": "当前没有任何被忽略的用户。",
+      "mutedWinksHeading": "已静音的 Winks",
+      "mutedWinksDescription": "不会自动播放其 Wink 动画和声音的联系人。",
+      "mutedWinksEmpty": "当前没有被静音 Wink 的联系人。",
+      "unmuteWinksAction": "恢复 Winks"
     }
   },
   "notifications": {
@@ -859,6 +863,16 @@
         "all": "所有对话（包括私信和空间频道）",
         "dmsAndMentions": "仅在私信以及包含直接提及我的消息中",
         "none": "完全不接收表情回应通知"
+      },
+      "winksHeading": "Wink 动画通知",
+      "winksDescription": "配置接收到特殊 Wink 动画时的通知与提醒偏好。",
+      "winks": {
+        "title": "Wink 通知",
+        "description": "收到 Wink 时显示桌面与移动端通知。"
+      },
+      "winksInBackground": {
+        "title": "Nuvio 处于后台时通知",
+        "description": "应用最小化、置于系统托盘或处于其他窗口时接收通知。"
       }
     },
     "sounds": {
@@ -895,9 +909,18 @@
         "action": "前往语音与视频设置"
       },
       "winks": {
-        "title": "Wink 音效",
-        "description": "播放接收到的 Wink 动画音效与伴随音频。"
-      }
+        "title": "播放 Wink 音效",
+        "description": "与收到的 Wink 动画同步播放音效与伴随音频。"
+      },
+      "winksInBackground": {
+        "title": "允许在后台播放 Wink 音效",
+        "description": "当 Nuvio 最小化或处于后台时依然播放音频。"
+      },
+      "winksInCall": {
+        "title": "通话期间播放 Wink 音效",
+        "description": "允许在语音通话期间播放 Wink 音效并自动压低音量。"
+      },
+      "winksVolumeSliderLabel": "Wink 音效音量"
     },
     "badges": {
       "heading": "视觉徽标与未读指示器",

@@ -5,18 +5,23 @@ import { AdminWinksPanel } from './AdminWinksPanel';
 import { api } from '../../../api/client';
 import type { OfficialWink, WinkAdminMetrics } from '@concord/shared/src/winks';
 
-vi.mock('../../../api/client', () => ({
-  api: {
-    adminWinks: {
-      list: vi.fn(),
-      upload: vi.fn(),
-      publish: vi.fn(),
-      unpublish: vi.fn(),
-      retry: vi.fn(),
-      delete: vi.fn(),
+vi.mock('../../../api/client', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      adminWinks: {
+        list: vi.fn(),
+        upload: vi.fn(),
+        publish: vi.fn(),
+        unpublish: vi.fn(),
+        retry: vi.fn(),
+        delete: vi.fn(),
+      },
     },
-  },
-}));
+  };
+});
 
 const mockMetrics: WinkAdminMetrics = {
   total: 7,

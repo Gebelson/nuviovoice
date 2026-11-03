@@ -29,6 +29,8 @@
     "./src/winks.js": "./src/winks.ts",
     "./src/verifications": "./src/verifications.ts",
     "./src/verifications.js": "./src/verifications.ts",
+    "./src/opportunities": "./src/opportunities.ts",
+    "./src/opportunities.js": "./src/opportunities.ts",
     "./src/liveStreams": "./src/liveStreams.ts",
     "./src/liveStreams.js": "./src/liveStreams.ts"
   },

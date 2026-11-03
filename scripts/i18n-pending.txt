@@ -22,6 +22,8 @@ packages/web/src/components/layout/MobileMembersScreen.tsx
 packages/web/src/components/live/DedicatedLiveStreamView.tsx
 packages/web/src/components/live/LiveStreamSidebarItem.tsx
 packages/web/src/components/live/PersistentLivePlayerRoot.tsx
+packages/web/src/components/marketplace/MarketplaceNavTabs.tsx
+packages/web/src/components/marketplace/MarketplaceSearchBar.tsx
 packages/web/src/components/modals/ReportMessageModal.tsx
 packages/web/src/components/modals/ReportProductModal.tsx
 packages/web/src/components/modals/ReportSpaceModal.tsx
@@ -38,6 +40,16 @@ packages/web/src/components/modals/settingsPanels/VerificationSection.tsx
 packages/web/src/components/modals/spaceSettingsPanels/AuditLogsPanel.tsx
 packages/web/src/components/modals/spaceSettingsPanels/IntegrationsPanel.tsx
 packages/web/src/components/modals/spaceSettingsPanels/SpaceVerificationSection.tsx
+packages/web/src/components/opportunities/ApplyModal.tsx
+packages/web/src/components/opportunities/CreateOpportunityModal.tsx
+packages/web/src/components/opportunities/GigCard.tsx
+packages/web/src/components/opportunities/NegotiationCard.tsx
+packages/web/src/components/opportunities/OpportunitiesContainer.tsx
+packages/web/src/components/opportunities/OpportunityCard.tsx
+packages/web/src/components/opportunities/OpportunityDetailModal.tsx
+packages/web/src/components/opportunities/ProfessionalProfileView.tsx
+packages/web/src/components/opportunities/ProposalThreadView.tsx
+packages/web/src/components/opportunities/ProposalsInbox.tsx
 packages/web/src/components/pwa/PwaInstallModal.tsx
 packages/web/src/components/store/ProductDetailPage.tsx
 packages/web/src/components/store/ProductEditorPage.tsx
@@ -45,7 +57,6 @@ packages/web/src/components/store/SellerDashboard.tsx
 packages/web/src/components/store/SellerProfilePage.tsx
 packages/web/src/components/store/StoreAdminQueue.tsx
 packages/web/src/components/store/StoreFrontPage.tsx
-packages/web/src/components/store/StoreNavTabs.tsx
 packages/web/src/components/store/VisualBlockRenderer.tsx
 packages/web/src/components/voice/SoundpadAddModal.tsx
 packages/web/src/components/voice/SoundpadPopover.tsx

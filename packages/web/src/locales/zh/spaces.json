@@ -577,7 +577,8 @@
       "leaveGroupConfirm": {
         "title": "退出群私信",
         "description": "确定要退出吗？除非有人重新将您拉入，否则您无法再次加入。"
-      }
+      },
+      "opportunities": "机会"
     },
     "userArea": {
       "inputDevice": "输入设备",

@@ -128,6 +128,22 @@ export function App() {
             }
           />
           <Route
+            path="/opportunities/*"
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/opportunities"
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/store/*"
             element={
               <ProtectedRoute>

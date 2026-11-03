@@ -8,13 +8,26 @@ import type { WinkStatus } from '@concord/shared/src/winks.js';
 
 const execFile = promisify(execFileCb);
 
+export function getWinksDir(): string {
+  return path.resolve(process.env.DATA_DIR || './data', 'winks');
+}
+export function getWinksOriginalDir(): string {
+  return path.join(getWinksDir(), 'original');
+}
+export function getWinksProcessedDir(): string {
+  return path.join(getWinksDir(), 'processed');
+}
+export function getWinksTempDir(): string {
+  return path.join(getWinksDir(), 'temp');
+}
+
 export const WINKS_DIR = path.resolve(process.env.DATA_DIR || './data', 'winks');
 export const WINKS_ORIGINAL_DIR = path.join(WINKS_DIR, 'original');
 export const WINKS_PROCESSED_DIR = path.join(WINKS_DIR, 'processed');
 export const WINKS_TEMP_DIR = path.join(WINKS_DIR, 'temp');
 
 export function ensureWinksDirectories(): void {
-  for (const dir of [WINKS_DIR, WINKS_ORIGINAL_DIR, WINKS_PROCESSED_DIR, WINKS_TEMP_DIR]) {
+  for (const dir of [getWinksDir(), getWinksOriginalDir(), getWinksProcessedDir(), getWinksTempDir()]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -43,7 +56,7 @@ export async function probeVideoFile(filePath: string): Promise<ProbeResult> {
   const { stdout: videoJson } = await execFile('ffprobe', [
     '-v', 'error',
     '-select_streams', 'v:0',
-    '-show_entries', 'stream=codec_name,pix_fmt,profile,width,height,r_frame_rate,duration',
+    '-show_entries', 'stream=codec_name,codec_tag_string,pix_fmt,profile,width,height,r_frame_rate,duration:stream_tags=alpha_mode',
     '-of', 'json',
     filePath,
   ], { timeout: probeTimeout });
@@ -83,8 +96,13 @@ export async function probeVideoFile(filePath: string): Promise<ProbeResult> {
 
   const pixFmt = (videoStream.pix_fmt || '').toLowerCase();
   const profile = (videoStream.profile || '').toLowerCase();
+  const codecTag = (videoStream.codec_tag_string || '').toLowerCase();
+  const codecName = (videoStream.codec_name || '').toLowerCase();
 
-  const hasAlpha = ALPHA_PIX_FMTS.some((fmt) => pixFmt.includes(fmt)) || profile.includes('4444');
+  const isProRes4444 = profile.includes('4444') || codecTag.includes('ap4h') || codecTag.includes('ap4x');
+  const isQtrle = codecName === 'qtrle' || codecTag.includes('rle');
+  const hasAlphaMode = videoStream.tags?.alpha_mode === '1' || videoStream.tags?.alpha_mode === 1;
+  const hasAlpha = ALPHA_PIX_FMTS.some((fmt) => pixFmt.includes(fmt)) || isProRes4444 || isQtrle || hasAlphaMode;
 
   const durStr = videoStream.duration || format.duration || '0';
   const durationSec = parseFloat(durStr);
@@ -154,9 +172,10 @@ export async function processWinkMedia(winkId: string): Promise<void> {
       audioCodec: probe.audioCodec,
     });
 
-    const webmFile = path.join(WINKS_PROCESSED_DIR, `${winkId}.webm`);
-    const mp4File = path.join(WINKS_PROCESSED_DIR, `${winkId}.mp4`);
-    const thumbFile = path.join(WINKS_PROCESSED_DIR, `${winkId}_thumb.webp`);
+    const processedDir = getWinksProcessedDir();
+    const webmFile = path.join(processedDir, `${winkId}.webm`);
+    const mp4File = path.join(processedDir, `${winkId}.mp4`);
+    const thumbFile = path.join(processedDir, `${winkId}_thumb.webp`);
 
     const convTimeout = 180_000; // 3 minutes timeout for conversion
 
@@ -175,7 +194,7 @@ export async function processWinkMedia(winkId: string): Promise<void> {
     }
 
     if (probe.hasAudio) {
-      webmArgs.push('-c:a', 'libopus', '-b:a', '128k');
+      webmArgs.push('-c:a', 'libopus', '-b:a', '128k', '-af', 'aresample=async=1');
     } else {
       webmArgs.push('-an');
     }
@@ -200,7 +219,7 @@ export async function processWinkMedia(winkId: string): Promise<void> {
     ];
 
     if (probe.hasAudio) {
-      mp4Args.push('-c:a', 'aac', '-b:a', '128k');
+      mp4Args.push('-c:a', 'aac', '-b:a', '128k', '-af', 'aresample=async=1');
     } else {
       mp4Args.push('-an');
     }

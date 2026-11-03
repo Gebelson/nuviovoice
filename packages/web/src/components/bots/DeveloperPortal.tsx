@@ -105,10 +105,10 @@ export function DeveloperPortal() {
   return (
     <div className="flex-1 flex flex-col h-full bg-surface-chat overflow-y-auto no-scrollbar text-txt-primary">
       {/* Top Header */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-purple-950/40 via-surface-panel to-surface-chat border-b border-white/10 px-6 py-10">
+      <div className="relative overflow-hidden bg-gradient-to-b from-accent-primary/15 via-surface-panel to-surface-chat border-b border-border-hard px-6 py-10 md:py-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-bold text-accent-primary uppercase tracking-wider">
+            <div className="flex items-center gap-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-primary/15 text-accent-primary border border-accent-primary/25 text-xs font-bold uppercase tracking-wider mb-2">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" />
               </svg>
@@ -124,14 +124,14 @@ export function DeveloperPortal() {
             <button
               type="button"
               onClick={() => navigate('/store/bots')}
-              className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-txt-secondary hover:text-white text-xs font-semibold transition-all border border-white/10"
+              className="px-4 py-2.5 rounded-xl bg-surface-panel hover:bg-surface-channel border border-border-hard text-white text-xs font-bold transition-colors"
             >
               Explorar Catálogo
             </button>
             <button
               type="button"
               onClick={() => setCreateModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-lg"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary hover:bg-accent-primary/90 text-white text-xs font-bold transition-all shadow-lg shadow-accent-primary/20"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M5 12h14M12 5v14" />
@@ -145,7 +145,7 @@ export function DeveloperPortal() {
       {/* Main List */}
       <div className="max-w-6xl mx-auto w-full px-6 py-8 space-y-6 flex-1">
         {myBots.length === 0 ? (
-          <div className="text-center py-20 px-4 rounded-3xl border border-dashed border-white/10 bg-white/[0.01] space-y-4">
+          <div className="text-center py-20 px-4 rounded-3xl border border-dashed border-border-hard bg-surface-panel/40 space-y-4">
             <div className="w-16 h-16 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 text-accent-primary mx-auto flex items-center justify-center text-3xl shadow-lg">
               🤖
             </div>
@@ -170,11 +170,11 @@ export function DeveloperPortal() {
               return (
                 <div
                   key={bot.id}
-                  className="p-6 rounded-2xl bg-surface-panel/70 border border-white/10 shadow-xl space-y-6 backdrop-blur-xl"
+                  className="p-6 rounded-2xl bg-surface-panel/70 border border-border-hard shadow-xl space-y-6 backdrop-blur-xl"
                 >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border-hard">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-surface-chat border border-white/10 overflow-hidden flex items-center justify-center font-bold text-xl shadow-md">
+                      <div className="w-14 h-14 rounded-2xl bg-surface-chat border border-border-hard overflow-hidden flex items-center justify-center font-bold text-xl shadow-md">
                         {bot.avatar ? (
                           <img
                             src={resolveUploadUrl(bot.avatar) ?? undefined}
@@ -194,7 +194,7 @@ export function DeveloperPortal() {
                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                 : bot.status === 'pending_review'
                                 ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                : 'bg-white/5 text-txt-muted border-white/10'
+                                : 'bg-surface-base text-txt-muted border-border-hard'
                             }`}
                           >
                             {bot.status === 'published'
@@ -222,14 +222,14 @@ export function DeveloperPortal() {
                       <button
                         type="button"
                         onClick={() => handleOpenStats(bot)}
-                        className="px-3.5 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-txt-secondary hover:text-white text-xs font-semibold transition-colors border border-white/5"
+                        className="px-3.5 py-1.5 rounded-xl bg-surface-base hover:bg-surface-channel text-txt-secondary hover:text-white text-xs font-semibold transition-colors border border-border-hard"
                       >
                         Estatísticas
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate(`/store/bots/editor/${bot.id}`)}
-                        className="px-3.5 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.12] text-white text-xs font-semibold transition-colors border border-white/10"
+                        className="px-3.5 py-1.5 rounded-xl bg-surface-channel hover:bg-white/[0.12] text-white text-xs font-semibold transition-colors border border-border-hard"
                       >
                         Editar Página
                       </button>
@@ -247,7 +247,7 @@ export function DeveloperPortal() {
 
                   {/* Token & Secrets Section */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 rounded-xl bg-surface-chat/60 border border-white/5 space-y-2">
+                    <div className="p-4 rounded-xl bg-surface-chat/60 border border-border-hard space-y-2">
                       <div className="flex items-center justify-between text-xs font-semibold text-txt-muted">
                         <span>Token do Bot (Nuvio Bot API)</span>
                         <div className="flex items-center gap-2">
@@ -272,12 +272,12 @@ export function DeveloperPortal() {
                           type={isRevealed ? 'text' : 'password'}
                           readOnly
                           value={bot.botToken || 'nbot_token_not_available'}
-                          className="flex-1 font-mono text-xs bg-black/40 border border-white/5 px-3 py-2 rounded-lg text-txt-secondary select-all"
+                          className="flex-1 font-mono text-xs bg-black/40 border border-border-hard px-3 py-2 rounded-lg text-txt-secondary select-all"
                         />
                         <button
                           type="button"
                           onClick={() => handleCopy(bot.botToken || '', bot.id)}
-                          className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors border border-white/10"
+                          className="px-3 py-2 rounded-lg bg-surface-base hover:bg-white/10 text-white text-xs font-semibold transition-colors border border-border-hard"
                         >
                           {copiedId === bot.id ? 'Copiado!' : 'Copiar'}
                         </button>
@@ -287,7 +287,7 @@ export function DeveloperPortal() {
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-xl bg-surface-chat/60 border border-white/5 space-y-2">
+                    <div className="p-4 rounded-xl bg-surface-chat/60 border border-border-hard space-y-2">
                       <div className="flex items-center justify-between text-xs font-semibold text-txt-muted">
                         <span>Segredo de Webhook (Assinatura HMAC)</span>
                       </div>
@@ -296,12 +296,12 @@ export function DeveloperPortal() {
                           type="password"
                           readOnly
                           value={bot.webhookSecret || 'whsec_secret_key'}
-                          className="flex-1 font-mono text-xs bg-black/40 border border-white/5 px-3 py-2 rounded-lg text-txt-secondary select-all"
+                          className="flex-1 font-mono text-xs bg-black/40 border border-border-hard px-3 py-2 rounded-lg text-txt-secondary select-all"
                         />
                         <button
                           type="button"
                           onClick={() => handleCopy(bot.webhookSecret || '', `wh_${bot.id}`)}
-                          className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-semibold transition-colors border border-white/10"
+                          className="px-3 py-2 rounded-lg bg-surface-base hover:bg-white/10 text-white text-xs font-semibold transition-colors border border-border-hard"
                         >
                           {copiedId === `wh_${bot.id}` ? 'Copiado!' : 'Copiar'}
                         </button>
@@ -321,8 +321,8 @@ export function DeveloperPortal() {
       {/* Create Bot Modal */}
       {createModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-md bg-surface-panel border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="w-full max-w-md bg-surface-panel border border-border-hard rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-border-hard pb-4">
               <h2 className="text-lg font-bold text-white">Criar Nova Aplicação / Bot</h2>
               <button
                 type="button"
@@ -342,7 +342,7 @@ export function DeveloperPortal() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Ex: Nuvio Sentinel, Welcome Bot..."
-                  className="w-full p-3 rounded-xl bg-surface-chat border border-white/10 text-white text-sm focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-chat border border-border-hard text-white text-sm focus:outline-none focus:border-accent-primary"
                 />
               </div>
 
@@ -353,7 +353,7 @@ export function DeveloperPortal() {
                   value={newTagline}
                   onChange={(e) => setNewTagline(e.target.value)}
                   placeholder="Ex: Moderação automática e segurança para o seu espaço"
-                  className="w-full p-3 rounded-xl bg-surface-chat border border-white/10 text-white text-xs focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-chat border border-border-hard text-white text-xs focus:outline-none focus:border-accent-primary"
                 />
               </div>
 
@@ -362,7 +362,7 @@ export function DeveloperPortal() {
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-surface-chat border border-white/10 text-white text-xs focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-chat border border-border-hard text-white text-xs focus:outline-none focus:border-accent-primary"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.slug}>
@@ -379,7 +379,7 @@ export function DeveloperPortal() {
                   value={newPrefix}
                   onChange={(e) => setNewPrefix(e.target.value)}
                   placeholder="/"
-                  className="w-full p-3 rounded-xl bg-surface-chat border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-chat border border-border-hard text-white text-xs font-mono focus:outline-none focus:border-accent-primary"
                 />
               </div>
 
@@ -390,7 +390,7 @@ export function DeveloperPortal() {
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="Descreva o propósito e as funções do bot..."
-                  className="w-full p-3 rounded-xl bg-surface-chat border border-white/10 text-white text-xs focus:outline-none focus:border-accent-primary"
+                  className="w-full p-3 rounded-xl bg-surface-chat border border-border-hard text-white text-xs focus:outline-none focus:border-accent-primary"
                 />
               </div>
 
@@ -418,8 +418,8 @@ export function DeveloperPortal() {
       {/* Stats Modal */}
       {activeStatsBot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-lg bg-surface-panel border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="w-full max-w-lg bg-surface-panel border border-border-hard rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between border-b border-border-hard pb-4">
               <h2 className="text-lg font-bold text-white">
                 Estatísticas: {activeStatsBot.name}
               </h2>
@@ -435,19 +435,19 @@ export function DeveloperPortal() {
             {statsData ? (
               <div className="space-y-4 text-xs">
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+                  <div className="p-3 rounded-xl bg-surface-base border border-border-hard text-center">
                     <div className="text-txt-muted">Instalações</div>
                     <div className="text-lg font-bold text-white mt-1">
                       {statsData.installCount}
                     </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+                  <div className="p-3 rounded-xl bg-surface-base border border-border-hard text-center">
                     <div className="text-txt-muted">Avaliação</div>
                     <div className="text-lg font-bold text-amber-400 mt-1">
                       ★ {statsData.ratingAverage?.toFixed(1) || '5.0'}
                     </div>
                   </div>
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center">
+                  <div className="p-3 rounded-xl bg-surface-base border border-border-hard text-center">
                     <div className="text-txt-muted">Avaliações</div>
                     <div className="text-lg font-bold text-white mt-1">
                       {statsData.ratingCount}
@@ -462,7 +462,7 @@ export function DeveloperPortal() {
                       {statsData.activeInstallations.map((inst: any, idx: number) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5"
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-surface-base border border-border-hard"
                         >
                           <div className="font-semibold text-white">
                             {inst.spaceName || 'Espaço Nuvio'}

@@ -11,6 +11,7 @@ import { TransferIndicator } from './TransferIndicator';
 import { isMine, userDisplayName } from '../../utils/identity';
 import { formatDmHeaderName, formatDmInputLabel, isDeletedPartnerDm } from '../../utils/dmFormatters';
 import { DmDeletedNotice } from '../chat/DmDeletedNotice';
+import { VerificationBadge } from '../ui/VerificationBadge';
 import { useCanonicalUserView } from '../../utils/userViewLookup';
 import { canStartDmCall, startDmCall, cancelOutgoingDmCall, isDmCallRunning, joinDmCall } from '../../utils/voiceActions';
 import { useDmViewer } from '../../hooks/useDmViewer';
@@ -123,10 +124,17 @@ export function MobileChatScreen({ params }: MobileChatScreenProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
         </button>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-1.5 min-w-0">
           <h1 className="text-sm font-semibold text-txt-primary truncate">
             {isDm ? channelName : `# ${channelName}`}
           </h1>
+          {isDm && !isGroup && canonicalMainOther?.verification?.status === 'verified' && (
+            <VerificationBadge
+              category={canonicalMainOther.verification.category}
+              status={canonicalMainOther.verification.status}
+              size="xs"
+            />
+          )}
         </div>
         <TransferIndicator />
         {/* DM call button. The 44px button is the tap target; what is drawn is

@@ -116,7 +116,7 @@ export function getVerificationExplanation(
       };
     case 'official':
       return {
-        title: 'Equipe oficial Nuvio',
+        title: 'Equipe Oficial Nuvio',
         description: 'Esta conta pertence a um membro autorizado da equipe do Nuvio.',
         badgeColor: 'purple',
         iconType: 'shield',

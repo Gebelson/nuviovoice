@@ -812,7 +812,11 @@
       "ignoreAction": "Ignorieren",
       "unignoreAction": "Nicht mehr ignorieren",
       "blockedEmpty": "Du hast derzeit keine Konten blockiert.",
-      "ignoredEmpty": "Keine Konten auf deiner Ignorieren-Liste."
+      "ignoredEmpty": "Keine Konten auf deiner Ignorieren-Liste.",
+      "mutedWinksHeading": "Stummgeschaltete Winks",
+      "mutedWinksDescription": "Kontakte, deren Wink-Animationen und Töne nicht automatisch abgespielt werden.",
+      "mutedWinksEmpty": "Derzeit keine Kontakte mit stummgeschalteten Winks.",
+      "unmuteWinksAction": "Winks wieder aktivieren"
     }
   },
   "notifications": {
@@ -860,6 +864,16 @@
         "all": "In allen Kanälen (DMs und Räume)",
         "dmsAndMentions": "Nur in Direktnachrichten und bei direkter Erwähnung",
         "none": "Keine Reaktionsmeldungen"
+      },
+      "winksHeading": "Wink-Benachrichtigungen",
+      "winksDescription": "Konfiguriere Benachrichtigungen bei eingehenden Wink-Animationen.",
+      "winks": {
+        "title": "Wink-Benachrichtigungen",
+        "description": "Benachrichtigungen auf Desktop und Mobilgeräten bei Winks anzeigen."
+      },
+      "winksInBackground": {
+        "title": "Benachrichtigen, wenn Nuvio im Hintergrund läuft",
+        "description": "Erhalte Benachrichtigungen, wenn die App minimiert oder im Hintergrund ist."
       }
     },
     "sounds": {
@@ -896,9 +910,18 @@
         "action": "Sprache & Video konfigurieren"
       },
       "winks": {
-        "title": "Wink-Töne",
+        "title": "Wink-Töne abspielen",
         "description": "Spielt Audio und Toneffekte für eingehende Wink-Animationen ab."
-      }
+      },
+      "winksInBackground": {
+        "title": "Wink-Töne im Hintergrund erlauben",
+        "description": "Spielt Töne ab, auch wenn Nuvio im Hintergrund oder minimiert ist."
+      },
+      "winksInCall": {
+        "title": "Wink-Töne während Anrufen abspielen",
+        "description": "Erlaubt Wink-Töne bei Sprachanrufen mit reduzierter Lautstärke."
+      },
+      "winksVolumeSliderLabel": "Wink-Lautstärke"
     },
     "badges": {
       "heading": "Optische Markierungen & Zähler",

@@ -78,7 +78,16 @@ function ActivityFriendItem({
         avatarColor={canonical.avatarColor}
       />
       <div className="flex-1 min-w-0">
-        <span className={`text-sm leading-[1.2] font-medium truncate ${isOffline ? 'text-txt-tertiary' : 'text-txt-primary'}`}>{friendDisplayName}</span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className={`text-sm leading-[1.2] font-medium truncate ${isOffline ? 'text-txt-tertiary' : 'text-txt-primary'}`}>{friendDisplayName}</span>
+          {canonical.verification?.status === 'verified' && (
+            <VerificationBadge
+              category={canonical.verification.category}
+              status={canonical.verification.status}
+              size="xs"
+            />
+          )}
+        </div>
         {!isOffline && isFederationGlobeApplicable(canonical) && (
           <div className="text-[10px] leading-[1.3] text-txt-tertiary truncate opacity-60">@{parseFederatedUsername(canonical.username).domain}</div>
         )}
@@ -367,8 +376,8 @@ export function FriendsPage({ mobile }: FriendsPageProps) {
             </TabButton>
             <button
               onClick={() => setActiveTab('add')}
-              className={`px-2 py-0.5 rounded text-[14px] font-medium transition-all ${
-                activeTab === 'add' ? 'text-status-online bg-transparent' : 'bg-status-online text-[#13131a] hover:bg-status-online/90'
+              className={`px-2.5 py-0.5 rounded text-[14px] transition-all border ${
+                activeTab === 'add' ? 'bg-status-online text-[#0a0c10] font-semibold border-white/60 shadow-[0_0_12px_rgba(134,239,172,0.45),0_2px_4px_rgba(0,0,0,0.18)]' : 'bg-status-online text-[#13131a] font-medium border-transparent hover:bg-status-online/90'
               }`}
             >
               {t('social:tabs.add')}
