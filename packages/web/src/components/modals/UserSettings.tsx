@@ -197,6 +197,14 @@ const DEFAULT_SECTION_BY_CATEGORY: Record<HubCategoryId, string> = {
   instance: 'instance',
 };
 
+const CATEGORIES_WITH_SUBSECTIONS: ReadonlySet<HubCategoryId> = new Set([
+  'data-privacy',
+  'message-permissions',
+  'notifications',
+  'experience',
+  'games-apps',
+]);
+
 export function UserSettingsModal() {
   const { t } = useTranslation(['settings', 'common']);
   const activeModal = useUIStore((s) => s.activeModal);
@@ -215,6 +223,19 @@ export function UserSettingsModal() {
   const initialTarget = resolveSettingsTarget(modalData?.tab, modalData?.section, isAdmin);
   const [activeCategory, setActiveCategory] = useState<HubCategoryId>(initialTarget.category);
   const [activeSection, setActiveSection] = useState<string>(initialTarget.section);
+  const [sectionByCategory, setSectionByCategory] = useState<Record<HubCategoryId, string>>(() => ({
+    ...DEFAULT_SECTION_BY_CATEGORY,
+    [initialTarget.category]: initialTarget.section,
+  }));
+  const [expandedCategory, setExpandedCategory] = useState<HubCategoryId | null>(() => {
+    const requestedTab = modalData?.tab;
+    const hasExplicitTarget =
+      typeof requestedTab === 'string' &&
+      (requestedTab === 'account' || initialTarget.category !== 'account' || initialTarget.section !== 'account');
+    return hasExplicitTarget && CATEGORIES_WITH_SUBSECTIONS.has(initialTarget.category)
+      ? initialTarget.category
+      : null;
+  });
   const [mobileView, setMobileView] = useState<'tabs' | 'content'>('tabs');
   const [instanceInfo, setInstanceInfo] = useState<InstanceInfoResponse | null>(null);
 
@@ -238,7 +259,13 @@ export function UserSettingsModal() {
         (requestedTab === 'account' || target.category !== 'account' || target.section !== 'account');
       setActiveCategory(target.category);
       setActiveSection(target.section);
+      setSectionByCategory((prev) => ({ ...prev, [target.category]: target.section }));
       setMobileView(hasExplicitValidTarget ? 'content' : 'tabs');
+      if (hasExplicitValidTarget && CATEGORIES_WITH_SUBSECTIONS.has(target.category)) {
+        setExpandedCategory(target.category);
+      } else {
+        setExpandedCategory(null);
+      }
     }
   }, [isOpen, modalData?.tab, modalData?.section, isAdmin]);
 
@@ -248,10 +275,40 @@ export function UserSettingsModal() {
   };
 
   const navigateHub = (category: HubCategoryId, section?: string) => {
-    const resolvedSection = section ?? DEFAULT_SECTION_BY_CATEGORY[category];
+    const resolvedSection = section ?? sectionByCategory[category] ?? DEFAULT_SECTION_BY_CATEGORY[category];
     setActiveCategory(category);
     setActiveSection(resolvedSection);
+    setSectionByCategory((prev) => ({ ...prev, [category]: resolvedSection }));
+    if (CATEGORIES_WITH_SUBSECTIONS.has(category)) {
+      setExpandedCategory(category);
+    } else {
+      setExpandedCategory(null);
+    }
     if (isMobile) setMobileView('content');
+  };
+
+  const handleCategoryClick = (category: HubCategoryId) => {
+    const hasSubs = CATEGORIES_WITH_SUBSECTIONS.has(category);
+
+    if (hasSubs) {
+      if (expandedCategory === category) {
+        // Toggle collapse without changing the active category or section
+        setExpandedCategory(null);
+      } else {
+        // Expand this category and collapse any previously expanded category
+        setExpandedCategory(category);
+        setActiveCategory(category);
+        const targetSection = sectionByCategory[category] ?? DEFAULT_SECTION_BY_CATEGORY[category];
+        setActiveSection(targetSection);
+        if (isMobile) {
+          setMobileView('tabs');
+        }
+      }
+    } else {
+      // Category without subsections (e.g. account, instance)
+      setExpandedCategory(null);
+      navigateHub(category);
+    }
   };
 
   const categorySubsections: Record<HubCategoryId, Array<{ id: string; label: string }>> = {
@@ -309,14 +366,17 @@ export function UserSettingsModal() {
         </div>
         {USER_SETTINGS_TABS.filter((entry) => entry.group === group).map((entry) => {
           const subs = categorySubsections[entry.id];
+          const hasSubs = subs.length > 0;
           const isCatActive = activeCategory === entry.id;
-          const showSubs = isCatActive || entry.id === 'experience';
+          const isExpanded = expandedCategory === entry.id;
+          const showSubs = isExpanded && hasSubs;
 
           if (entry.id === 'instance' && layout === 'desktop') {
             return (
               <Fragment key={entry.id}>
                 <button
-                  onClick={() => navigateHub(entry.id)}
+                  type="button"
+                  onClick={() => handleCategoryClick(entry.id)}
                   className={`${tabClass(entry.id)} flex items-center gap-1.5`}
                   aria-current={isCatActive ? 'page' : undefined}
                 >
@@ -331,13 +391,31 @@ export function UserSettingsModal() {
           return (
             <Fragment key={entry.id}>
               <button
-                onClick={() => navigateHub(entry.id)}
+                type="button"
+                onClick={() => handleCategoryClick(entry.id)}
                 className={`${tabClass(entry.id)} flex items-center justify-between`}
                 aria-current={isCatActive ? 'page' : undefined}
+                aria-expanded={hasSubs ? isExpanded : undefined}
               >
                 <span className="truncate">{t(entry.label)}</span>
+                {hasSubs && (
+                  <svg
+                    className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ${
+                      isExpanded ? 'rotate-180 text-txt-secondary' : 'text-txt-tertiary'
+                    }`}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                )}
               </button>
-              {showSubs && subs.length > 0 && (
+              {showSubs && (
                 <div className="ml-3 pl-2.5 border-l border-white/[0.06] my-0.5 space-y-0.5">
                   {subs.map((sub) => {
                     const isSubActive = isCatActive && activeSection === sub.id;
@@ -395,7 +473,10 @@ export function UserSettingsModal() {
         return (
           <DataPrivacyPanel
             activeSection={activeSection as DataPrivacySubsection}
-            onSelectSection={(sec) => setActiveSection(sec)}
+            onSelectSection={(sec) => {
+              setActiveSection(sec);
+              setSectionByCategory((prev) => ({ ...prev, 'data-privacy': sec }));
+            }}
             onNavigateToSection={(cat, sec) => navigateHub(cat as HubCategoryId, sec)}
           />
         );
@@ -403,7 +484,10 @@ export function UserSettingsModal() {
         return (
           <MessagePermissionsPanel
             activeSection={activeSection as MessagePermissionsSubsection}
-            onSelectSection={(sec) => setActiveSection(sec)}
+            onSelectSection={(sec) => {
+              setActiveSection(sec);
+              setSectionByCategory((prev) => ({ ...prev, 'message-permissions': sec }));
+            }}
             onNavigateToSection={(cat, sec) => navigateHub(cat as HubCategoryId, sec)}
           />
         );
@@ -411,7 +495,10 @@ export function UserSettingsModal() {
         return (
           <NotificationsPanel
             activeSection={activeSection as NotificationsSubsection}
-            onSelectSection={(sec) => setActiveSection(sec)}
+            onSelectSection={(sec) => {
+              setActiveSection(sec);
+              setSectionByCategory((prev) => ({ ...prev, notifications: sec }));
+            }}
             onNavigateToSection={(cat, sec) => navigateHub(cat as HubCategoryId, sec)}
           />
         );
@@ -424,7 +511,10 @@ export function UserSettingsModal() {
               subtitle={t('settings:experience.subtitle')}
               subsections={experienceTabs}
               activeSubsection={activeSection}
-              onSelectSubsection={(sec) => setActiveSection(sec as ExperienceSubsection)}
+              onSelectSubsection={(sec) => {
+                setActiveSection(sec as ExperienceSubsection);
+                setSectionByCategory((prev) => ({ ...prev, experience: sec }));
+              }}
             />
             {activeSection === 'voice-video' && <VoicePanel />}
             {activeSection === 'appearance' && <AppearancePanel />}
@@ -443,7 +533,10 @@ export function UserSettingsModal() {
         return (
           <GamesAppsPanel
             activeSection={activeSection as GamesAppsSubsection}
-            onSelectSection={(sec) => setActiveSection(sec)}
+            onSelectSection={(sec) => {
+              setActiveSection(sec);
+              setSectionByCategory((prev) => ({ ...prev, 'games-apps': sec }));
+            }}
           />
         );
       case 'instance':

@@ -260,3 +260,135 @@ describe('UserSettingsModal deep link resolution and backward compatibility', ()
     expect(await screen.findByText('AccountPanel stub')).toBeInTheDocument();
   });
 });
+
+describe('UserSettings category expansion and collapse controls', () => {
+  it('does NOT force Experience or any other category to be permanently open on initial load', async () => {
+    await openSettings();
+
+    // Default active page is Account
+    expect(await screen.findByText('AccountPanel stub')).toBeInTheDocument();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Subsections of Experience must NOT be visible when collapsed
+    expect(screen.queryByRole('button', { name: 'Voice & Video' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accessibility' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Keybinds' })).not.toBeInTheDocument();
+  });
+
+  it('allows clicking the Experience header to expand and show its subsections', async () => {
+    await openSettings();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    fireEvent.click(experienceBtn);
+
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByRole('button', { name: 'Voice & Video' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Accessibility' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keybinds' })).toBeInTheDocument();
+  });
+
+  it('allows clicking the Experience header again to collapse its subsections while keeping the panel active', async () => {
+    await openSettings();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    // 1st click: expand
+    fireEvent.click(experienceBtn);
+    expect(await screen.findByRole('button', { name: 'Voice & Video' })).toBeInTheDocument();
+    expect(await screen.findByText('AppearancePanel stub')).toBeInTheDocument();
+
+    // 2nd click: collapse
+    fireEvent.click(experienceBtn);
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Subsections must be removed from the sidebar
+    expect(screen.queryByRole('button', { name: 'Voice & Video' })).not.toBeInTheDocument();
+
+    // The Appearance panel must still remain active in the content area
+    expect(screen.getByText('AppearancePanel stub')).toBeInTheDocument();
+    expect(experienceBtn).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('preserves the active subsection after collapsing and re-expanding the category', async () => {
+    await openSettings();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    // Expand
+    fireEvent.click(experienceBtn);
+    const voiceSubBtn = await screen.findByRole('button', { name: 'Voice & Video' });
+
+    // Select Voice & Video subsection
+    fireEvent.click(voiceSubBtn);
+    expect(await screen.findByText('VoicePanel stub')).toBeInTheDocument();
+
+    // Collapse category
+    fireEvent.click(experienceBtn);
+    expect(screen.queryByRole('button', { name: 'Voice & Video' })).not.toBeInTheDocument();
+    expect(screen.getByText('VoicePanel stub')).toBeInTheDocument();
+
+    // Re-expand category
+    fireEvent.click(experienceBtn);
+    const reloadedVoiceBtn = await screen.findByRole('button', { name: 'Voice & Video' });
+    expect(reloadedVoiceBtn).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByText('VoicePanel stub')).toBeInTheDocument();
+  });
+
+  it('automatically collapses the previous category when expanding another category', async () => {
+    await openSettings();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    const notificationsBtn = screen.getByRole('button', { name: 'Notifications' });
+
+    // Expand Experience
+    fireEvent.click(experienceBtn);
+    expect(await screen.findByRole('button', { name: 'Voice & Video' })).toBeInTheDocument();
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(notificationsBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Click Notifications -> Experience must collapse
+    fireEvent.click(notificationsBtn);
+    expect(notificationsBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Notifications subsections must be visible
+    expect(await screen.findByRole('button', { name: 'Sounds' })).toBeInTheDocument();
+    // Experience subsections must no longer be in the document
+    expect(screen.queryByRole('button', { name: 'Voice & Video' })).not.toBeInTheDocument();
+  });
+
+  it('automatically collapses open categories when navigating to a category without subsections', async () => {
+    await openSettings();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    const accountBtn = screen.getByRole('button', { name: 'Account' });
+
+    // Expand Experience
+    fireEvent.click(experienceBtn);
+    expect(await screen.findByRole('button', { name: 'Voice & Video' })).toBeInTheDocument();
+
+    // Click Account (which has no subsections)
+    fireEvent.click(accountBtn);
+    expect(await screen.findByText('AccountPanel stub')).toBeInTheDocument();
+
+    // Experience must be collapsed
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Voice & Video' })).not.toBeInTheDocument();
+  });
+
+  it('automatically expands only the target category when deep-linking to a subsection', async () => {
+    mocks.ui.modalData = { tab: 'voice' };
+    await openSettings();
+
+    expect(await screen.findByText('VoicePanel stub')).toBeInTheDocument();
+
+    const experienceBtn = screen.getByRole('button', { name: 'Experience' });
+    expect(experienceBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Voice & Video' })).toHaveAttribute('aria-current', 'true');
+
+    // Other expandable categories must remain collapsed
+    const dataPrivacyBtn = screen.getByRole('button', { name: 'Data & Privacy' });
+    expect(dataPrivacyBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Profile Privacy' })).not.toBeInTheDocument();
+  });
+});
