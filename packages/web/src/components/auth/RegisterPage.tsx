@@ -584,6 +584,12 @@ export function RegisterPage() {
                 />
               </div>
 
+              <p className="text-xs text-txt-tertiary text-center mb-4 leading-relaxed">
+                Ao continuar, você confirma ter pelo menos <strong>15 anos</strong> e concorda com a nossa{' '}
+                <Link to="/privacy" className="text-accent-primary hover:underline font-medium">
+                  Política de Privacidade
+                </Link>.
+              </p>
               <button
                 type="submit"
                 disabled={continueDisabled}

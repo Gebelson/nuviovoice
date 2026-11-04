@@ -148,6 +148,11 @@ export function LoginPage() {
               }}
             />
           </p>
+          <div className="mt-4 pt-3 border-t border-white/[0.04] text-center">
+            <Link to="/privacy" className="text-xs text-txt-tertiary hover:text-txt-secondary hover:underline transition-colors">
+              Política de Privacidade
+            </Link>
+          </div>
         </form>
 
         {instanceInfo && (

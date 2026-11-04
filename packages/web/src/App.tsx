@@ -8,6 +8,7 @@ import { VoiceInvitePage } from './components/voice/VoiceInvitePage';
 import { SwAutoUpdate } from './components/ui/SwUpdatePrompt';
 import { TelemetryAsk } from './components/telemetry/TelemetryAsk';
 import { ScreenShareSetup } from './components/voice/ScreenShareSetup';
+import { PrivacyPolicyPage } from './components/legal/PrivacyPolicyPage';
 import { useAuthStore } from './stores/authStore';
 import { isElectron } from './platform/platform';
 import { initializeNativeContextMenuSuppression } from './platform/nativeContextMenu';
@@ -187,6 +188,7 @@ export function App() {
               )
             }
           />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/" element={<Navigate to="/channels/@me" replace />} />
           <Route path="*" element={<Navigate to="/channels/@me" replace />} />
         </Routes>

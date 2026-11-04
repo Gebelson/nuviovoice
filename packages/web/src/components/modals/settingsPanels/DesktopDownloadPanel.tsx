@@ -500,14 +500,25 @@ export function DesktopDownloadPanel({ version }: { version: string | null }) {
 
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <p className="text-xs text-txt-tertiary">{t('desktopDownload.intro')}</p>
-        <a
-          href={links?.allReleasesUrl ?? RELEASES_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-txt-secondary hover:text-txt-primary transition-colors"
-        >
-          {t('desktopDownload.allReleases')}
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-txt-secondary hover:text-txt-primary underline transition-colors"
+          >
+            Política de Privacidade
+          </a>
+          <span className="text-xs text-txt-tertiary">•</span>
+          <a
+            href={links?.allReleasesUrl ?? RELEASES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-txt-secondary hover:text-txt-primary transition-colors"
+          >
+            {t('desktopDownload.allReleases')}
+          </a>
+        </div>
       </div>
     </div>
   );

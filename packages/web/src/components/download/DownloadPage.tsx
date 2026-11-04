@@ -199,6 +199,20 @@ export function DownloadPage() {
                 </p>
               </div>
             )}
+
+            {/* Institutional footer with privacy link */}
+            <div className="mt-8 pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-center gap-4 text-xs text-txt-tertiary w-full max-w-lg">
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-txt-secondary underline transition-colors"
+              >
+                Política de Privacidade
+              </a>
+              <span>•</span>
+              <span>Nuvio © 2026 Gabriel Cerqueira do Nascimento</span>
+            </div>
           </div>
         </div>
       </div>
