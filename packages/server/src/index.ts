@@ -97,6 +97,7 @@ async function main(): Promise<void> {
   await app.register(cors, {
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    strictPreflight: false,
     // Tus-* and Upload-* headers are required for federated tus uploads
     // (cross-origin POST/HEAD/PATCH/DELETE on /api/files/*). Without them the
     // browser preflight blocks the request before it ever reaches the server.

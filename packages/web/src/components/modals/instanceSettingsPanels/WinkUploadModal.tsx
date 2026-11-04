@@ -193,6 +193,23 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
     const upload = new Upload(file, {
       endpoint,
       retryDelays: [0, 1000, 3000, 5000, 10000],
+      onShouldRetry: (err: any) => {
+        const status = extractHttpStatus(err);
+        // Do not retry on 4xx client errors (404, 400, 401, 403, 409, 413) or 507 (insufficient storage)
+        if (
+          status &&
+          (status === 404 ||
+            status === 400 ||
+            status === 401 ||
+            status === 403 ||
+            status === 409 ||
+            status === 413 ||
+            status === 507)
+        ) {
+          return false;
+        }
+        return true;
+      },
       chunkSize: 2.5 * 1024 * 1024, // 2.5 MB safe chunks (strictly below Vercel 4.5MB limit)
       headers: {
         Authorization: `Bearer ${token}`,
@@ -295,9 +312,16 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
           currentLoaded > 0 &&
           status !== 404 &&
           status !== 401 &&
-          status !== 403
+          status !== 403 &&
+          status !== 409 &&
+          status !== 413 &&
+          status !== 507
         );
         setIsResumable(hasValidSession);
+        if (!hasValidSession) {
+          setBytesUploaded(0);
+          bytesUploadedRef.current = 0;
+        }
 
         if (status === 404 || rawMsg.includes('404')) {
           setError(
@@ -474,7 +498,11 @@ export function WinkUploadModal({ isOpen, onClose, onSuccess }: WinkUploadModalP
           </div>
 
           {/* Upload Progress & Controls */}
-          {(uploadStatus !== 'idle') && (
+          {((uploadStatus === 'uploading' ||
+            uploadStatus === 'processing' ||
+            uploadStatus === 'paused' ||
+            uploadStatus === 'completed') ||
+            (uploadStatus === 'error' && isResumable && bytesUploaded > 0)) && (
             <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2.5 animate-in fade-in duration-150">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">

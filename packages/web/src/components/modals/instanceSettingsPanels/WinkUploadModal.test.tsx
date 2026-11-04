@@ -302,9 +302,14 @@ describe('WinkUploadModal Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/O serviço de upload de Winks não foi encontrado no servidor \(HTTP 404\)/i)).toBeInTheDocument();
       expect(screen.queryByText(/O progresso foi mantido/i)).not.toBeInTheDocument();
+      expect(screen.queryByText('Progresso do envio')).not.toBeInTheDocument();
       expect(screen.getAllByText('Tentar Novamente').length).toBeGreaterThan(0);
       expect(screen.queryByText('Retomar Envio')).not.toBeInTheDocument();
     });
+
+    const error404: any = new Error('HTTP 404 Not Found');
+    error404.originalResponse = { getStatus: () => 404 };
+    expect(lastUploadInstance.options.onShouldRetry(error404)).toBe(false);
   });
 
   it('displays resumable option when network fails after partial upload', async () => {
