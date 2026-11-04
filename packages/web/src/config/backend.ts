@@ -11,9 +11,9 @@ export const DEFAULT_OFFICIAL_WS_URL = 'wss://167-234-239-100.sslip.io';
  * Returns the authoritative HTTP backend base URL.
  * 1. Checks if Electron preload injected `window.nuvioConfig.backendUrl`.
  * 2. Checks `import.meta.env.VITE_BACKEND_URL`.
- * 3. On localhost/127.0.0.1, uses relative '' to let Vite proxy to local server.
- * 4. In all other browser environments (Vercel, custom domain, production web),
- *    defaults to the official Nuvio server (`https://167-234-239-100.sslip.io`).
+ * 3. In all browser environments (localhost, Vercel, custom domain), uses relative ''
+ *    so requests route to `/api/...` through the host proxy/rewrites (Vite dev or Vercel).
+ * 4. In non-browser environments (SSR / test runners), defaults to the official Nuvio server (`https://167-234-239-100.sslip.io`).
  */
 export function getResolvedBackendUrl(): string {
   if (typeof window !== 'undefined' && (window as any).nuvioConfig?.backendUrl) {
@@ -23,10 +23,7 @@ export function getResolvedBackendUrl(): string {
     return import.meta.env.VITE_BACKEND_URL;
   }
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return '';
-    }
+    return '';
   }
   return DEFAULT_OFFICIAL_BACKEND_URL;
 }

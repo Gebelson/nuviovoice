@@ -22,6 +22,22 @@
   ],
   "rewrites": [
     {
+      "source": "/api/store/products",
+      "destination": "/api/store/products"
+    },
+    {
+      "source": "/api/store/categories",
+      "destination": "/api/store/categories"
+    },
+    {
+      "source": "/api/bots",
+      "destination": "/api/bots"
+    },
+    {
+      "source": "/api/bots/categories",
+      "destination": "/api/bots/categories"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://167-234-239-100.sslip.io/api/:path*"
     },
