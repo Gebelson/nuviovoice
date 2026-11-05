@@ -1,6 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "games": [
+    { "id": "roblox", "name": "Roblox", "processes": ["RobloxPlayerBeta.exe", "RobloxPlayerLauncher.exe", "RobloxPlayer.exe"] },
     { "id": "cs2", "name": "Counter-Strike 2", "processes": ["cs2.exe", "cs2"] },
     { "id": "dota2", "name": "Dota 2", "processes": ["dota2.exe", "dota2"] },
     { "id": "pubg", "name": "PUBG: Battlegrounds", "processes": ["TslGame.exe", "TslGame"] },
@@ -16,7 +17,7 @@
     { "id": "destiny2", "name": "Destiny 2", "processes": ["destiny2.exe"] },
     { "id": "deadbydaylight", "name": "Dead by Daylight", "processes": ["DeadByDaylight-Win64-Shipping.exe", "DeadByDaylight"] },
     { "id": "valorant", "name": "Valorant", "processes": ["VALORANT-Win64-Shipping.exe", "VALORANT.exe"] },
-    { "id": "lol", "name": "League of Legends", "processes": ["League of Legends.exe", "LeagueofLegends"] },
+    { "id": "lol", "name": "League of Legends", "processes": ["League of Legends.exe", "LeagueofLegends", "LeagueClientUx.exe", "LeagueClient.exe"] },
     { "id": "overwatch", "name": "Overwatch 2", "processes": ["Overwatch.exe"] },
     { "id": "fortnite", "name": "Fortnite", "processes": ["FortniteClient-Win64-Shipping.exe"] },
     { "id": "rocketleague", "name": "Rocket League", "processes": ["RocketLeague.exe", "RocketLeague"] },
@@ -76,7 +77,7 @@
     { "id": "diablo4", "name": "Diablo IV", "processes": ["Diablo IV.exe"] },
     { "id": "hearthstone", "name": "Hearthstone", "processes": ["Hearthstone.exe"] },
     { "id": "ff14", "name": "Final Fantasy XIV", "processes": ["ffxiv_dx11.exe", "ffxiv"] },
-    { "id": "genshin", "name": "Genshin Impact", "processes": ["GenshinImpact.exe", "YuanShen.exe"] },
+    { "id": "genshin", "name": "Genshin Impact", "processes": ["GenshinImpact.exe", "YuanShen.exe", "Genshin Impact.exe"] },
     { "id": "honkai-sr", "name": "Honkai: Star Rail", "processes": ["StarRail.exe"] },
     { "id": "zenless-zone-zero", "name": "Zenless Zone Zero", "processes": ["ZenlessZoneZero.exe"] },
     { "id": "wuthering-waves", "name": "Wuthering Waves", "processes": ["Wuthering Waves.exe", "Client-Win64-Shipping.exe"] },

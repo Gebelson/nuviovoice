@@ -103,6 +103,7 @@ vi.mock('../../stores/authStore', async () => {
 
 // Mock activityStore
 vi.mock('../../stores/activityStore', () => ({
+  activitiesFor: vi.fn(() => []),
   useActivityStore: Object.assign(
     (selector: (s: any) => any) => selector({
       userActivities: new Map(),
@@ -683,6 +684,35 @@ describe('FriendsPage', () => {
 
       expect(screen.getByText('No pending requests — Nori is napping.')).toBeInTheDocument();
       expect(screen.queryByText(/Wumpus/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Friend activities in friends list', () => {
+    it('renders the game activity subtitle when a friend has an active game', async () => {
+      const { activitiesFor } = await import('../../stores/activityStore');
+      vi.mocked(activitiesFor).mockReturnValueOnce([
+        { type: 'playing', name: 'Genshin Impact' },
+      ]);
+
+      useSocialStore.setState({
+        friends: [
+          {
+            id: 'friend-gaming',
+            username: 'gamerfriend',
+            displayName: 'Gamer Friend',
+            status: 'online',
+            avatar: null,
+            avatarColor: null,
+            _instanceOrigin: '',
+          } as any,
+        ],
+        requests: [],
+      });
+
+      renderFriendsPage();
+
+      expect(screen.getByText(/Genshin Impact/)).toBeInTheDocument();
+      expect(screen.getByText('🎮')).toBeInTheDocument();
     });
   });
 });

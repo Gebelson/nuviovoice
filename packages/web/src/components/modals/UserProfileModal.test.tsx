@@ -28,6 +28,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useSocialStore } from '../../stores/socialStore';
 import { api, HttpError } from '../../api/client';
 import { useAuthStore } from '../../stores/authStore';
+import { useActivityStore } from '../../stores/activityStore';
 
 function makeUser(overrides: Partial<User>): User {
   return {
@@ -143,6 +144,19 @@ describe('UserProfileModal', () => {
 
       expect(screen.getByText('Send Message')).toBeInTheDocument();
       expect(screen.getByText('Add Friend')).toBeInTheDocument();
+    });
+
+    it('renders the rich activity card in the About tab when an active game is present', () => {
+      const gamingUser = makeUser({ id: 'u-gaming', username: 'gamer' });
+      useActivityStore.getState().setUserActivities(gamingUser, '', [
+        { type: 'playing', name: 'Grand Theft Auto V' },
+      ]);
+      useUIStore.getState().openModal('userProfile', { userId: gamingUser.id, user: gamingUser, origin: '' });
+
+      render(<MemoryRouter><UserProfileModal /></MemoryRouter>);
+
+      expect(screen.getByText('Grand Theft Auto V')).toBeInTheDocument();
+      expect(screen.getByText('🎮')).toBeInTheDocument();
     });
   });
 });

@@ -146,12 +146,18 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
 
   pushActivities: (activities) => {
     if (!get().showActivity) return;
+    if (activities.length === 0) {
+      if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+      set({ myActivities: [] });
+      wsSendAll({ type: 'activity_update', activities: [] });
+      return;
+    }
     set({ myActivities: activities });
     if (pushTimer) clearTimeout(pushTimer);
     pushTimer = setTimeout(() => {
       wsSendAll({ type: 'activity_update', activities });
       pushTimer = null;
-    }, 5000);
+    }, 500);
   },
 
   reset: () => {

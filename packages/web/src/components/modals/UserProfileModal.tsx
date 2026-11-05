@@ -26,6 +26,8 @@ import { replaceEmojiShortcodes, useEmojiShortcodeNames } from '../../utils/emoj
 import { getProfileMember, useProfileMemberRoles } from '../../hooks/useProfileMember';
 import { useShownStatus } from '../../hooks/useShownStatus';
 import { ProfileRoles } from '../ui/ProfileRoles';
+import { useActivityStore, activitiesFor } from '../../stores/activityStore';
+import { ActivityCard, hasRichActivity } from '../ui/ActivityCard';
 
 type Tab = 'about' | 'friends' | 'spaces';
 
@@ -141,6 +143,10 @@ export function UserProfileModal() {
   }, [isOpen, closeModal]);
 
   const shownStatus = useShownStatus(user, userOrigin, user?.status);
+  const userActivities = useActivityStore((s) => s.userActivities);
+  const activities = user && typeof activitiesFor === 'function' ? activitiesFor(userActivities, user, userOrigin) : [];
+  const isOnline = shownStatus !== 'offline';
+  const hasRich = isOnline && hasRichActivity(activities);
 
   if (!isOpen || !user) return null;
 
@@ -320,6 +326,11 @@ export function UserProfileModal() {
         <div className="flex-1 overflow-y-auto scrollbar-thin p-5 min-h-[200px]">
           {activeTab === 'about' && (
             <div className="space-y-4">
+              {/* Rich Activity */}
+              {hasRich && (
+                <ActivityCard activities={activities} variant="full" />
+              )}
+
               {/* Bio */}
               {user.bio && (
                 <div>

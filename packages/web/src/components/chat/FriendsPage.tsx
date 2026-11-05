@@ -937,13 +937,17 @@ function TabButton({ children, active, onClick }: { children: React.ReactNode, a
 function FriendItem({ friend, onRemove, onDm }: { friend: TaggedFriend, onRemove: () => void, onDm: () => void }) {
   const { t } = useTranslation(['social', 'common']);
   const canonical = useCanonicalUserView(friend as unknown as User, friend._instanceOrigin);
+  const userActivities = useActivityStore((s) => s.userActivities);
+  const activities = activitiesFor(userActivities, friend, friend._instanceOrigin);
+  const isOnline = friend.status !== 'offline';
+  const hasRich = isOnline && hasRichActivity(activities);
   const instanceLabel = friend._instanceOrigin ? (() => { try { return new URL(friend._instanceOrigin).host; } catch { return friend._instanceOrigin; } })() : '';
   const friendDisplayName = userDisplayName(canonical);
   return (
     <div className="flex items-center justify-between px-3 h-[62px] rounded-[8px] hover:bg-interactive-hover group transition-colors border-t border-interactive-muted mx-2">
       <div className="flex items-center gap-3">
         <Avatar src={canonical.avatar} name={friendDisplayName} size={32} status={canonical.status} userId={canonical.homeUserId ?? canonical.id} avatarColor={canonical.avatarColor} />
-        <div className="flex flex-col leading-tight">
+        <div className="flex flex-col leading-tight min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-txt-primary font-semibold text-[15px]">{friendDisplayName}</span>
             {canonical.verification?.status === 'verified' && (
@@ -955,10 +959,14 @@ function FriendItem({ friend, onRemove, onDm }: { friend: TaggedFriend, onRemove
             )}
             <span className="text-txt-tertiary text-[13px] opacity-60 group-hover:opacity-100 transition-opacity font-medium">@{friend.username}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[12px] text-txt-tertiary font-medium">{presenceLabel(t, friend.status)}</span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            {hasRich ? (
+              <ActivityCard activities={activities} variant="inline" />
+            ) : (
+              <span className="text-[12px] text-txt-tertiary font-medium">{presenceLabel(t, friend.status)}</span>
+            )}
             {instanceLabel && (
-              <span className="text-[11px] text-txt-tertiary/60 font-medium">{t('social:friend.viaInstance', { host: instanceLabel })}</span>
+              <span className="text-[11px] text-txt-tertiary/60 font-medium truncate">{t('social:friend.viaInstance', { host: instanceLabel })}</span>
             )}
           </div>
         </div>

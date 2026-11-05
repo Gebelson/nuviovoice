@@ -513,15 +513,16 @@ function handleActivityUpdate(event: Record<string, unknown>, userId: string): v
 
   connectionManager.setUserActivities(userId, activities);
   const status = connectionManager.getUserStatus(userId);
+  const outgoingActivities = status === 'offline' ? [] : activities;
 
-  const payload = presenceUpdateFor(userId, status, activities);
+  const payload = presenceUpdateFor(userId, status, outgoingActivities);
   const targets = collectProfileBroadcastTargetIds(userId);
   for (const uid of targets) connectionManager.sendToUser(uid, payload);
   connectionManager.sendToUser(userId, payload);
 
   // S2S: broadcast to peers (activities + current status); see queueOutboxEvent.
   void import('../utils/federationPresence.js').then(({ queuePresenceRelay }) => {
-    try { queuePresenceRelay(userId, status as 'online' | 'idle' | 'dnd' | 'offline', activities); } catch (e) { console.warn('[ws] queuePresenceRelay(activity) failed', e); }
+    try { queuePresenceRelay(userId, status as 'online' | 'idle' | 'dnd' | 'offline', outgoingActivities); } catch (e) { console.warn('[ws] queuePresenceRelay(activity) failed', e); }
   });
 }
 

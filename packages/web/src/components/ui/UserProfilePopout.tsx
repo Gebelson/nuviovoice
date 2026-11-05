@@ -25,6 +25,8 @@ import { viewerCanEditMemberRoles } from '../../utils/roleHierarchy';
 import { ProfileRoles } from './ProfileRoles';
 import { ProfileSpaceNickname } from './ProfileSpaceNickname';
 import { VerificationBadge } from './VerificationBadge';
+import { useActivityStore, activitiesFor } from '../../stores/activityStore';
+import { ActivityCard, hasRichActivity } from './ActivityCard';
 
 /** Gap between the card and the element it was opened from. */
 const ANCHOR_OFFSET = 8;
@@ -55,6 +57,10 @@ export function UserProfilePopout({ user: propUser, origin, onClose, anchor, pla
   const { baseName, domain } = parseFederatedUsername(user.username);
   const displayName = user.displayName ?? baseName;
   const shownStatus = useShownStatus(user, origin, user.status);
+  const userActivities = useActivityStore((s) => s.userActivities);
+  const activities = typeof activitiesFor === 'function' ? activitiesFor(userActivities, user, origin) : [];
+  const isOnline = shownStatus !== 'offline';
+  const hasRich = isOnline && hasRichActivity(activities);
   const self = useSelfIdentity();
   const isYou = isMine(user, origin, self);
 
@@ -206,6 +212,14 @@ export function UserProfilePopout({ user: propUser, origin, onClose, anchor, pla
             </div>
           )}
         </div>
+
+        {/* Rich Activity */}
+        {hasRich && (
+          <>
+            <div className="border-t border-white/[0.06] my-3" />
+            <ActivityCard activities={activities} variant="full" />
+          </>
+        )}
 
         {/* Bio */}
         {user.bio && (

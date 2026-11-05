@@ -181,6 +181,7 @@ const desktopApi = {
     return () => { ipcRenderer.removeListener('activity-detected', handler); };
   },
   getCurrentActivity: () => ipcRenderer.invoke('get-current-activity'),
+  setRegisteredGames: (games: unknown) => ipcRenderer.send('set-registered-games', games),
 
   // Keybind support
   getKeybindPortalStatus: () => ipcRenderer.invoke('keybind-portal-status'),

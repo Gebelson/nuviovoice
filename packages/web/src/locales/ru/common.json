@@ -96,6 +96,13 @@
     "hoursMinutesShort": "{{hours}} ч {{minutes}} мин.",
     "elapsed": "Прошло {{duration}}"
   },
+  "activity": {
+    "title": "Активность",
+    "playing": "Играет в {{name}}",
+    "listening": "Слушает {{name}}",
+    "watching": "Смотрит {{name}}",
+    "streaming": "Стримит {{name}}"
+  },
   "units": {
     "ms": "{{value}} мс",
     "percent": "{{value}}%",

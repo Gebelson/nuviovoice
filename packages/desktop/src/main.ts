@@ -18,7 +18,13 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { pathToFileURL } from 'url';
-import { startActivityDetection, stopActivityDetection, getCurrentActivity } from './activityDetector';
+import {
+  startActivityDetection,
+  stopActivityDetection,
+  getCurrentActivity,
+  setRegisteredGames,
+  type UserRegisteredGame,
+} from './activityDetector';
 import { KeybindManager } from './keybindManager';
 import { deriveStartMinimizedFromArgs, parseExecPathFromDesktopFile, shouldReapplyAppImage } from './autoLaunch';
 import {
@@ -1997,6 +2003,11 @@ if (!gotTheLock) {
     });
 
     ipcMain.handle('get-current-activity', () => getCurrentActivity());
+    ipcMain.on('set-registered-games', (_event, games: unknown) => {
+      if (Array.isArray(games)) {
+        setRegisteredGames(games as UserRegisteredGame[]);
+      }
+    });
 
     // Linux/AppImage path-refresh ONLY. On Windows and macOS the OS is the source
     // of truth for openAtLogin (Task 4) and we must not override user changes made

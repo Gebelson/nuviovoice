@@ -96,6 +96,13 @@
     "hoursMinutesShort": "{{hours}} Std. {{minutes}} Min.",
     "elapsed": "Seit {{duration}}"
   },
+  "activity": {
+    "title": "Aktivität",
+    "playing": "Spielt {{name}}",
+    "listening": "Hört {{name}}",
+    "watching": "Sieht {{name}}",
+    "streaming": "Überträgt {{name}}"
+  },
   "units": {
     "ms": "{{value}} ms",
     "percent": "{{value}} %",

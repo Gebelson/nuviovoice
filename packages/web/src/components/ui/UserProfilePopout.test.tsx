@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { User } from '@concord/shared';
+import { useActivityStore } from '../../stores/activityStore';
 
 // The popout reaches into the space store (origin routing), the API client and
 // the federated-mutuals loader. None of that is under test here — stub it so the
@@ -222,5 +223,21 @@ describe('UserProfilePopout', () => {
     expect(getByText('praying 🙏')).toBeInTheDocument();
     // Inline code stays literal: the bio shows what was typed between the backticks.
     expect(getByText('-Catholic 🇻🇦 ☦️ and :smile:')).toBeInTheDocument();
+  });
+
+  it('renders rich activity card when the user has an active game', () => {
+    const user = makeUser();
+    useActivityStore.getState().setUserActivities(user, '', [
+      { type: 'playing', name: 'Cyberpunk 2077' },
+    ]);
+
+    const { getByText } = render(
+      <MemoryRouter>
+        <UserProfilePopout user={user} origin="" onClose={() => {}} anchor={anchorAt(300, 200)} />
+      </MemoryRouter>,
+    );
+
+    expect(getByText('Cyberpunk 2077')).toBeInTheDocument();
+    expect(getByText('🎮')).toBeInTheDocument();
   });
 });

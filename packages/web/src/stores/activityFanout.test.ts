@@ -40,13 +40,30 @@ describe('activityStore fan-out', () => {
 
   it('pushActivities calls wsSendAll (not wsSend) after debounce', () => {
     useActivityStore.getState().pushActivities([GAME_ACTIVITY]);
-    vi.advanceTimersByTime(5000);
+    vi.advanceTimersByTime(500);
 
     expect(mockWsSendAll).toHaveBeenCalledWith({
       type: 'activity_update',
       activities: [GAME_ACTIVITY],
     });
     expect(mockWsSend).not.toHaveBeenCalled();
+  });
+
+  it('pushActivities([]) immediately sends activity_update without debounce', () => {
+    // Start an activity first
+    useActivityStore.getState().pushActivities([GAME_ACTIVITY]);
+    vi.advanceTimersByTime(500);
+    vi.clearAllMocks();
+
+    // Now push empty activities (game stopped)
+    useActivityStore.getState().pushActivities([]);
+
+    // Should be called immediately without waiting for any timer
+    expect(mockWsSendAll).toHaveBeenCalledWith({
+      type: 'activity_update',
+      activities: [],
+    });
+    expect(useActivityStore.getState().myActivities).toEqual([]);
   });
 
   it('setShowActivity(false) fans out empty activities via wsSendAll and clears myActivities', () => {

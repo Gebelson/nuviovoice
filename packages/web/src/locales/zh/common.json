@@ -96,6 +96,13 @@
     "hoursMinutesShort": "{{hours}} 小时 {{minutes}} 分钟",
     "elapsed": "已过去 {{duration}}"
   },
+  "activity": {
+    "title": "活动",
+    "playing": "正在玩 {{name}}",
+    "listening": "正在听 {{name}}",
+    "watching": "正在看 {{name}}",
+    "streaming": "正在直播 {{name}}"
+  },
   "units": {
     "ms": "{{value}} 毫秒",
     "percent": "{{value}}%",

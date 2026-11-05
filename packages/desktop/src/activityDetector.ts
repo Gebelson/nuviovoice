@@ -35,18 +35,38 @@ interface VersionedDictionary {
 
 const VALID_TYPES = new Set(['playing', 'listening', 'watching', 'streaming']);
 const POLL_INTERVAL_MS = 15_000;
-const REMOTE_URL = 'https://raw.githubusercontent.com/TheZwiss/backspace/main/packages/desktop/resources/games.json';
+export const REMOTE_URL = 'https://raw.githubusercontent.com/Gebelson/nuviovoice/main/packages/desktop/resources/games.json';
+export const USER_AGENT = 'Nuvio-Desktop/1.0';
+
+export interface UserRegisteredGame {
+  id: string;
+  name: string;
+  exeName?: string;
+  detectionEnabled?: boolean;
+  overlayEnabled?: boolean;
+}
 
 // ─── Module state ───────────────────────────────────────────────────────────
 
 let processMap: Map<string, GameEntry> = new Map();
 let gameEntries: GameEntry[] = [];
+let userRegisteredGames: UserRegisteredGame[] = [];
+let disabledGameIds = new Set<string>();
 let currentGameId: string | null = null;
 let currentActivity: Activity | null = null;
 let intervalId: NodeJS.Timeout | null = null;
 let isPolling = false;
-let hasErrored = false;
+let consecutiveErrors = 0;
 let onChangeCallback: ((activity: Activity | null) => void) | null = null;
+
+export function setRegisteredGames(games: UserRegisteredGame[]): void {
+  userRegisteredGames = Array.isArray(games) ? games : [];
+  disabledGameIds = new Set(
+    userRegisteredGames
+      .filter((g) => g.detectionEnabled === false)
+      .map((g) => g.id.toLowerCase()),
+  );
+}
 
 // ─── Dictionary loading ────────────────────────────────────────────────────
 
@@ -251,7 +271,7 @@ function fetchRemote(url: string, etag: string | null): Promise<{
 } | null> {
   return new Promise((resolve) => {
     const headers: Record<string, string> = {
-      'User-Agent': 'Backspace-Desktop/1.0',
+      'User-Agent': USER_AGENT,
     };
     if (etag) {
       headers['If-None-Match'] = etag;
@@ -412,7 +432,7 @@ function getProcessCommand(): { executable: string; args: string[] } {
   return { executable: 'ps', args: ['-A', '-o', 'comm'] };
 }
 
-function parseProcessList(stdout: string): Set<string> {
+export function parseProcessList(stdout: string): Set<string> {
   const names = new Set<string>();
 
   if (process.platform === 'win32') {
@@ -438,6 +458,39 @@ function parseProcessList(stdout: string): Set<string> {
   return names;
 }
 
+export function matchActivityFromProcesses(runningProcesses: Set<string>): { id: string; name: string; type: string } | null {
+  // 1. Priority: check custom registered games first
+  for (const custom of userRegisteredGames) {
+    if (custom.detectionEnabled === false) continue;
+    if (!custom.exeName) continue;
+    const cleanExe = custom.exeName.toLowerCase().trim();
+    const withExe = cleanExe.endsWith('.exe') ? cleanExe : `${cleanExe}.exe`;
+    if (runningProcesses.has(cleanExe) || runningProcesses.has(withExe)) {
+      return {
+        id: custom.id,
+        name: custom.name,
+        type: 'playing',
+      };
+    }
+  }
+
+  // 2. Fall back to game dictionary, skipping any disabled games
+  for (const entry of gameEntries) {
+    if (disabledGameIds.has(entry.id.toLowerCase())) continue;
+    for (const proc of entry.processes) {
+      if (runningProcesses.has(proc.toLowerCase())) {
+        return {
+          id: entry.id,
+          name: entry.name,
+          type: entry.type ?? 'playing',
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 // ─── Poll logic ─────────────────────────────────────────────────────────────
 
 function poll(): void {
@@ -450,27 +503,16 @@ function poll(): void {
     isPolling = false;
 
     if (error) {
-      if (!hasErrored) {
-        console.warn('[ActivityDetector] execFile failed:', error.message, '— stopping detection');
-        hasErrored = true;
-        stopActivityDetection();
+      consecutiveErrors++;
+      if (consecutiveErrors <= 3) {
+        console.warn(`[ActivityDetector] Process poll failed (attempt ${consecutiveErrors}):`, error.message);
       }
       return;
     }
+    consecutiveErrors = 0;
 
     const runningProcesses = parseProcessList(stdout);
-
-    // Find first matching game (dictionary order = priority)
-    let matchedEntry: GameEntry | null = null;
-    for (const entry of gameEntries) {
-      for (const proc of entry.processes) {
-        if (runningProcesses.has(proc.toLowerCase())) {
-          matchedEntry = entry;
-          break;
-        }
-      }
-      if (matchedEntry) break;
-    }
+    const matchedEntry = matchActivityFromProcesses(runningProcesses);
 
     if (matchedEntry) {
       if (matchedEntry.id !== currentGameId) {
@@ -518,7 +560,7 @@ export function startActivityDetection(
   }
 
   onChangeCallback = onActivityChange;
-  hasErrored = false;
+  consecutiveErrors = 0;
 
   // Run first poll immediately
   poll();
