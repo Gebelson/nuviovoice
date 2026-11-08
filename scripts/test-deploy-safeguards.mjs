@@ -10,7 +10,7 @@ console.log('AUDITORIA AUTOMATIZADA DE SALVAGUARDAS DO DEPLOY');
 console.log('Arquivo:', scriptPath);
 console.log('====================================================\n');
 
-// Test 1: Sem qualquer 'rm -rf data'
+// Test 1: Sem qualquer 'rm -rf data' no código
 console.log('1. Testando eliminação de rm -rf data...');
 assert.strictEqual(
   scriptContent.includes('rm -rf data'),
@@ -48,7 +48,7 @@ assert.strictEqual(
 );
 console.log('   -> APROVADO: Prontidão exige estritamente Docker HEALTHY E API HTTP 200.');
 
-// Test 4: Confirmação interativa com interrupção segura
+// Test 4: Confirmação interativa com cancelamento seguro
 console.log('4. Testando confirmação interativa antes de parada de serviço...');
 assert.ok(
   scriptContent.includes('read -p') && scriptContent.includes('USER_CONFIRM'),
@@ -60,18 +60,22 @@ assert.ok(
 );
 console.log('   -> APROVADO: Operador pode cancelar antes de qualquer parada ou alteração.');
 
-// Test 5: Validação do commit v1.15.6
-console.log('5. Testando trava do commit obrigatório...');
+// Test 5: Checkout e verificação exata do commit obrigatório
+console.log('5. Testando checkout comprovado do commit v1.15.6...');
 const REQUIRED_COMMIT = '7d8c8dec44be78477aad2a7f23315db8797a610f';
 assert.ok(
   scriptContent.includes(REQUIRED_COMMIT),
   `FALHA: Commit obrigatório ${REQUIRED_COMMIT} não está presente no script!`
 );
 assert.ok(
-  scriptContent.includes('git merge-base --is-ancestor'),
-  'FALHA: Validação de ancestralidade Git não encontrada!'
+  scriptContent.includes('git checkout "${TARGET_COMMIT}"'),
+  'FALHA: Checkout explícito do commit pretendido não encontrado!'
 );
-console.log('   -> APROVADO: Trava de integridade do commit v1.15.6 validada.');
+assert.ok(
+  scriptContent.includes('[ "${ACTUAL_COMMIT}" != "${TARGET_COMMIT}" ]'),
+  'FALHA: Verificação estrita de igualdade do commit não encontrada!'
+);
+console.log('   -> APROVADO: Checkout e trava de igualdade do commit v1.15.6 validados.');
 
 // Test 6: Caminhos absolutos e validação de migração
 console.log('6. Testando caminhos absolutos e validações de banco...');

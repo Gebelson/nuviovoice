@@ -1,20 +1,35 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # NUVIO — Script de Atualização Blindada do Backend Oracle Cloud (v1.15.6)
-# Commit obrigatório de base: 7d8c8dec44be78477aad2a7f23315db8797a610f
+# Commit obrigatório da release: 7d8c8dec44be78477aad2a7f23315db8797a610f
 #
 # AUDITORIA FINAL DE SEGURANÇA:
-# 1. Eliminação total de 'exclusão destrutiva de data' no rollback; preservação atômica via mv data data_preserved_*.
-# 2. Captura do Image ID real, container image e variáveis Compose (CONCORD_IMAGE, CONCORD_IMAGE_TAG).
-# 3. Prontidão estrita: exige Docker HEALTHY E resposta HTTP 200 simultâneos (ambos obrigatórios).
-# 4. Confirmação interativa com possibilidade de cancelamento antes de qualquer parada de serviço.
-# 5. Caminhos absolutos em Node.js e validação de migrações e rotas internas.
+# 1. Execução desacoplada via /tmp para permitir checkout exato de 7d8c8de sem
+#    auto-deleção do script bash durante a execução.
+# 2. Checkout e compilação comprovadamente do commit 7d8c8dec44be78477aad2a7f23315db8797a610f.
+# 3. Eliminação total de 'deleção destrutiva'; rollback preserva atomicamente via mv data data_preserved_*.
+#    Se o mv falhar, a restauração do backup é IMEDIATAMENTE INTERROMPIDA.
+# 4. Captura do Image ID real, container image e variáveis Compose (CONCORD_IMAGE, CONCORD_IMAGE_TAG).
+# 5. Prontidão estrita: exige Docker HEALTHY E resposta HTTP 200 simultâneos (ambos obrigatórios).
+# 6. Confirmação interativa com possibilidade de cancelamento antes de qualquer parada de serviço.
 # ==============================================================================
 set -euo pipefail
 
-REQUIRED_ANCESTOR="7d8c8dec44be78477aad2a7f23315db8797a610f"
+TARGET_COMMIT="7d8c8dec44be78477aad2a7f23315db8797a610f"
 APP_DIR="${HOME}/concord"
 BACKUP_DIR="${HOME}/nuvio_backups"
+
+# ------------------------------------------------------------------------------
+# Desacoplamento de Execução: Copiar para /tmp para permitir checkout livre
+# ------------------------------------------------------------------------------
+SELF_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+TMP_RUN_SCRIPT="/tmp/nuvio-deploy-v1.15.6.sh"
+
+if [ "${SELF_PATH}" != "${TMP_RUN_SCRIPT}" ]; then
+  cp "${SELF_PATH}" "${TMP_RUN_SCRIPT}"
+  chmod +x "${TMP_RUN_SCRIPT}"
+  exec bash "${TMP_RUN_SCRIPT}" "$@"
+fi
 
 DEPLOY_STAGE="INITIAL"
 ORIGINAL_COMMIT=""
@@ -26,7 +41,7 @@ BACKUP_FILE=""
 echo "=================================================================="
 echo "NUVIO — Atualização Segura do Backend Oracle Cloud (v1.15.6)"
 echo "Diretório da Aplicação: ${APP_DIR}"
-echo "Commit Obrigatório:     ${REQUIRED_ANCESTOR}"
+echo "Commit Alvo Obrigatório: ${TARGET_COMMIT}"
 echo "=================================================================="
 
 cd "${APP_DIR}"
@@ -36,7 +51,7 @@ mkdir -p "${BACKUP_DIR}"
 # Confirmação Interativa do Operador (Possibilidade de Cancelamento)
 # ------------------------------------------------------------------------------
 echo ""
-echo "Esta operação atualizará o backend para a versão v1.15.6."
+echo "Esta operação atualizará o backend para o commit oficial v1.15.6."
 echo "Uma breve parada do container será necessária para backup consistente do SQLite."
 read -p "Deseja continuar com a atualização? [digite 'sim' para prosseguir]: " USER_CONFIRM
 if [ "${USER_CONFIRM}" != "sim" ]; then
@@ -87,11 +102,30 @@ cleanup_on_error() {
 
         if [ -f "${BACKUP_FILE}" ]; then
           PRESERVED_DATA="data_preserved_$(date +%Y%m%d_%H%M%S)"
-          echo "-> 2. Preservando estado de data/ em ${PRESERVED_DATA} (sem descartar escritas)..."
-          mv data "${PRESERVED_DATA}" || true
+          echo "-> 2. Preservando estado atual de data/ em ${PRESERVED_DATA}..."
+          
+          if [ -d data ]; then
+            if ! mv data "${PRESERVED_DATA}"; then
+              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&2
+              echo "ERRO CRÍTICO DE SEGURANÇA: Falha ao mover 'data' para '${PRESERVED_DATA}'!" >&2
+              echo "Interrompendo restauração automática do backup para NÃO sobrescrever dados." >&2
+              echo "O diretório 'data' original foi mantido intacto. Intervenção manual obrigatória." >&2
+              echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" >&2
+              return 1
+            fi
+
+            if [ -d data ]; then
+              echo "ERRO CRÍTICO: 'data' ainda existe após mv! Abortando restauração." >&2
+              return 1
+            fi
+          fi
 
           echo "-> 3. Restaurando base de dados consistente do backup pré-deploy..."
-          tar -xzf "${BACKUP_FILE}"
+          if ! tar -xzf "${BACKUP_FILE}"; then
+            echo "ERRO CRÍTICO: Falha ao descompactar backup ${BACKUP_FILE}!" >&2
+            echo "Os dados prévios estão seguros em ${PRESERVED_DATA}." >&2
+            return 1
+          fi
         fi
 
         echo "-> 4. Restaurando código e imagem Docker da versão anterior..."
@@ -205,29 +239,38 @@ rm -rf "${RESTORE_TEST_DIR}"
 echo "Backup validado com sucesso e 100% recuperável."
 
 # ==============================================================================
-# FASE 3: Sincronização do Repositório e Trava no Commit v1.15.6
+# FASE 3: Checkout Comprovado do Commit Exato v1.15.6
 # ==============================================================================
 DEPLOY_STAGE="GIT_OR_BUILD"
 echo ""
-echo "[Fase 3/6] Sincronizando código com origin/main..."
+echo "[Fase 3/6] Sincronizando e posicionando exatamente no commit v1.15.6 (${TARGET_COMMIT})..."
 
 git fetch origin main
 
-# Validar se o HEAD do repositório contém as alterações da versão v1.15.6
-CURRENT_COMMIT=$(git rev-parse HEAD)
-if ! git merge-base --is-ancestor "${REQUIRED_ANCESTOR}" "${CURRENT_COMMIT}" && [ "${CURRENT_COMMIT}" != "${REQUIRED_ANCESTOR}" ]; then
-  echo "ERRO CRÍTICO: O repositório não contém as alterações da versão v1.15.6 (${REQUIRED_ANCESTOR})!" >&2
+# Checkout explícito e rigoroso do commit pretendido
+git checkout "${TARGET_COMMIT}"
+
+ACTUAL_COMMIT=$(git rev-parse HEAD)
+echo "Commit HEAD verificado no repositório: ${ACTUAL_COMMIT}"
+
+if [ "${ACTUAL_COMMIT}" != "${TARGET_COMMIT}" ]; then
+  echo "ERRO CRÍTICO: Falha no checkout! HEAD (${ACTUAL_COMMIT}) não é o commit pretendido (${TARGET_COMMIT})!" >&2
   exit 1
 fi
 
-echo "Commit verificado e compatível com v1.15.6: ${CURRENT_COMMIT}"
+SERVER_PKG_VERSION=$(node -e "console.log(require('./packages/server/package.json').version)" 2>/dev/null || echo "unknown")
+if [ "${SERVER_PKG_VERSION}" != "1.15.6" ]; then
+  echo "ERRO CRÍTICO: packages/server/package.json version (${SERVER_PKG_VERSION}) não é 1.15.6!" >&2
+  exit 1
+fi
+echo "Versão do package.json confirmada: 1.15.6"
 
 # ==============================================================================
-# FASE 4: Recompilação da Imagem Docker com Tag de Commit
+# FASE 4: Recompilação da Imagem Docker do Commit Pretendido
 # ==============================================================================
 echo ""
-echo "[Fase 4/6] Compilando a nova imagem Docker com CONCORD_COMMIT=${REQUIRED_ANCESTOR}..."
-export CONCORD_COMMIT="${REQUIRED_ANCESTOR}"
+echo "[Fase 4/6] Compilando a nova imagem Docker a partir do commit ${TARGET_COMMIT}..."
+export CONCORD_COMMIT="${TARGET_COMMIT}"
 docker compose build concord
 
 # ==============================================================================
@@ -314,25 +357,25 @@ db.close();
 echo "Validando rotas HTTP da API..."
 docker compose exec concord node -e "
 async function run() {
-  const base = 'http://127.0.0.1:3000';
+  const b = 'http://127.0.0.1:3000';
 
   // 1. Health
-  const h = await (await fetch(base + '/api/health')).json();
+  const h = await (await fetch(b + '/api/health')).json();
   if (h.status !== 'ok') throw new Error('Falha health status: ' + JSON.stringify(h));
   console.log('-> GET /api/health: 200 OK');
 
   // 2. Instance info
-  const info = await (await fetch(base + '/api/instance/info')).json();
+  const info = await (await fetch(b + '/api/instance/info')).json();
   if (info.version !== '1.15.6') throw new Error('Versão reportada incorreta: ' + info.version);
   console.log('-> GET /api/instance/info: 200 OK (versão 1.15.6, commit ' + info.commit + ')');
 
   // 3. Live streams
-  const streams = await (await fetch(base + '/api/live/streams')).json();
+  const streams = await (await fetch(b + '/api/live/streams')).json();
   if (!Array.isArray(streams.streams)) throw new Error('Payload inesperado em live streams');
   console.log('-> GET /api/live/streams: 200 OK (' + streams.streams.length + ' transmissões ativas)');
 
   // 4. Live channels me (sem token)
-  const me = await fetch(base + '/api/live/channels/me');
+  const me = await fetch(b + '/api/live/channels/me');
   if (me.status !== 401) throw new Error('Live channels me sem token esperava 401, recebeu: ' + me.status);
   console.log('-> GET /api/live/channels/me: 401 Unauthorized (rota registrada com Fastify JWT guard ativo)');
 }
@@ -357,7 +400,7 @@ echo ""
 echo "=================================================================="
 echo "ATUALIZAÇÃO CONCLUÍDA COM SUCESSO!"
 echo "Versão:          1.15.6"
-echo "Commit:          ${REQUIRED_ANCESTOR}"
+echo "Commit:          ${TARGET_COMMIT}"
 echo "Container:       concord (HEALTHY)"
 echo "Tabela SQLite:   streamer_channels (ATIVA)"
 echo "Rotas Live:      Operacionais (200 OK / 401 Unauthorized)"
