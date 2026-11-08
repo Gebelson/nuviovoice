@@ -7,6 +7,7 @@ import {
   type StreamPlatform,
   type LinkChannelInput,
   parseChannelInput,
+  validateChannelInput,
   getStreamExternalUrl,
 } from '@concord/shared';
 import {
@@ -97,12 +98,13 @@ export async function liveStreamRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'channelInput is required' });
       }
 
-      const parsed = parseChannelInput(channelInput, platformHint);
-      if (!parsed) {
+      const validation = validateChannelInput(channelInput, platformHint);
+      if (!validation.valid || !validation.parsed) {
         return reply.code(400).send({
-          error: 'Formato de canal inválido. Forneça o link ou nome do canal da Twitch, Kick ou YouTube.',
+          error: validation.error || 'Formato de canal inválido. Forneça o link ou nome do canal da Twitch, Kick ou YouTube.',
         });
       }
+      const parsed = validation.parsed;
 
       const db = getDb();
 

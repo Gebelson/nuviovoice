@@ -38,6 +38,18 @@
       "destination": "/api/bots/categories"
     },
     {
+      "source": "/api/live/streams",
+      "destination": "/api/live/streams"
+    },
+    {
+      "source": "/api/live/channels/me",
+      "destination": "/api/live/channels/me"
+    },
+    {
+      "source": "/api/live/channels/link",
+      "destination": "/api/live/channels/link"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://167-234-239-100.sslip.io/api/:path*"
     },

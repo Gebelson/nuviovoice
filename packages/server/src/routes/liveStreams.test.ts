@@ -224,4 +224,71 @@ describe('Live Streams API', () => {
     expect(singleRes.statusCode).toBe(200);
     expect(JSON.parse(singleRes.body).stream.id).toBe('chan-123');
   });
+
+  it('validates platform mismatch, invalid characters, and duplicate channels', async () => {
+    // 1. Platform mismatch: selected Kick but sent Twitch URL
+    const mismatchRes = await app.inject({
+      method: 'POST',
+      url: '/api/live/channels/link',
+      headers: { authorization: 'alice' },
+      payload: {
+        platform: 'kick',
+        channelInput: 'https://twitch.tv/alicestream',
+      },
+    });
+    expect(mismatchRes.statusCode).toBe(400);
+    expect(JSON.parse(mismatchRes.body).error).toContain('Você selecionou a plataforma Kick, mas inseriu um link da Twitch');
+
+    // 2. Invalid channel name with illegal characters
+    const invalidRes = await app.inject({
+      method: 'POST',
+      url: '/api/live/channels/link',
+      headers: { authorization: 'alice' },
+      payload: {
+        platform: 'twitch',
+        channelInput: 'canal com espacos',
+      },
+    });
+    expect(invalidRes.statusCode).toBe(400);
+    expect(JSON.parse(invalidRes.body).error).toContain('Nome de canal da Twitch inválido');
+
+    // 3. Link valid Kick channel for Alice
+    const kickRes = await app.inject({
+      method: 'POST',
+      url: '/api/live/channels/link',
+      headers: { authorization: 'alice' },
+      payload: {
+        platform: 'kick',
+        channelInput: 'alice_gamer',
+      },
+    });
+    expect(kickRes.statusCode).toBe(201);
+    expect(JSON.parse(kickRes.body).channel.platform).toBe('kick');
+
+    // 4. Duplicate channel from same user
+    const dupRes = await app.inject({
+      method: 'POST',
+      url: '/api/live/channels/link',
+      headers: { authorization: 'alice' },
+      payload: {
+        platform: 'kick',
+        channelInput: 'https://kick.com/alice_gamer',
+      },
+    });
+    expect(dupRes.statusCode).toBe(200);
+    expect(JSON.parse(dupRes.body).alreadyLinked).toBe(true);
+
+    // 5. Conflict: another user tries to link Alice's channel
+    const conflictRes = await app.inject({
+      method: 'POST',
+      url: '/api/live/channels/link',
+      headers: { authorization: 'bob' },
+      payload: {
+        platform: 'kick',
+        channelInput: 'alice_gamer',
+      },
+    });
+    expect(conflictRes.statusCode).toBe(409);
+    expect(JSON.parse(conflictRes.body).error).toContain('já está vinculado a outra conta');
+  });
 });

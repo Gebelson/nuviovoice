@@ -228,8 +228,8 @@ async function main() {
   try {
     run('pnpm -r typecheck');
     run('pnpm --filter @concord/desktop test');
-    run('pnpm --filter @concord/web test sidebarNavigation.test.tsx ChannelSidebar.homeNav.test.tsx SpaceSidebar.homeNav.test.tsx ChannelSidebar.download.test.tsx homeNav.test.ts opportunities.test.tsx tusUrl.test.ts WinkUploadModal.test.tsx UserSettings.test.tsx PrivacyPolicyPage.test.tsx CatalogResilience.test.tsx ActivityCard.test.tsx FriendsPage.test.tsx activityFanout.test.ts UserProfilePopout.test.tsx UserProfileModal.test.tsx');
-    run('pnpm --filter @concord/server test winks.upload.test.ts');
+    run('pnpm --filter @concord/web test --maxWorkers=2 sidebarNavigation.test.tsx ChannelSidebar.homeNav.test.tsx SpaceSidebar.homeNav.test.tsx ChannelSidebar.download.test.tsx homeNav.test.ts opportunities.test.tsx tusUrl.test.ts WinkUploadModal.test.tsx UserSettings.test.tsx PrivacyPolicyPage.test.tsx CatalogResilience.test.tsx ActivityCard.test.tsx FriendsPage.test.tsx activityFanout.test.ts UserProfilePopout.test.tsx UserProfileModal.test.tsx StreamerChannelsSection.test.tsx liveStreamStore.test.ts');
+    run('pnpm --filter @concord/server test winks.upload.test.ts liveStreams.test.ts');
     run('pnpm --filter @concord/web build');
     success('Preflight validation passed completely (0 errors, 100% tests passing, clean build).');
   } catch (err) {

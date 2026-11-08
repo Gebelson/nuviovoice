@@ -123,6 +123,16 @@ export function parseChannelInput(input: string, platformHint?: StreamPlatform):
     };
   }
 
+  const ytCustomMatch = trimmed.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/(?:c\/|user\/)?([a-zA-Z0-9_\-\.]{3,35})/i);
+  if (ytCustomMatch && ytCustomMatch[1] && !['watch', 'live', 'feed', 'gaming'].includes(ytCustomMatch[1].toLowerCase())) {
+    const name = ytCustomMatch[1].replace(/^@/, '');
+    return {
+      platform: 'youtube',
+      channelName: name,
+      cleanUrl: `https://www.youtube.com/@${name}`,
+    };
+  }
+
   // Fallback if platform is passed as hint
   if (platformHint) {
     const cleanSlug = trimmed.replace(/^@/, '').toLowerCase().trim();
@@ -140,6 +150,77 @@ export function parseChannelInput(input: string, platformHint?: StreamPlatform):
   }
 
   return null;
+}
+
+/**
+ * Validates channel input with comprehensive checks for platform rules and mismatches.
+ */
+export function validateChannelInput(
+  input: string,
+  platformHint?: StreamPlatform
+): {
+  valid: boolean;
+  error?: string;
+  parsed?: { platform: StreamPlatform; channelName: string; cleanUrl: string };
+} {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return { valid: false, error: 'Insira o link ou o identificador do canal de transmissão.' };
+  }
+
+  // 1. Detect if the input contains a URL of a conflicting platform
+  let detectedPlatform: StreamPlatform | null = null;
+  if (/twitch\.tv/i.test(trimmed)) detectedPlatform = 'twitch';
+  else if (/kick\.com/i.test(trimmed)) detectedPlatform = 'kick';
+  else if (/youtube\.com/i.test(trimmed) || /youtu\.be/i.test(trimmed)) detectedPlatform = 'youtube';
+
+  if (platformHint && detectedPlatform && platformHint !== detectedPlatform) {
+    const platformNames: Record<StreamPlatform, string> = {
+      twitch: 'Twitch',
+      kick: 'Kick',
+      youtube: 'YouTube',
+    };
+    return {
+      valid: false,
+      error: `Você selecionou a plataforma ${platformNames[platformHint]}, mas inseriu um link da ${platformNames[detectedPlatform]}. Ajuste a plataforma selecionada ou corrija o link informado.`,
+    };
+  }
+
+  const parsed = parseChannelInput(trimmed, platformHint);
+  if (!parsed) {
+    return {
+      valid: false,
+      error: 'Formato de canal inválido. Forneça o link completo ou o nome de usuário da Twitch, Kick ou YouTube.',
+    };
+  }
+
+  // Validate format and length rules per platform
+  if (parsed.platform === 'twitch') {
+    if (!/^[a-zA-Z0-9_]{3,25}$/.test(parsed.channelName)) {
+      return {
+        valid: false,
+        error: 'Nome de canal da Twitch inválido. Deve ter entre 3 e 25 caracteres (letras, números ou sublinhados, sem espaços).',
+      };
+    }
+  } else if (parsed.platform === 'kick') {
+    if (!/^[a-zA-Z0-9_\-]{3,30}$/.test(parsed.channelName)) {
+      return {
+        valid: false,
+        error: 'Nome de canal da Kick inválido. Deve ter entre 3 e 30 caracteres (letras, números, hifens ou sublinhados).',
+      };
+    }
+  } else if (parsed.platform === 'youtube') {
+    const isChannelId = /^UC[a-zA-Z0-9_\-]{20,24}$/.test(parsed.channelName);
+    const isHandle = /^[a-zA-Z0-9_\-\.]{3,35}$/.test(parsed.channelName);
+    if (!isChannelId && !isHandle) {
+      return {
+        valid: false,
+        error: 'Identificador do YouTube inválido. Forneça o @identificador do canal ou o link completo do canal.',
+      };
+    }
+  }
+
+  return { valid: true, parsed };
 }
 
 /**
